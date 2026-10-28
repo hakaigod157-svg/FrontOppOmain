@@ -11,11 +11,14 @@ export const useEtapeStore = defineStore("etapeStore", {
         etapes: [],
         etapeEnCours: null,
         historique: [],
+        actions :[],
+        fournisseurs :[],
+        marques :[],
         loading: false,
     }),
 
     actions: {
-
+        //Liste étape preparation -> TABLE ETAPE_LIGNE
         async getListeEtapes(natureEtape , classFction) {
             const sessionId = localStorage.getItem("sessionId");
             const { handleLogout } = useLogout();
@@ -65,6 +68,7 @@ export const useEtapeStore = defineStore("etapeStore", {
             }
         },
 
+        //Liste REALISATION RETO -> TABLE REALISATION
 
         async getListePrepaMaint(maintCode){
             if (!maintCode) {
@@ -400,52 +404,179 @@ export const useEtapeStore = defineStore("etapeStore", {
             }
         } 
         
-        
-        ,async getHistorique(demandeCode) {
-            if (!demandeCode || demandeCode === "-") {
-                return [];
-            }
+        /////////////////////////////////// MBOLA MILA ALEFA BACKEND /////////////////////////////////////////////////
+        ,async getTypeActionReal(){
             const sessionId = localStorage.getItem("sessionId");
             const { handleLogout } = useLogout();
-
+            
             this.loading = true;
             try {
-                const response = await axios.get(
-                    Config.SERVER_URL + "api/getHistorique",
+                const actionRecue = await axios.get(Config.SERVER_URL + "api/getAction",null,
                     {
-                        headers: {
-                            Authorization: sessionId
-                        },
-                        params: {
-                            DEMANDE_CODE: demandeCode
+                        headers:{
+                            "Authorization" : sessionId
                         }
                     }
                 );
-                console.log("Historique récupéré depuis l'API :", response.data);
-
-                if (response.status === 204 || !response.data) {
-                    this.historique = [];
-                    return [];
+                if (Array.isArray(actionRecue.data)) {
+                    this.actions = actionRecue.data.map(
+                        (actionsAZO) => ({ ...actionsAZO })
+                    );
+                } else if (
+                    actionRecue.data &&
+                    Array.isArray(actionRecue.data.target)
+                ) {
+                    this.actions = actionRecue.data.target.map(
+                        (actionsAZO) => ({ ...actionsAZO })
+                    );
+                } else {
+                    this.actions = [];
+                    console.log(
+                        "TSISY ACTIONS ao am base fa mande requeten'ise"
+                    );
                 }
-
-                let data = response.data;
-                if (data && Array.isArray(data.target)) {
-                    data = data.target;
-                }
-
-                this.historique = Array.isArray(data) ? data : [];
-                return this.historique;
+                return this.actions;
             } catch (error) {
-                console.error("Erreur lors de la récupération de l'historique :", error);
-                if (error.response?.status === 401) {
+                console.error("Erreur de récuperation ACTIONS (/getActon) : " , error);
+                if (error?.response?.status === 401) {
                     await handleLogout();
                 }
-                this.historique = [];
-                return [];
-            } finally {
-                this.loading = false;
+                return null;
             }
         },
+
+        async getFournisseurs(){
+            const sessionId = localStorage.getItem("sessionId");
+            const { handleLogout } = useLogout();
+            
+            this.loading = true;
+            try {
+                const fournisseurS = await axios.get(Config.SERVER_URL + "api/getFNR",null,
+                    {
+                        headers:{
+                            "Authorization" : sessionId
+                        }
+                    }
+                );
+                if (Array.isArray(fournisseurS.data)) {
+                    this.fournisseurs = fournisseurS.data.map(
+                        (frnisseurs) => ({ ...frnisseurs })
+                    );
+                } else if (
+                    fournisseurS.data &&
+                    Array.isArray(fournisseurS.data.target)
+                ) {
+                    this.fournisseurs = fournisseurS.data.target.map(
+                        (frnisseurs) => ({ ...frnisseurs })
+                    );
+                } else {
+                    this.fournisseurs = [];
+                    console.log(
+                        "TSISY ACTIONS ao am base fa mande requeten'ise"
+                    );
+                }
+                return this.fournisseurs;
+            } catch (error) {
+                console.error("Erreur de récuperation FNR(/getFNR) : " , error);
+                if (error?.response?.status === 401) {
+                    await handleLogout();
+                }
+                return null;
+            }
+
+        },
+
+        async getMarques(){
+            const sessionId = localStorage.getItem("sessionId");
+            const { handleLogout } = useLogout();
+            
+            this.loading = true;
+            try {
+                const marquePiece = await axios.get(Config.SERVER_URL + "api/getMarques",null,
+                    {
+                        headers:{
+                            "Authorization" : sessionId
+                        }
+                    }
+                );
+                if (Array.isArray(marquePiece.data)) {
+                    this.marques = marquePiece.data.map(
+                        (mrkp) => ({ ...mrkp })
+                    );
+                } else if (
+                    marquePiece.data &&
+                    Array.isArray(marquePiece.data.target)
+                ) {
+                    this.marques = marquePiece.data.target.map(
+                        (mrkp) => ({ ...mrkp })
+                    );
+                } else {
+                    this.marques = [];
+                    console.log(
+                        "TSISY ACTIONS ao am base fa mande requeten'ise"
+                    );
+                }
+                return this.marques;
+            } catch (error) {
+                console.error("Tena tsy azo ilay marques mec : " , error);
+                if (error?.response?.status === 401) {
+                    await handleLogout();
+                }
+                return null;
+            }
+
+        },
+        
+
+
+
+        /////////////////////////////////// MBOLA MILA ALEFA BACKEND /////////////////////////////////////////////////
+
+        // async getHistorique(demandeCode) {
+        //     if (!demandeCode || demandeCode === "-") {
+        //         return [];
+        //     }
+        //     const sessionId = localStorage.getItem("sessionId");
+        //     const { handleLogout } = useLogout();
+
+        //     this.loading = true;
+        //     try {
+        //         const response = await axios.get(
+        //             Config.SERVER_URL + "api/getHistorique",
+        //             {
+        //                 headers: {
+        //                     Authorization: sessionId
+        //                 },
+        //                 params: {
+        //                     DEMANDE_CODE: demandeCode
+        //                 }
+        //             }
+        //         );
+        //         console.log("Historique récupéré depuis l'API :", response.data);
+
+        //         if (response.status === 204 || !response.data) {
+        //             this.historique = [];
+        //             return [];
+        //         }
+
+        //         let data = response.data;
+        //         if (data && Array.isArray(data.target)) {
+        //             data = data.target;
+        //         }
+
+        //         this.historique = Array.isArray(data) ? data : [];
+        //         return this.historique;
+        //     } catch (error) {
+        //         console.error("Erreur lors de la récupération de l'historique :", error);
+        //         if (error.response?.status === 401) {
+        //             await handleLogout();
+        //         }
+        //         this.historique = [];
+        //         return [];
+        //     } finally {
+        //         this.loading = false;
+        //     }
+        // },
       
     }
 });

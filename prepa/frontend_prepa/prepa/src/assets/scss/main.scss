@@ -1,0 +1,9 @@
+
+//$font: Arial, Helvetica, sans-serif;
+$font-size: 14px;
+
+@use 'vuetify' with (
+  //$body-font-family: $font,
+ 
+  $font-size-root: $font-size,
+);

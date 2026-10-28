@@ -1,0 +1,14 @@
+$my-header-color: #f5f5f5;
+
+@use '~vuetify/src/styles/styles' as vuetify;
+
+$material-light: map-merge(
+  vuetify.$material-light,
+  (
+    'theme': (
+      'colors': (
+        'header': $my-header-color
+      )
+    )
+  )
+);

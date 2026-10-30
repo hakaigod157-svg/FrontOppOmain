@@ -9,6 +9,7 @@ const props= defineProps ({
     search: {type:String , default:''},
     loading: {type:Boolean , default:false},
     height: {type:[String,Number] , default:600},
+    highlightedCode: { type: String, default: "" },
 
     longTextCols: {
     type: Array,
@@ -63,6 +64,14 @@ const skeletonRows = computed(() => {
   return Math.max(3, Math.floor(h / 50)); 
 });
 
+const rowProps = ({ item }) => {
+  const demande = item?.raw ?? item;
+  const code = demande?.demande_CODE ?? demande?.DEMANDE_CODE;
+  return code && code === props.highlightedCode
+    ? { class: "nouvelle-demande-clignote" }
+    : {};
+};
+
 
 const filteredItems = computed(() => {
   const query = props.search.trim().toLowerCase();
@@ -110,6 +119,7 @@ const filteredItems = computed(() => {
       fixed-header
       hover
       :height="height"
+      :row-props="rowProps"
       no-data-text="Aucune données disponible pour l'instant"
       
       @click:row="(_, row) => emit('click:row', row.item)"

@@ -411,7 +411,7 @@ export const useEtapeStore = defineStore("etapeStore", {
             
             this.loading = true;
             try {
-                const actionRecue = await axios.get(Config.SERVER_URL + "api/getAction",null,
+                const actionRecue = await axios.get(Config.SERVER_URL + "api/getActions",
                     {
                         headers:{
                             "Authorization" : sessionId
@@ -421,7 +421,9 @@ export const useEtapeStore = defineStore("etapeStore", {
                 if (Array.isArray(actionRecue.data)) {
                     this.actions = actionRecue.data.map(
                         (actionsAZO) => ({ ...actionsAZO })
+                    
                     );
+                    console.log("Actions:" , this.actions)
                 } else if (
                     actionRecue.data &&
                     Array.isArray(actionRecue.data.target)
@@ -451,10 +453,10 @@ export const useEtapeStore = defineStore("etapeStore", {
             
             this.loading = true;
             try {
-                const fournisseurS = await axios.get(Config.SERVER_URL + "api/getFNR",null,
+                const fournisseurS = await axios.get(Config.SERVER_URL + "api/getFnr",
                     {
-                        headers:{
-                            "Authorization" : sessionId
+                       headers: {
+                            Authorization: sessionId
                         }
                     }
                 );
@@ -472,7 +474,7 @@ export const useEtapeStore = defineStore("etapeStore", {
                 } else {
                     this.fournisseurs = [];
                     console.log(
-                        "TSISY ACTIONS ao am base fa mande requeten'ise"
+                        "TSISY Fournisseurs ao am base fa mande requeten'ise"
                     );
                 }
                 return this.fournisseurs;
@@ -492,7 +494,7 @@ export const useEtapeStore = defineStore("etapeStore", {
             
             this.loading = true;
             try {
-                const marquePiece = await axios.get(Config.SERVER_URL + "api/getMarques",null,
+                const marquePiece = await axios.get(Config.SERVER_URL + "api/getMarque",
                     {
                         headers:{
                             "Authorization" : sessionId
@@ -513,7 +515,7 @@ export const useEtapeStore = defineStore("etapeStore", {
                 } else {
                     this.marques = [];
                     console.log(
-                        "TSISY ACTIONS ao am base fa mande requeten'ise"
+                        "TSISY Marques ao am base fa mande requeten'ise"
                     );
                 }
                 return this.marques;

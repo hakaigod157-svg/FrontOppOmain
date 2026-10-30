@@ -1,33 +1,35 @@
-<script>
-import { defineComponent, ref, computed, onMounted, watch } from "vue";
+<script setup>
+import { ref, computed, onMounted, watch } from "vue";
 import dayjs from "dayjs";
 import { useDemandeMaintenance } from "@/store/Maintenance/demande_store";
 import { useEtapeStore } from "@/store/Maintenance/etape_store";
 import { maintStore } from "@/store/Maintenance/maintenance_store";
 
-export default defineComponent({
-  name: "DetailMaintenance",
-  props: {
-    maintenance: {
-      type: Object,
-      required: true,
-    },
+const props = defineProps({
+  maintenance: {
+    type: Object,
+    required: true,
   },
-  emits: ["close"],
-  setup(props) {
-    const tab = ref("prepa");
-    const loadingEtapes = ref(false);
+});
 
-    const storeDemande = useDemandeMaintenance();
-    const storeMaint = maintStore();
-    const storeEtape = useEtapeStore();
+const emit = defineEmits(["close"]);
 
-    const linkedMaintenance = ref(null);
-    const linkedDemande = ref(null);
-    const fetchedKm = ref(null);
-    const etapeEnCoursData = ref(null);
 
-    const formatDate = (date) => {
+const tab = ref("prepa");
+
+
+const loadingEtapes = ref(false);
+
+const storeDemande = useDemandeMaintenance();
+const storeMaint = maintStore();
+const storeEtape = useEtapeStore();
+
+const linkedMaintenance = ref(null);
+const linkedDemande = ref(null);
+const fetchedKm = ref(null);
+const etapeEnCoursData = ref(null);
+
+const formatDate = (date) => {
       if (!date) return "-";
       if (typeof date === "string" && /^\d{2}\/\d{2}\/\d{4}/.test(date)) {
         return date;
@@ -36,15 +38,36 @@ export default defineComponent({
       return d.isValid() ? d.format("DD/MM/YYYY") : String(date);
     };
 
-    
-
-    const itemData = computed(() => {
+  
+const itemData = computed(() => {
       const obj = props.maintenance;
       if (!obj) return {};
       return obj.raw ? { ...obj.raw, ...obj } : obj;
     });
 
-    const synchroniserDonnees = async () => {
+   
+const listeTypesActions = computed(() => {
+      return (storeEtape.actions)
+        .map((e) => e.enum_CODE)
+        .filter(Boolean);
+});
+    
+
+const listeFournisseurs = computed(() => {
+      return (storeEtape.fournisseurs )
+        .map((e) => e.enum_CODE)
+        .filter(Boolean);
+});
+const listeMarquePiece = computed(() => {
+      return (storeEtape.marques)
+        .map((e) => e.enum_CODE)
+        .filter(Boolean);
+});
+
+
+
+
+const synchroniserDonnees = async () => {
       const dmdCode =
         itemData.value?.demande_CODE || itemData.value?.maint_DEMANDE 
       
@@ -113,8 +136,7 @@ export default defineComponent({
       }
     };
 
-    // Données normalisées pour accepter à la fois Demande et Maintenance
-    const displayCode = computed(() => {
+const displayCode = computed(() => {
       return (
         itemData.value?.maint_CODE ||
         itemData.value?.MAINT_CODE ||
@@ -124,7 +146,7 @@ export default defineComponent({
       );
     });
 
-    const displayDate = computed(() => {
+const displayDate = computed(() => {
       return (
         itemData.value?.maint_DATE ||
         linkedMaintenance.value?.maint_DATE ||
@@ -133,7 +155,7 @@ export default defineComponent({
       );
     });
 
-    const displayDemandeCode = computed(() => {
+const displayDemandeCode = computed(() => {
       return (
         itemData.value?.maint_DEMANDE ||
         itemData.value?.demande_CODE ||
@@ -142,7 +164,7 @@ export default defineComponent({
       );
     });
 
-    const displayDemandeDate = computed(() => {
+const displayDemandeDate = computed(() => {
       return (
         itemData.value?.demande_DATE ||
         linkedDemande.value?.demande_DATE ||
@@ -151,7 +173,7 @@ export default defineComponent({
       );
     });
 
-    const displayType = computed(() => {
+const displayType = computed(() => {
       return (
         itemData.value?.maint_TYPE ||
         linkedMaintenance.value?.maint_TYPE ||
@@ -161,7 +183,7 @@ export default defineComponent({
       );
     });
 
-    const displayVehicule = computed(() => {
+const displayVehicule = computed(() => {
       const v =
         itemData.value?.demande_VOITURE ||
         linkedDemande.value?.demande_VOITURE ||
@@ -173,7 +195,7 @@ export default defineComponent({
       return v || m || "Véhicule interne";
     });
 
-    const displayKm = computed(() => {
+const displayKm = computed(() => {
       const km =
         itemData.value?.maint_KM ??
         linkedMaintenance.value?.maint_KM ??
@@ -187,7 +209,7 @@ export default defineComponent({
       return "-";
     });
 
-    const displayUserCre = computed(() => {
+const displayUserCre = computed(() => {
       return (
         itemData.value?.maint_USERCRE ||
         itemData.value?.MAINT_USERCRE ||
@@ -203,7 +225,7 @@ export default defineComponent({
       );
     });
 
-    const displayDateCre = computed(() => {
+const displayDateCre = computed(() => {
       return (
         itemData.value?.maint_DATECRE ||
         
@@ -216,7 +238,7 @@ export default defineComponent({
       );
     });
 
-    const displayUserModif = computed(() => {
+const displayUserModif = computed(() => {
       return (
         itemData.value?.maint_USERMODIF ||
         linkedMaintenance.value?.maint_USERMODIF ||
@@ -226,7 +248,7 @@ export default defineComponent({
       );
     });
 
-    const displayClassification = computed(() => {
+const displayClassification = computed(() => {
       return (
         itemData.value?.maint_CLASSIFICATION ||
         itemData.value?.demande_CLASSIFICATION ||
@@ -236,7 +258,7 @@ export default defineComponent({
       );
     });
 
-    const displayDescription = computed(() => {
+const displayDescription = computed(() => {
       return (
         itemData.value?.demande_DESCR ||
         linkedDemande.value?.demande_DESCR ||
@@ -246,7 +268,7 @@ export default defineComponent({
       );
     });
 
-    const isMaintenanceActive = computed(() => {
+const isMaintenanceActive = computed(() => {
       const code = String(displayCode.value);
       return (
         code.startsWith("MNT") ||
@@ -255,7 +277,7 @@ export default defineComponent({
       );
     });
 
-    const statusChipColor = computed(() => {
+const statusChipColor = computed(() => {
       const s = String(etapeEnCoursData.value?.statut || "").toUpperCase().trim();
 
       if (s.includes("REFUS") || s.includes("ANNUL")) return "#e53935";
@@ -269,11 +291,10 @@ export default defineComponent({
       if (s.includes("EN COURS") || s.includes("COURS")) return "#f57c00";
       if (s.includes("CRE") || s.includes("ATTENTE")) return "#1976d2";
 
-      // Fallback si pas encore de données etapeEnCours
       return isMaintenanceActive.value ? "#f57c00" : "#1976d2";
     });
 
-    const statusChipText = computed(() => {
+const statusChipText = computed(() => {
       const raw = etapeEnCoursData.value?.statut;
       if (raw) {
         const s = String(raw).toUpperCase().trim();
@@ -284,20 +305,18 @@ export default defineComponent({
         if (s.includes("CRE") || s.includes("ATTENTE")) {
           return "ATTENTE VALIDATION";
         }
-        // Affiche la valeur réelle renvoyée par le backend (ex: "PRET à TERMINER", etc.)
         return raw;
       }
 
-      // Fallback
       return isMaintenanceActive.value
         ? "MAINTENANCE ACTIVE"
         : "ATTENTE VALIDATION";
     });
 
-    const etapesPrepa = ref([]);
-    const etapesReal = ref([]);
+const etapesPrepa = ref([]);
+const etapesReal = ref([]);
 
-    const headersEtapes = [
+const headersEtapes = [
       { title: "N°", key: "ligne_NUMERO", align: "start", width: "70px" },
       { title: "Étape d'intervention", key: "etape_LIBELLE", align: "start" },
       { title: "Date prévue", key: "etape_DATE_PREV", align: "start", width: "160px" },
@@ -306,7 +325,7 @@ export default defineComponent({
       { title: "Intervenant", key: "etape_USER", align: "start", width: "180px" },
     ];
 
-    const headersEtapesReal = [
+const headersEtapesReal = [
       { title: "N°", key: "ligne_NUMERO", align: "start", width: "55px" },
       { title: "Intervention", key: "etape_LIBELLE", align: "start", minWidth: "180px" },
       { title: "Date prévue", key: "etape_DATE_PREV", align: "start", width: "115px" },
@@ -319,26 +338,26 @@ export default defineComponent({
       { title: "Validation", key: "actions", align: "center", width: "100px" },
     ];
 
-    const formatMontant = (val) => {
+const formatMontant = (val) => {
       if (val === null || val === undefined || val === "") return "-";
       const num = Number(val);
       return isNaN(num) ? String(val) : num.toLocaleString("fr-FR") + " Ar";
     };
 
-    const etapesPrepaRealiseesCount = computed(() => {
+const etapesPrepaRealiseesCount = computed(() => {
       return etapesPrepa.value.filter((e) => !!e.etape_DATE).length;
     });
 
-    const etapesRealRealiseesCount = computed(() => {
+const etapesRealRealiseesCount = computed(() => {
       return etapesReal.value.filter((e) => !!e.etape_DATE).length;
     });
 
-    const getRowProps = ({ item }) => {
+const getRowProps = ({ item }) => {
       const isRealisee = !!(item?.etape_DATE || item?.raw?.etape_DATE);
       return isRealisee ? { class: "row-realisee" } : {};
     };
 
-    const addBusinessDays = (date, days) => {
+const addBusinessDays = (date, days) => {
       let result = date;
       let remaining = days;
       while (remaining > 0) {
@@ -349,10 +368,10 @@ export default defineComponent({
       return result;
     };
 
-    const loadingActionPrepa = ref(false);
+const loadingActionPrepa = ref(false);
 
     // Validation d'une étape PREPA
-    const validerEtapePrepaAction = async (item) => {
+const validerEtapePrepaAction = async (item) => {
       const code = getMaintCode();
       if (!code) {
         console.warn("[validerEtapePrepaAction] Aucun code maintenance trouvé");
@@ -371,23 +390,21 @@ export default defineComponent({
       }
     };
 
-    const loadingActionReal = ref(false);
+const loadingActionReal = ref(false);
 
-    // Validation directe d'une étape REAL depuis les colonnes du tableau
-    const validerEtapeRealDirect = async (item) => {
+const validerEtapeRealDirect = async (item) => {
+      if (incomplet(item)) return;
+      if (!item.action)return;
       const code = getMaintCode();
-      if (!code) {
-        console.warn("[validerEtapeRealDirect] Code maintenance introuvable");
-        return;
-      }
       loadingActionReal.value = true;
       try {
+        const verif = isVerification(item);
         await storeEtape.validerEtapeReal(code, {
           intervReal: item.etape_LIBELLE || item.code,
-          action: item.action || "",
-          fournisseur: item.fournisseur || "",
-          marque: item.marque || "",
-          prix: item.prix !== null && item.prix !== undefined && item.prix !== "" ? Number(item.prix) : null,
+          action: item.action ,
+          fournisseur: verif ? "" : (item.fournisseur || ""),
+          marque: verif ? "" : (item.marque || ""),
+          prix: verif ? null : (item.prix !== null && item.prix !== undefined && item.prix !== "" ? Number(item.prix) : null),
           dateReal: null, 
         });
         await chargerDonneesEtEtapes(false);
@@ -398,33 +415,78 @@ export default defineComponent({
       }
     };
 
-    // Dialog & Formulaire Ajout RÉALISATION
-    const dialogAjoutReal = ref(false);
-    const loadingAjoutReal = ref(false);
-    const erreurAjoutReal = ref("");
-    const formAjoutReal = ref({
+const dialogAjoutReal = ref(false);
+const loadingAjoutReal = ref(false);
+const erreurAjoutReal = ref("");
+const formAjoutReal = ref({
       intervReal: "",
       datePrevu: dayjs().format("YYYY-MM-DD"),
       action: "",
-      fournisseur: "",
-      marque: "",
-      prix: null,
+      // fournisseur: "",
+      // marque: "",
+      // prix: null,
     });
 
-    const ouvrirDialogAjoutReal = () => {
+    // const ouvrirDialogAjoutReal = () => {
+    //   formAjoutReal.value = {
+    //     intervReal: "",
+    //     datePrevu: dayjs().format("YYYY-MM-DD"),
+    //     action: "",
+    //     fournisseur: "",
+    //     marque: "",
+    //     prix: null,
+    //   };
+    //   erreurAjoutReal.value = "";
+    //   dialogAjoutReal.value = true;
+    // };
+
+    // const soumettreAjoutReal = async () => {
+    //   if (!formAjoutReal.value.intervReal || !formAjoutReal.value.intervReal.trim()) {
+    //     erreurAjoutReal.value = "Le libellé de l'intervention est obligatoire.";
+    //     return;
+    //   }
+    //   const code = getMaintCode();
+    //   if (!code) {
+    //     erreurAjoutReal.value = "Code de maintenance introuvable.";
+    //     return;
+    //   }
+
+    //   loadingAjoutReal.value = true;
+    //   erreurAjoutReal.value = "";
+    //   try {
+    //     await storeEtape.ajouterEtapeReal(code, {
+    //       intervReal: formAjoutReal.value.intervReal.trim(),
+    //       datePrevu: formAjoutReal.value.datePrevu,
+    //       action: formAjoutReal.value.action,
+    //       fournisseur: formAjoutReal.value.fournisseur,
+    //       marque: formAjoutReal.value.marque,
+    //       prix: formAjoutReal.value.prix,
+    //     });
+    //     dialogAjoutReal.value = false;
+    //     await chargerDonneesEtEtapes(false);
+    //   } catch (err) {
+    //     console.error("Erreur ajout étape REAL :", err);
+    //     erreurAjoutReal.value = "Erreur lors de l'enregistrement de l'étape de réalisation.";
+    //   } finally {
+    //     loadingAjoutReal.value = false;
+    //   }
+    // };
+
+
+  const ouvrirDialogAjoutReal = () => {
       formAjoutReal.value = {
         intervReal: "",
         datePrevu: dayjs().format("YYYY-MM-DD"),
-        action: "",
-        fournisseur: "",
-        marque: "",
-        prix: null,
+         action: "",
+        // fournisseur: "",
+        // marque: "",
+        // prix: null,
       };
       erreurAjoutReal.value = "";
       dialogAjoutReal.value = true;
     };
 
-    const soumettreAjoutReal = async () => {
+const soumettreAjoutReal = async () => {
       if (!formAjoutReal.value.intervReal || !formAjoutReal.value.intervReal.trim()) {
         erreurAjoutReal.value = "Le libellé de l'intervention est obligatoire.";
         return;
@@ -441,10 +503,10 @@ export default defineComponent({
         await storeEtape.ajouterEtapeReal(code, {
           intervReal: formAjoutReal.value.intervReal.trim(),
           datePrevu: formAjoutReal.value.datePrevu,
-          action: formAjoutReal.value.action,
-          fournisseur: formAjoutReal.value.fournisseur,
-          marque: formAjoutReal.value.marque,
-          prix: formAjoutReal.value.prix,
+           action: formAjoutReal.value.action,
+          // fournisseur: formAjoutReal.value.fournisseur,
+          // marque: formAjoutReal.value.marque,
+          // prix: formAjoutReal.value.prix,
         });
         dialogAjoutReal.value = false;
         await chargerDonneesEtEtapes(false);
@@ -459,8 +521,57 @@ export default defineComponent({
 
 
 
-    const demandeTerminee = ref(false);
-    const loadingCloture = ref(false);
+    
+    // const ouvrirDialogAjoutReal = () => {
+    //   formAjoutReal.value = {
+    //     intervReal: "",
+    //     datePrevu: dayjs().format("YYYY-MM-DD"),
+    //     action: "",
+    //     fournisseur: "",
+    //     marque: "",
+    //     prix: null,
+    //   };
+    //   erreurAjoutReal.value = "";
+    //   dialogAjoutReal.value = true;
+    // };
+
+    // const soumettreAjoutReal = async () => {
+    //   if (!formAjoutReal.value.intervReal || !formAjoutReal.value.intervReal.trim()) {
+    //     erreurAjoutReal.value = "Le libellé de l'intervention est obligatoire.";
+    //     return;
+    //   }
+    //   const code = getMaintCode();
+    //   if (!code) {
+    //     erreurAjoutReal.value = "Code de maintenance introuvable.";
+    //     return;
+    //   }
+
+    //   loadingAjoutReal.value = true;
+    //   erreurAjoutReal.value = "";
+    //   try {
+    //     await storeEtape.ajouterEtapeReal(code, {
+    //       intervReal: formAjoutReal.value.intervReal.trim(),
+    //       datePrevu: formAjoutReal.value.datePrevu,
+    //       action: formAjoutReal.value.action,
+    //       fournisseur: formAjoutReal.value.fournisseur,
+    //       marque: formAjoutReal.value.marque,
+    //       prix: formAjoutReal.value.prix,
+    //     });
+    //     dialogAjoutReal.value = false;
+    //     await chargerDonneesEtEtapes(false);
+    //   } catch (err) {
+    //     console.error("Erreur ajout étape REAL :", err);
+    //     erreurAjoutReal.value = "Erreur lors de l'enregistrement de l'étape de réalisation.";
+    //   } finally {
+    //     loadingAjoutReal.value = false;
+    //   }
+    // };
+
+
+
+
+const demandeTerminee = ref(false);
+const loadingCloture = ref(false);
 
 const toutesEtapesValidees = computed(() => {
   const all = [...etapesPrepa.value, ...etapesReal.value];
@@ -472,6 +583,9 @@ const choisirOngletInitial = () => {
     etapesPrepa.value.length > 0 && etapesPrepa.value.every((e) => e.valide);
   tab.value = prepaTerminee && etapesReal.value.length > 0 ? "realisation" : "prepa";
 };
+
+
+
 
     // const listEtape = async (classification = null) => {
     //   loadingEtapes.value = true;
@@ -593,14 +707,12 @@ const toIso = (d) => (d ? dayjs(d).toISOString() : null);
 const listEtape = async (maintCode = null) => {
   loadingEtapes.value = true;
   try {
-    const code = getMaintCode(maintCode);
-    console.log("[listEtape] code maintenance résolu :", code, "| itemData:", JSON.stringify(itemData.value?.maint_CODE || itemData.value?.MAINT_CODE));
+const code = getMaintCode(maintCode);
     if (!code) {
-      console.warn("[listEtape] Aucun code maintenance trouvé — étapes PREPA non chargées");
       etapesPrepa.value = [];
       return;
     }
-    const repApi = await storeEtape.getListePrepaMaint(code);
+const repApi = await storeEtape.getListePrepaMaint(code);
     console.log("Étapes PREPA récupérées depuis l'API :", repApi);
 
     if (Array.isArray(repApi) && repApi.length > 0) {
@@ -638,18 +750,17 @@ const listEtape = async (maintCode = null) => {
 const listEtapeReal = async (maintCode = null) => {
   loadingEtapes.value = true;
   try {
-    const code = getMaintCode(maintCode);
+const code = getMaintCode(maintCode);
     console.log("[listEtapeReal] code maintenance résolu :", code);
-    if (!code) {
-      console.warn("[listEtapeReal] Aucun code maintenance trouvé — étapes REAL non chargées");
-      etapesReal.value = [];
-      return;
-    }
-    const repApi = await storeEtape.getListeRealMaint(code);
-    console.log("Étapes REAL récupérées depuis l'API :", repApi);
+    
+const repApi = await storeEtape.getListeRealMaint(code);
+    // console.log("Étapes REAL tao amleAPI :", repApi);
+
+
 
     if (Array.isArray(repApi) && repApi.length > 0) {
-      // REAL n'est actif que si toutes les étapes PREPA sont terminées (etat === 2)
+
+
       const prepaTerminee = etapesPrepa.value.length === 0 ||
         etapesPrepa.value.every((e) => Number(e.etat_ID) === 2);
 
@@ -672,7 +783,7 @@ const listEtapeReal = async (maintCode = null) => {
           fournisseur: fnr,
           prix: prix,
           marque: marque,
-          enCours: false, // calculé juste après
+          enCours: false, 
           valide: prepaTerminee && !!dateReal,
           menuOpen: false,
           tempDate: "",
@@ -716,14 +827,13 @@ const calculerDemandeTerminee = () => {
 };
 
 
-    const chargerDonneesEtEtapes = async (choisirOnglet = true) => {
+const chargerDonneesEtEtapes = async (choisirOnglet = true) => {
       loadingEtapes.value = true;
       try {
         console.log("[chargerDonneesEtEtapes] props.maintenance.maint_CODE:", props.maintenance?.maint_CODE);
         await synchroniserDonnees();
         console.log("[chargerDonneesEtEtapes] getMaintCode() =", getMaintCode());
 
-        // Récupérer le statut via getEtapeEnCours
         const dmdCode =
           itemData.value?.demande_CODE ||
           itemData.value?.maint_DEMANDE ||
@@ -742,14 +852,7 @@ const calculerDemandeTerminee = () => {
       }
     };
 
-    const validerEtape = async () => {
-      const code = itemData.value?.demande_CODE || itemData.value?.maint_DEMANDE || displayDemandeCode.value;
-      if (code && code !== "-") {
-        await storeEtape.validEtape(code);
-      }
-    };
-
-    const fermerDmd = async () => {
+const fermerDmd = async () => {
         const code =
           itemData.value?.demande_CODE ||
           itemData.value?.maint_DEMANDE ||
@@ -769,6 +872,40 @@ const calculerDemandeTerminee = () => {
       };
 
 
+// Quand l'action est "VERIFICATION", vider Marque, Fournisseur et Prix
+const isVerification = (item) => {
+      return String(item.action || "").toUpperCase() === "VERIFICATION";
+    };
+    
+const actReparation = (item) => {
+      return String(item.action || "").toUpperCase() === "REPARATION";
+    };
+
+  const requis = (item) => String(item.action || "").toUpperCase().startsWith("REMPLAC");
+
+const incomplet = (item) => requis(item) && (!item.fournisseur || !item.marque || !(Number(item.prix) > 0)) ;
+
+const onActionChange = (item) => {
+      if (isVerification(item)) {
+        item.fournisseur = "";
+        item.marque = "";
+        item.prix = null;
+      }
+      
+    };
+
+//FONCTION PRIX NEGATIF
+      const prixInvalide = (v) => v !== '' && v !== null && v !== undefined && Number(v) <= 0
+
+      function bloquerCaracteres(e) {
+        if (['-', '+', 'e', 'E'].includes(e.key)) e.preventDefault()
+      }
+
+        function corrigerPrix(item) {
+          if (prixInvalide(item.prix)) item.prix = null
+        }
+
+
     watch(
       () => props.maintenance,
       async () => {
@@ -778,55 +915,12 @@ const calculerDemandeTerminee = () => {
 
     onMounted(async () => {
       await chargerDonneesEtEtapes();
+      await storeEtape.getTypeActionReal();
+      await storeEtape.getFournisseurs();
+      await storeEtape.getMarques();
+
     });
 
-    return {
-      tab,
-      loadingEtapes,
-      etapesPrepa,
-      etapesReal,
-      headersEtapes,
-      headersEtapesReal,
-      formatDate,
-      formatMontant,
-      displayCode,
-      displayDate,
-      displayDemandeCode,
-      displayDemandeDate,
-      displayType,
-      displayVehicule,
-      displayKm,
-      displayUserCre,
-      displayDateCre,
-      displayUserModif,
-      displayClassification,
-      listEtape,
-      listEtapeReal,
-      chargerDonneesEtEtapes,
-      displayDescription,
-      statusChipColor,
-      statusChipText,
-      etapeEnCoursData,
-      etapesPrepaRealiseesCount,
-      etapesRealRealiseesCount,
-      loadingActionPrepa,
-      validerEtapePrepaAction,
-      loadingActionReal,
-      validerEtapeRealDirect,
-      dialogAjoutReal,
-      loadingAjoutReal,
-      erreurAjoutReal,
-      formAjoutReal,
-      ouvrirDialogAjoutReal,
-      soumettreAjoutReal,
-      getRowProps,
-      fermerDmd,
-      toutesEtapesValidees,   
-      demandeTerminee,        
-      loadingCloture,
-    };
-  },
-});
 </script>
 
 
@@ -843,14 +937,16 @@ const calculerDemandeTerminee = () => {
             <span v-if="displayDate" class="maint-date"> - {{ formatDate(displayDate) }}</span>
           </span>
           <v-chip
-            size="small"
-            class="ml-3 font-weight-bold"
-            :color="statusChipColor"
-            variant="flat"
+          size="small"
+          class="ml-3 font-weight-bold"
+          :color="statusChipColor"
+          variant="flat"
           >
-            {{ statusChipText }}
-          </v-chip>
-        </div>
+          {{ statusChipText }}
+        </v-chip>
+      </div>
+      
+   
 
         <div class="d-flex align-center">
           <v-btn
@@ -875,6 +971,7 @@ const calculerDemandeTerminee = () => {
           >
             <v-icon size="22">mdi-close</v-icon>
           </v-btn>
+
         </div>
       </div>
     </v-card-title>
@@ -1112,13 +1209,11 @@ const calculerDemandeTerminee = () => {
               <!-- Colonne Date réalisation -->
               <template v-slot:[`item.etape_DATE`]="{ item }">
                 <div class="cell-with-button d-flex align-center justify-center">
-                  <!-- Si date définie : affiche la date -->
                   <template v-if="item.etape_DATE">
                     <v-icon size="16" color="green-darken-1" class="mr-1">mdi-check-circle</v-icon>
                     <span class="cell-text">{{ formatDate(item.etape_DATE) }}</span>
                   </template>
 
-                  <!-- Si aucune date et étape en cours : bouton Valider -->
                   <template v-else-if="item.enCours">
                     <v-btn
                       size="x-small"
@@ -1132,7 +1227,6 @@ const calculerDemandeTerminee = () => {
                     </v-btn>
                   </template>
 
-                  <!-- Sinon : étape pas encore accessible -->
                   <template v-else>
                     <span class="text-grey text-caption">—</span>
                   </template>
@@ -1159,7 +1253,6 @@ const calculerDemandeTerminee = () => {
               </template>
             </v-data-table>
 
-            <!-- Ligne de résumé sobre style ERPO -->
             <div v-if="!loadingEtapes" class="summary-line mt-2">
               <b>{{ etapesPrepa.length }}</b> étape<span v-if="etapesPrepa.length > 1">s</span> de préparation &bull;
               <b>{{ etapesPrepaRealiseesCount }}</b> réalisée<span v-if="etapesPrepaRealiseesCount > 1">s</span> &bull;
@@ -1167,13 +1260,10 @@ const calculerDemandeTerminee = () => {
             </div>
           </div>
 
-          <!-- TAB 2 : ÉTAPES DE RÉALISATION (nature = REAL) -->
           <div v-else-if="tab === 'realisation'" class="tab1 tableau-maint-wrapper">
-            <!-- Barre d'action supérieure pour l'onglet Réalisation -->
             <div class="d-flex align-center justify-space-between mb-2">
               <div class="text-caption text-medium-emphasis d-flex align-center">
                 <v-icon size="16" color="deep-purple-accent-4" class="mr-1">mdi-tools</v-icon>
-                <!-- <span>Étapes de réalisation pour cette maintenance</span> -->
               </div>
               <v-btn
                 size="small"
@@ -1187,7 +1277,6 @@ const calculerDemandeTerminee = () => {
               </v-btn>
             </div>
 
-            <!-- Skeleton loading comme les listes -->
             <div v-if="loadingEtapes" class="pa-3 flex-grow-1 overflow-hidden">
               <div class="d-flex ga-2 mb-3">
                 <v-skeleton-loader
@@ -1215,7 +1304,6 @@ const calculerDemandeTerminee = () => {
               hide-default-footer
               class="custom-table1 dettab"
             >
-              <!-- En-têtes du tableau -->
               <template #headers="{ columns }">
                 <tr>
                   <th
@@ -1246,16 +1334,24 @@ const calculerDemandeTerminee = () => {
                 <span>{{ item.etape_DATE_PREV ? formatDate(item.etape_DATE_PREV) : "-" }}</span>
               </template>
 
+
+
+
+
               <!-- Colonne Action -->
               <template v-slot:[`item.action`]="{ item }">
                 <template v-if="!item.etape_DATE && item.enCours">
-                  <v-text-field
+                  <v-autocomplete
                     v-model="item.action"
+                    :items="listeTypesActions"
                     placeholder="Action..."
                     density="compact"
                     variant="underlined"
+                    clearable
                     hide-details
+                    required
                     class="table-inline-input"
+                    @update:modelValue="onActionChange(item)"
                   />
                 </template>
                 <template v-else>
@@ -1266,13 +1362,17 @@ const calculerDemandeTerminee = () => {
               <!-- Colonne Fournisseur -->
               <template v-slot:[`item.fournisseur`]="{ item }">
                 <template v-if="!item.etape_DATE && item.enCours">
-                  <v-text-field
+                  <v-autocomplete
                     v-model="item.fournisseur"
+                    :items="listeFournisseurs"
                     placeholder="Fournisseur..."
                     density="compact"
                     variant="underlined"
+                    clearable
                     hide-details
                     class="table-inline-input"
+                    :disabled="isVerification(item)"
+                    :error="requis(item) && !item.fournisseur"
                   />
                 </template>
                 <template v-else>
@@ -1283,13 +1383,18 @@ const calculerDemandeTerminee = () => {
               <!-- Colonne Marque -->
               <template v-slot:[`item.marque`]="{ item }">
                 <template v-if="!item.etape_DATE && item.enCours">
-                  <v-text-field
+                  <v-autocomplete 
                     v-model="item.marque"
+                    :items="listeMarquePiece"
                     placeholder="Marque..."
                     density="compact"
                     variant="underlined"
+                    clearable
                     hide-details
                     class="table-inline-input"
+                    :disabled="isVerification(item)"
+                    :error="requis(item) && !item.marque"
+                    
                   />
                 </template>
                 <template v-else>
@@ -1297,18 +1402,28 @@ const calculerDemandeTerminee = () => {
                 </template>
               </template>
 
+
+
+
+
               <!-- Colonne Prix -->
               <template v-slot:[`item.prix`]="{ item }">
                 <template v-if="!item.etape_DATE && item.enCours">
                   <v-text-field
-                    v-model.number="item.prix"
-                    type="number"
-                    placeholder="Prix"
-                    density="compact"
-                    variant="underlined"
-                    hide-details
-                    class="table-inline-input text-right"
-                  />
+                  v-model.number="item.prix"
+                  type="number"
+                  min="0"
+                  step="1"
+                  placeholder="Prix"
+                  density="compact"
+                  variant="underlined"
+                  hide-details
+                  :error="prixInvalide(item.prix)"
+                  class="table-inline-input text-right"
+                  :disabled="isVerification(item)"
+                  @keydown="bloquerCaracteres"
+                  @blur="corrigerPrix(item)"
+                />
                 </template>
                 <template v-else>
                   <span class="font-weight-bold text-caption" :class="{ 'text-primary': !!item.prix }">
@@ -1316,6 +1431,10 @@ const calculerDemandeTerminee = () => {
                   </span>
                 </template>
               </template>
+
+
+
+
 
               <!-- Colonne Date réalisation -->
               <template v-slot:[`item.etape_DATE`]="{ item }">
@@ -1356,6 +1475,7 @@ const calculerDemandeTerminee = () => {
                       class="tb-date-btn"
                       prepend-icon="mdi-check"
                       :loading="loadingActionReal"
+                      :disabled="incomplet(item)" || {{ (!item.action) }}
                       @click="validerEtapeRealDirect(item)"
                     >
                       Valider
@@ -1368,7 +1488,6 @@ const calculerDemandeTerminee = () => {
               </template>
             </v-data-table>
 
-            <!-- Ligne de résumé sobre style ERPO -->
             <div v-if="!loadingEtapes" class="summary-line mt-2">
               <b>{{ etapesReal.length }}</b> étape<span v-if="etapesReal.length > 1">s</span> de réalisation &bull;
               <b>{{ etapesRealRealiseesCount }}</b> réalisée<span v-if="etapesRealRealiseesCount > 1">s</span> &bull;
@@ -1376,7 +1495,7 @@ const calculerDemandeTerminee = () => {
             </div>
           </div>
 
-          <!-- TAB 2 : DESCRIPTION -->
+          <!-- Ito ONGLET DESCRIPTION -->
           <div v-else-if="tab === 'description'" class="pa-4">
             <h4 class="text-subtitle-2 mb-2 font-weight-bold" style="color: #388e3c">
               Motif & Description de l'intervention
@@ -1399,13 +1518,13 @@ const calculerDemandeTerminee = () => {
             </v-row>
           </div>
 
-          <!-- TAB 3 : PIÈCES REQUISES -->
-          <div v-else-if="tab === 'pieces'" class="pa-6 text-center">
+          <!-- ONGLETS PIÈCES REQUISES -->
+          <!-- <div v-else-if="tab === 'pieces'" class="pa-6 text-center">
             <v-icon size="40" color="grey-lighten-1" class="mb-2">mdi-cog-box</v-icon>
             <div class="text-body-2 text-medium-emphasis">
               Aucune pièce détachée spécifique enregistrée pour cette maintenance.
             </div>
-          </div>
+          </div> -->
         </v-card-text>
       </v-card>
     </v-card-text>
@@ -1453,8 +1572,11 @@ const calculerDemandeTerminee = () => {
 </v-card-actions>
 
 
-
     <!-- Dialog Ajout Étape Réalisation -->
+
+
+
+
     <v-dialog v-model="dialogAjoutReal" max-width="580" scrim="black" persistent>
       <v-card class="pa-2 rounded-lg">
         <v-card-title class="d-flex align-center font-weight-bold" style="color: #6200ea">
@@ -1506,7 +1628,7 @@ const calculerDemandeTerminee = () => {
                 density="compact"
               />
             </v-col>
-            <v-col cols="12" md="6">
+            <!-- <v-col cols="12" md="6">
               <v-text-field
                 v-model="formAjoutReal.fournisseur"
                 label="Fournisseur (optionnel)"
@@ -1533,7 +1655,7 @@ const calculerDemandeTerminee = () => {
                 variant="outlined"
                 density="compact"
               />
-            </v-col>
+            </v-col> -->
           </v-row>
         </v-card-text>
 

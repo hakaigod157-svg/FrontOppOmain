@@ -202,7 +202,6 @@ const valider = async () => {
     emit("saved", codeDmd);
 
     fermer();
-    router.go(-1)
   } catch (err) {
     console.error("Erreur lors de la validation :", err);
     erreur.value = "Erreur lors de la validation de la demande.";

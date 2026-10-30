@@ -221,13 +221,14 @@ const save = async () => {
 
           <!-- VOITURE -->
           <v-col cols="12" md="6">
-            <v-select
+            <v-autocomplete
               v-model="form.DEMANDE_VOITURE"
               :items="listeVoitNum"
               label="Voiture"
               variant="outlined"
               density="compact"
               clearable
+              placeholder="Entrez l'Immatriculation du véhicule"
               required
             />
           </v-col>
@@ -250,6 +251,7 @@ const save = async () => {
               label="Type de demande"
               variant="outlined"
               density="compact"
+              placeholder="Choisir le type de Maintenance"
               clearable
               required
             />

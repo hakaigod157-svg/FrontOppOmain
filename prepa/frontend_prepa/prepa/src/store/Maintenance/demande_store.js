@@ -12,6 +12,7 @@ export const useDemandeMaintenance = defineStore("demandeMaintenance", {
         marques: [],
         voitures: [],
         enumerations: [],
+        typeRefus: [],
         loading: false,
     }),
 
@@ -76,68 +77,68 @@ export const useDemandeMaintenance = defineStore("demandeMaintenance", {
             }
         },
 
-        async searchDemandes(search = "", marque = "") {
+        // async searchDemandes(search = "", marque = "") {
 
-            const sessionId = localStorage.getItem("sessionId");
-            const { handleLogout } = useLogout();
+        //     const sessionId = localStorage.getItem("sessionId");
+        //     const { handleLogout } = useLogout();
 
-            this.loading = true;
+        //     this.loading = true;
 
-            try {
+        //     try {
 
-                const response = await axios.get(
-                    Config.SERVER_URL + "api/demandes/search",
-                    {
-                        params: {
-                            search: search,
-                            marque: marque
-                        },
+        //         const response = await axios.get(
+        //             Config.SERVER_URL + "api/demandes/search",
+        //             {
+        //                 params: {
+        //                     search: search,
+        //                     marque: marque
+        //                 },
 
-                        headers: {
-                            Authorization: sessionId
-                        }
-                    }
-                );
+        //                 headers: {
+        //                     Authorization: sessionId
+        //                 }
+        //             }
+        //         );
 
-                console.log(
-                    "Résultat de la recherche :",
-                    response.data
-                );
+        //         console.log(
+        //             "Résultat de la recherche :",
+        //             response.data
+        //         );
 
-                if (Array.isArray(response.data)) {
+        //         if (Array.isArray(response.data)) {
 
-                    this.demandes = response.data.map(
-                        (demande) => ({ ...demande })
-                    );
+        //             this.demandes = response.data.map(
+        //                 (demande) => ({ ...demande })
+        //             );
 
-                } else if (
-                    response.data &&
-                    Array.isArray(response.data.target)
-                ) {
+        //         } else if (
+        //             response.data &&
+        //             Array.isArray(response.data.target)
+        //         ) {
 
-                    this.demandes = response.data.target.map(
-                        (demande) => ({ ...demande })
-                    );
+        //             this.demandes = response.data.target.map(
+        //                 (demande) => ({ ...demande })
+        //             );
 
-                } else {
+        //         } else {
 
-                    this.demandes = [];
+        //             this.demandes = [];
 
-                    console.log(
-                        "Aucune demande trouvée"
-                    );
-                }
-            } catch (error) {
-                console.error(
-                    "Erreur lors de la recherche des demandes :",
-                    error
-                );
-                this.demandes = [];
-                await handleLogout();
-            } finally {
-                this.loading = false;
-            }
-        },
+        //             console.log(
+        //                 "Aucune demande trouvée"
+        //             );
+        //         }
+        //     } catch (error) {
+        //         console.error(
+        //             "Erreur lors de la recherche des demandes :",
+        //             error
+        //         );
+        //         this.demandes = [];
+        //         await handleLogout();
+        //     } finally {
+        //         this.loading = false;
+        //     }
+        // },
 
 
         async validerDemande(demandeCode, numVoiture, classification) {
@@ -170,7 +171,7 @@ export const useDemandeMaintenance = defineStore("demandeMaintenance", {
                     }
                 );
                 console.log("Demande validée :", response.data);
-                await this.searchDemandes();
+                await this.fetchDemandes();
 
             } catch (error) {
                 console.error("Erreur lors de la validation de la demande :", error);
@@ -182,7 +183,55 @@ export const useDemandeMaintenance = defineStore("demandeMaintenance", {
                 this.loading = false;
             }
         },
-        async refuserDemande(demandeCode) {
+
+
+        ////////////////////////////////////////////////////////////////////////////////////
+
+       async getTypeRefus(){
+                   const sessionId = localStorage.getItem("sessionId");
+                   const { handleLogout } = useLogout();
+                   
+                   this.loading = true;
+                   try {
+                       const refusType = await axios.get(Config.SERVER_URL + "api/getTypeRefus",
+                           {
+                             headers:{
+                                   "Authorization" : sessionId
+                               }
+                           }
+                       );
+                       if (Array.isArray(refusType.data)) {
+                           this.typeRefus = refusType.data.map(
+                               (refuz) => ({ ...refuz })
+                           
+                           );
+                           console.log("Actions:" , this.typeRefus)
+                       } else if (
+                           refusType.data &&
+                           Array.isArray(refusType.data.target)
+                       ) {
+                           this.typeRefus = refusType.data.target.map(
+                               (refuz) => ({ ...refuz })
+                           );
+                       } else {
+                           this.typeRefus = [];
+                           console.log(
+                               "TSISY ACTIONS ao am base fa mande requeten'ise"
+                           );
+                       }
+                       return this.typeRefus;
+                   } catch (error) {
+                       console.error("Erreur de récuperation ACTIONS (/getTypeRefus) : " , error);
+                       if (error?.response?.status === 401) {
+                           await handleLogout();
+                       }
+                       return null;
+                   } finally {
+                       this.loading = false;
+                   }
+               },
+
+        async refuserDemande(demandeCode,typeRefus,descRefus) {
             const sessionId = localStorage.getItem("sessionId");
             const { handleLogout } = useLogout();
 
@@ -193,20 +242,22 @@ export const useDemandeMaintenance = defineStore("demandeMaintenance", {
                     Config.SERVER_URL + "api/refuser",
                     null,
                     {
-                        params: { demandeCode },
+                        params: { demandeCode ,typeRefus,descRefus},
                         headers: { Authorization: sessionId }
                     }
                 );
 
                 console.log("Demande validée :", response.data);
 
-                await this.searchDemandes();
+                await this.fetchDemandes();
+                return response.data;
 
             } catch (error) {
                 console.error("Erreur lors de la validation de la demande :", error);
                 if (error.response?.status === 401) {
                     await handleLogout();
                 }
+                throw error;
             } finally {
                 this.loading = false;
             }
@@ -229,7 +280,7 @@ export const useDemandeMaintenance = defineStore("demandeMaintenance", {
 
                 console.log("Demande validée :", response.data);
 
-                await this.searchDemandes();
+                await this.fetchDemandes();
 
             } catch (error) {
                 console.error("Erreur lors de la validation de la demande :", error);
@@ -371,7 +422,7 @@ export const useDemandeMaintenance = defineStore("demandeMaintenance", {
 
                 console.log("Demande modifiée :", response.data);
 
-                await this.searchDemandes();
+                await this.fetchDemandes();
 
                 return response.data;
 
@@ -417,7 +468,7 @@ export const useDemandeMaintenance = defineStore("demandeMaintenance", {
 
                 console.log("Demande créée avec succès :", response.data);
 
-                await this.searchDemandes();
+                await this.fetchDemandes();
 
                 return response.data;
 

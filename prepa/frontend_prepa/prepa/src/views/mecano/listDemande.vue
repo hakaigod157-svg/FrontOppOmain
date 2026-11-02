@@ -1,6 +1,5 @@
 <script setup>
-import { ref, onMounted, watch } from "vue";
-import { useDebounceFn } from "@vueuse/core";
+import { ref, onMounted } from "vue";
 
 import TableVirtuelle from "@/components/mecano/TableVirtuelle.vue";
 import FormDialog from "@/components/mecano/Demande/FormDialog.vue";
@@ -12,8 +11,6 @@ import { useDemandeMaintenance } from "@/store/Maintenance/demande_store";
 import { useEtapeStore } from "@/store/Maintenance/etape_store";
 
 const searchQuery = ref("");
-const selectedMarque = ref("");
-
 const store = useDemandeMaintenance();
 const storeEtape = useEtapeStore();
 
@@ -23,24 +20,23 @@ const editingCode = ref("");
 const editingDemande = ref(null);
 const ponctuelValider = ref(false);
 const demandeAValider = ref(null);
-// "valider" | "refuser" : mode du modal de confirmation
 const modeValidation = ref("valider");
 const dialogVisibleDetail = ref(false);
 const selectedDemande = ref(null);
+const demandeClignotante = ref("");
 
 const nouvelleDemande = () => {
   showForm.value = true;
 };
 
 const chargerDemandes = async () => {
-  await store.searchDemandes(searchQuery.value, selectedMarque.value);
+  await store.fetchDemandes();
   await Promise.all(
     store.demandes.map(async (item) => {
-      const code = item.demande_CODE || item.DEMANDE_CODE;
+      const code = item.demande_CODE;
       if (code && code !== "-") {
         const etape = await storeEtape.getEtapeEnCours(code);
         if (etape) {
-          // Ne copier QUE les champs étape, sans écraser les champs demande
           if (etape.statut !== undefined) item.statut = etape.statut;
           if (etape.etape_EN_COURS !== undefined) item.etape_EN_COURS = etape.etape_EN_COURS;
           if (etape.duree !== undefined) item.duree = etape.duree;
@@ -50,7 +46,8 @@ const chargerDemandes = async () => {
   );
 };
 
-const onSaved = () => {
+const onSaved = (code) => {
+  demandeClignotante.value = code || "";
   chargerDemandes();
 };
 
@@ -66,10 +63,11 @@ const headersDemandes = [
   { title: "Date Création", key: "demande_DATE_CRE" },
   // { title: "Date", key: "demande_DATE" },
   { title: "Voiture", key: "demande_VOITURE" },
+  { title: "KM", key: "demande_KM" },
   { title: "Marque", key: "demande_MARQUE" },
   { title: "Type", key: "demande_TYPE" },
   { title: "Auteur", key: "demande_AUTEUR" ,width:"90px"},
-  { title: "Description", key: "demande_DESCR" , width:"220px" },
+  { title: "Description", key: "demande_DESCR" , width:"500px" },
   {
     title: "État",
     key: "statut",
@@ -79,16 +77,16 @@ const headersDemandes = [
       class: "statut-col-td",
     }),
   },
-  { title: "Étape en cours", key: "etape_EN_COURS" , width:"150px"},
-  { title: "Créé par", key: "demande_USER_CRE" },
-  { title: "Date Modif.", key: "demande_DATE_MODIF" },
-  { title: "Modifié par", key: "demande_USER_MODIF" },
+  // { title: "Étape en cours", key: "etape_EN_COURS" , width:"150px"},
+  // { title: "Créé par", key: "demande_USER_CRE" },
+  // { title: "Date Modif.", key: "demande_DATE_MODIF" },
+  // { title: "Modifié par", key: "demande_USER_MODIF" },
   {
   title: "Actions",
   key: "actions",
   width: "px",   
   sortable: false,
-  align: "center",
+  align: "center",  
 },
 ];
 
@@ -131,12 +129,9 @@ const getStatusTooltip = (item) => {
   return "Attente validation";
 };
 
-// Ne remplace pas la valeur réelle renvoyée par le backend (ex: "PRET à TERMINER", "EN COURS", etc.)
 const getStatusText = (item) => {
-  if (!item) return "ATTENTE VALIDATION";
   if (item.statut) return item.statut;
   const etat = Number(item.demande_ETAT);
-  if (etat === 1) return "ATTENTE VALIDATION";
   if (etat === 2) return "EN COURS";
   if (etat === 3) return "REFUSÉE";
   return "";
@@ -187,7 +182,6 @@ const estEnAttente = (item) => {
 };
 const dmdValider = (item) => !estEnAttente(item);
 
-// Ouvre le modal de confirmation en mode "valider"
 const validerDemande = (item) => {
   if (!item) return;
   demandeAValider.value = item;
@@ -195,8 +189,7 @@ const validerDemande = (item) => {
   ponctuelValider.value = true;
 };
 
-// Ouvre le modal de confirmation en mode "refuser"
-// (l'appel store.refuserDemande est fait dans ValidationDemande après confirmation)
+
 const refuserDemande = (item) => {
   if (!item) return;
   demandeAValider.value = item;
@@ -214,12 +207,6 @@ const refuserDemande = (item) => {
 
 
 
-const enumerer = async() =>{
-  
-  await store.getTypeMaint()
-}
-
-
 const modifierDemande = (itemOrCode) => {
   if (!itemOrCode) return;
   if (typeof itemOrCode === "object") {
@@ -233,6 +220,7 @@ const modifierDemande = (itemOrCode) => {
 };
 
 const handleRowClick = (item) => {
+  arreterClignotement(item);
   selectedDemande.value = item;
   if (estEnAttente(item) || item.demande_ETAT==3 ){
     dialogVisibleDetail.value=false
@@ -241,19 +229,16 @@ const handleRowClick = (item) => {
   dialogVisibleDetail.value = true;
 };
 
+const arreterClignotement = (item) => {
+  const code = item?.demande_CODE || item?.DEMANDE_CODE;
+  if (code && code === demandeClignotante.value) demandeClignotante.value = "";
+};
+
 const fermerDialogDetail = () => {
   dialogVisibleDetail.value = false;
   selectedDemande.value = null;
   chargerDemandes();
 };
-
-const rechercher = useDebounceFn(() => {
-  chargerDemandes();
-}, 300);
-
-watch([searchQuery, selectedMarque], () => {
-  rechercher();
-});
 
 onMounted(async () => {
   await chargerDemandes();
@@ -270,8 +255,6 @@ onMounted(async () => {
       variant="elevated" color="#144f0e"
           style="font-weight: 600; border-radius: 8px"
       class="boutonNvDmd"
-      color:="secondary"
-      
         
         prepend-icon="mdi-plus"
         :loading="store.loading"
@@ -311,6 +294,8 @@ onMounted(async () => {
     <TableVirtuelle
       :headers="headersDemandes"
       :items="store.demandes"
+      :search="searchQuery"
+      :highlighted-code="demandeClignotante"
       :loading="store.loading"
       :height="550"
       :long-text-cols="['demande_DESCR']"
@@ -321,7 +306,6 @@ onMounted(async () => {
       ]"
       @click:row="handleRowClick"
     >
-      <!-- Espace de 5px en style de badge avant la colonne code -->
       <template v-slot:[`item.badge_statut`]="{ item }">
         <div class="badge-col-wrapper">
           <span
@@ -332,7 +316,7 @@ onMounted(async () => {
         </div>
       </template>
 
-      <!-- Colonne État : fond de la colonne coloré et écriture bien visible -->
+      <!-- Colonne État -->
       <template v-slot:[`item.statut`]="{ item }">
         <div class="statut-col-cell" :style="getStatusCellStyle(item)">
           {{ getStatusText(item) }}
@@ -340,63 +324,61 @@ onMounted(async () => {
       </template>
 
       <template v-slot:[`item.actions`]="{ item }">
-        <div class="actions-vertical-col">
+        <div class="actions-row-col">
           <template v-if="estEnAttente(item)">
             <v-btn
+              icon
               size="x-small"
+              variant="text"
               color="success"
-              variant="tonal"
-              class="action-btn-stacked"
-              @click.stop="validerDemande(item)"
+              aria-label="Valider"
+              @click.stop="arreterClignotement(item); validerDemande(item)"
             >
-              VALIDER
+              <v-icon>mdi-check-circle-outline</v-icon>
+              <v-tooltip activator="parent" location="top">Valider</v-tooltip>
             </v-btn>
 
             <v-btn
+              icon
               size="x-small"
+              variant="text"
               color="error"
-              variant="tonal"
-              class="action-btn-stacked"
-              @click.stop="refuserDemande(item)"
+              aria-label="Refuser"
+              @click.stop="arreterClignotement(item); refuserDemande(item)"
             >
-              REFUSER
+              <v-icon>mdi-close-circle-outline</v-icon>
+              <v-tooltip activator="parent" location="top">Refuser</v-tooltip>
             </v-btn>
 
             <v-btn
-              icon=""
+              icon
               size="x-small"
+              variant="text"
               color="warning"
-              variant="tonal"
-              prepend-icon="mdi-pencil"
-              class="action-btn-stacked"
-              @click.stop="modifierDemande(item)"
+              aria-label="Modifier"
+              @click.stop="arreterClignotement(item); modifierDemande(item)"
             >
-              MODIFIER
+              <v-icon>mdi-pencil-outline</v-icon>
+              <v-tooltip activator="parent" location="top">Modifier</v-tooltip>
             </v-btn>
-
-           
           </template>
 
           <template v-else>
             <v-btn
-              icon="mdi-eye-outline"
+              icon
               size="x-small"
               variant="text"
               color="primary"
               aria-label="Voir la maintenance"
-              class="action-btn"
               @click.stop="handleRowClick(item)"
             >
+              <v-icon>mdi-eye-outline</v-icon>
+              <v-tooltip activator="parent" location="top">Voir</v-tooltip>
             </v-btn>
           </template>
         </div>
       </template>
     </TableVirtuelle>
-
-    <v-btn
-    @click.stop="enumerer">
-      dashboard
-    </v-btn>
 
     <!-- Dialog détail demande / étapes avec background blur -->
     <v-dialog
@@ -550,6 +532,16 @@ onMounted(async () => {
   width: 100% !important;
   padding: 0 8px !important;
   justify-content: flex-start !important;
+}
+</style>
+
+<style>
+@keyframes demande-clignote {
+  85% { background-color: #ebfbeb; }
+}
+
+.nouvelle-demande-clignote > td {
+  animation: demande-clignote 1.5s ease-in-out infinite;
 }
 </style>
 

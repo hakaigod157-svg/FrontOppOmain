@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, watch } from "vue";
 import { useDemandeMaintenance } from "@/store/Maintenance/demande_store";
+import dayjs from "dayjs";
 import router from "@/router";
 const props = defineProps({
   
@@ -53,12 +54,25 @@ const loadingEnum = ref(false);
 const erreur = ref("");
 const classification = ref("");
 const classifications = ref([]);
+const typeRefus = ref(null);
+const descRefus = ref("");
+const typesRefus = ref([]);
 
 const rules = {
   required: (v) =>
     (v !== null && v !== undefined && String(v).trim() !== "") ||
     "La classification est obligatoire",
 };
+
+
+const formatDate = (date) => {
+      if (!date) return "-";
+      if (typeof date === "string" && /^\d{2}\/\d{2}\/\d{4}/.test(date)) {
+        return date;
+      }
+      const d = dayjs(date);
+      return d.isValid() ? d.format("DD/MM/YYYY") : String(date);
+    };
 
 
 const demandeCode = computed(() => {
@@ -127,9 +141,7 @@ const chargerClassifications = async () => {
     const existingClassif = d.demande_CLASSIFICATION ;
     if (existingClassif && classifications.value.includes(existingClassif)) {
       classification.value = existingClassif;
-    } else if (!classification.value && classifications.value.length > 0) {
-      classification.value = classifications.value[0];
-    }
+    } 
   } catch (err) {
     console.error("Erreur chargement énumération TYPE_CLASSIFICATION :", err);
     if (!classification.value) {
@@ -141,6 +153,34 @@ const chargerClassifications = async () => {
 };
 
 const listeClassifications = computed(() => classifications.value);
+const listeTypeRefus = computed(() =>
+  typesRefus.value.map((item) => {
+    if (typeof item === "string") return { title: item, value: item };
+    const value = item?.enum_CODE ?? item?.ENUM_CODE ?? item?.code ?? item?.valeur ?? item?.enum_VALEUR ?? item?.ENUM_VALEUR;
+    return { title: String(value ?? ""), value };
+  }).filter((item) => item.value !== undefined && item.value !== null && item.title)
+);
+
+const chargerTypesRefus = async () => {
+  loadingEnum.value = true;
+  erreur.value = "";
+  try {
+    const result = await store.getTypeRefus();
+    typesRefus.value = Array.isArray(result) ? result : [];
+    if (typesRefus.value.length === 0) {
+      erreur.value = "Aucun motif de refus n'est disponible.";
+    }
+  } catch (err) {
+    console.error("Erreur lors du chargement des types de refus :", err);
+    typesRefus.value = [];
+    erreur.value = "Impossible de charger les motifs de refus.";
+  } finally {
+    loadingEnum.value = false;
+  }
+};
+
+
+
 
 const fermer = () => {
   if (loading.value) return;
@@ -200,7 +240,7 @@ const valider = async () => {
       numVoiture: voitNum,
     });
     emit("saved", codeDmd);
-
+    loading.value=false
     fermer();
   } catch (err) {
     console.error("Erreur lors de la validation :", err);
@@ -213,12 +253,17 @@ const valider = async () => {
 const refuser = async () => {
   const codeDmd = props.code || props.demande?.demande_CODE;
   if (!codeDmd) return;
+  if (!typeRefus.value) {
+    erreur.value = "Veuillez sélectionner un motif de refus.";
+    return;
+  }
 
   loading.value = true;
   erreur.value = "";
 
   try {
-    await store.refuserDemande(codeDmd);
+    await store.refuserDemande(codeDmd, typeRefus.value, descRefus.value.trim() || null);
+  
 
     emit("refused", codeDmd);
     emit("saved", codeDmd);
@@ -239,9 +284,14 @@ watch(
   (ouvert) => {
     if (ouvert) {
       classification.value = "";
+      typeRefus.value = null;
+      descRefus.value = "";
       erreur.value = "";
       if (isPonctuelle.value) {
         chargerClassifications();
+      }
+      if (isRefus.value) {
+        chargerTypesRefus();
       }
     }
   },
@@ -253,9 +303,14 @@ watch(
   () => {
     if (props.modelValue) {
       classification.value = "";
+      typeRefus.value = null;
+      descRefus.value = "";
       erreur.value = "";
       if (isPonctuelle.value) {
         chargerClassifications();
+      }
+      if (isRefus.value) {
+        chargerTypesRefus();
       }
     }
   }
@@ -277,11 +332,7 @@ watch(
           <v-icon :color="isRefus ? 'error' : 'success'" size="26">
             {{ isRefus ? "mdi-close-circle-outline" : "mdi-check-circle-outline" }}
           </v-icon>
-          <span class="font-weight-bold">
-            <span v-if="demandeDate" class="text-primary font-weight-bold ml-1">
-              {{ demandeDate }}
-            </span>
-          </span>
+          
         </div>
         <v-btn
           icon="mdi-close"
@@ -318,6 +369,30 @@ watch(
                 <template v-if="isRefus">
                   Voulez-vous vraiment refuser cette demande de maintenance de type
                   <strong class="text-error">{{ demandeType }}</strong> ?
+                  <v-autocomplete
+                    v-model="typeRefus"
+                  :items="listeTypeRefus"
+                    item-title="title"
+                    item-value="value"
+                    label="Motif du refus"
+                    variant="outlined"
+                    density="compact"
+                    clearable
+                    :loading="loadingEnum"
+                    :disabled="loadingEnum"
+                    class="mt-3 text-left"
+                  />
+                  <v-textarea
+                    v-model="descRefus"
+                    label="Description complémentaire (facultatif)"
+                    variant="outlined"
+                    density="compact"
+                    rows="2"
+                    auto-grow
+                    maxlength="255"
+                    counter="255"
+                    class="mt-3 text-left"
+                  />
                 </template>
                 <template v-else>
                   Voulez-vous valider cette demande de maintenance de type
@@ -345,16 +420,19 @@ watch(
               <div class="text-caption text-grey">Type</div>
               <div class="text-body-2 font-weight-bold">{{ demandeType || "—" }}</div>
             </v-col>
-            <v-col cols="12" v-if="demandeDescr" class="mt-1">
+            <v-col cols="12" sm="4" v-if="demandeDescr">
               <div class="text-caption text-grey">Description</div>
-              <div class="text-body-2 font-weight-bold">
-                {{ demandeDescr }}
-              </div>
+              <div class="text-body-2 font-weight-bold">{{ demandeDescr }}</div>
             </v-col>
+           <v-col v-if="demandeDate" cols="6" sm="4"> 
+              <div class="text-caption text-grey">Date Demande</div>
+              <div div class="text-body-2 font-weight-bold">{{ formatDate(demandeDate) }}
+           </div>
+          </v-col>
           </v-row>
         </div>
 
-        <!-- Cas 1 : Demande PONCTUELLE (validation uniquement) -> Choix de la classification avec capsules modernes et bien centrées -->
+        <!--  Demande PONCTUELLE  -> Classification cho -->
         <v-row v-if="isPonctuelle">
           <v-col cols="12">
             <div class="classification-container">
@@ -362,10 +440,15 @@ watch(
                 <span class="classification-label">
                   Classification de la maintenance ponctuelle
                 </span>
+
+                 
                 <span v-if="loadingEnum" class="text-caption text-grey ml-2">
                   Chargement...
                 </span>
               </div>
+              <div v-if="!classification && !loadingEnum" class="classification-error">
+                    Veuillez sélectionner une classification.
+                  </div>
 
               <div class="classification-options">
                 <button
@@ -391,12 +474,7 @@ watch(
                 Les étapes de la maintenance seront générées selon la classification choisie.
               </div>
 
-              <div
-                v-if="!classification && !loadingEnum"
-                class="classification-error"
-              >
-                Veuillez sélectionner une classification.
-              </div>
+             
             </div>
           </v-col>
         </v-row>
@@ -419,7 +497,7 @@ watch(
           variant="flat"
           :prepend-icon="isRefus ? 'mdi-close-thick' : 'mdi-check-bold'"
           :loading="loading"
-          :disabled="loading || (isPonctuelle && !classification)"
+          :disabled="loading || (isPonctuelle && !classification) || (isRefus && (!typeRefus || loadingEnum))"
           @click="confirmer"
         >
           {{ isRefus ? "Refuser la demande" : "Valider la demande" }}
@@ -481,6 +559,7 @@ watch(
   align-items: center;
   justify-content: center;
   gap: 8px;
+  width:max-content;
   min-height: 42px;
   padding: 8px 22px;
   border: 1.5px solid #e0e0e0;

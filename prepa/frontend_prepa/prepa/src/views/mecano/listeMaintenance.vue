@@ -37,9 +37,9 @@ const headersMaintenance = [
   { title: "Étape en cours", key: "etape_EN_COURS" , width:"150px" },
   // { title: "Liste", key: "liste" ,width:"150px" },
   { title: "Durée en jours", key: "duree" , align: "center"},
-  { title: "Créé par", key: "maint_USERCRE", align: "center" },
-  { title: "Date Modif.", key: "maint_DATEMODIF" , align: "center"},
-  { title: "Modifié par", key: "maint_USERMODIF" , align: "center"},
+  // { title: "Créé par", key: "maint_USERCRE", align: "center" },
+  // { title: "Date Modif.", key: "maint_DATEMODIF" , align: "center"},
+  // { title: "Modifié par", key: "maint_USERMODIF" , align: "center"},
   { title: "Actions", key: "actions", sortable: true, align: "center" },
 ];
 
@@ -118,7 +118,6 @@ const chargerMaintenances = async () => {
       if (code && code !== "-") {
         const etape = await storeEtape.getEtapeEnCours(code);
         if (etape) {
-          // Ne copier QUE les champs étape, sans écraser les champs maintenance
           if (etape.statut !== undefined) item.statut = etape.statut;
           if (etape.etape_EN_COURS !== undefined) item.etape_EN_COURS = etape.etape_EN_COURS;
           if (etape.duree !== undefined) item.duree = etape.duree;

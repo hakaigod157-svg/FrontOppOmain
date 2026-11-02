@@ -15,7 +15,7 @@
           >
             <v-tab :to="{ name: 'maintenance-demande' }">DEMANDES</v-tab>
             <v-tab :to="{ name: 'maintenance-liste' }">MAINTENANCE</v-tab>
-            <!-- <v-tab :to="{ name: 'maintenance-calendar' }">CALENDRIER</v-tab> -->
+            <v-tab :to="{ name: 'maintenance-calendar' }">CALENDRIER</v-tab>
           </v-tabs>
         </v-card>
 

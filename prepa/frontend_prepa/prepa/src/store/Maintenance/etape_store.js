@@ -246,7 +246,7 @@ export const useEtapeStore = defineStore("etapeStore", {
                         params: {
                             MAINT_CODE_LIGNE: maintCode,
                             MAINT_ETAPE_LIGNE: etapeLigne,
-                            // MAINT_INTERVENANT: intervenant || localStorage.getItem("username") || "Admin"
+                            // MAINT_INTERVENANT: intervenant || localStorage.getItem("username") 
                         }
                     }
                 );
@@ -278,12 +278,12 @@ export const useEtapeStore = defineStore("etapeStore", {
                         },
                         params: {
                             MAINT_CODE_REAL: maintCode,
-                            MAINT_INTERV_REAL: data.intervReal || data.etape_LIBELLE || data.code,
-                            MAINT_ACTION_REAL: data.actionReal ?? data.action ?? "",
-                            MAINT_FNR_REAL: data.fnrReal ?? data.fournisseur ?? "",
-                            MAINT_PRIX_REAL: data.prixReal ?? data.prix ?? 0,
-                            MAINT_MRAQUE_MARQUE: data.marqueReal ?? data.marque ?? "",
-                            MAINT_DATE_REAL: data.dateReal || null,
+                            MAINT_INTERV_REAL: data.intervReal,
+                            MAINT_ACTION_REAL:  data.action ,
+                            MAINT_FNR_REAL:  data.fournisseur ,
+                            MAINT_PRIX_REAL: data.prix ?? 0,
+                            MAINT_MRAQUE_MARQUE: data.marque ,
+                            MAINT_DATE_REAL: data.dateReal,
                         }
                     }
                 );
@@ -315,12 +315,12 @@ export const useEtapeStore = defineStore("etapeStore", {
                         },
                         params: {
                             MAINT_CODE_REAL: maintCode,
-                            MAINT_INTERV_REAL: data.intervReal || "",
+                            MAINT_INTERV_REAL: data.intervReal ,
                             MAINT_DATE_PREVU: data.datePrevu || null,
                             MAINT_ACTION_REAL: data.actionReal || "",
-                            MAINT_FNR_REAL: data.fnrReal || "",
-                            MAINT_PRIX_REAL: data.prixReal || 0,
-                            MAINT_MRAQUE_MARQUE: data.marqueReal || "",
+                            // MAINT_FNR_REAL: data.fnrReal || "",
+                            // MAINT_PRIX_REAL: data.prixReal || 0,
+                            // MAINT_MRAQUE_MARQUE: data.marqueReal || "",
                         }
                     }
                 );
@@ -337,39 +337,7 @@ export const useEtapeStore = defineStore("etapeStore", {
             }
         },
 
-        async validEtape(demandeCode){
-            const sessionId = localStorage.getItem("sessionId");
-            const { handleLogout } = useLogout();
-
-            this.loading = true;
-            try {
-                const reponseValid = await axios.post(Config.SERVER_URL + "api/validEtape",null,
-                    {
-                        headers: {
-                            Authorization: sessionId
-                        },
-                        params:{
-                            DEMANDE_CODE: demandeCode
-                        }
-                    }
-                );
-                console.log("ETAPE VALIDÉE :" , reponseValid.data)
-                
-                
-            } catch (error) {
-                console.error("Erreur lors de la validation de la demande :", error);
-                if (error.response?.status === 401) {
-                    await handleLogout();
-                }
-                else if(error.response?.status === 500) {
-                    console.log(error)
-                }
-                
-            }finally {
-                this.loading = false;
-            }
-        } ,
-
+   
 
         async cloturerDemande(demandeCode){
             const sessionId = localStorage.getItem("sessionId");
@@ -404,7 +372,7 @@ export const useEtapeStore = defineStore("etapeStore", {
             }
         } 
         
-        /////////////////////////////////// MBOLA MILA ALEFA BACKEND /////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////////////////////////
         ,async getTypeActionReal(){
             const sessionId = localStorage.getItem("sessionId");
             const { handleLogout } = useLogout();
@@ -413,7 +381,7 @@ export const useEtapeStore = defineStore("etapeStore", {
             try {
                 const actionRecue = await axios.get(Config.SERVER_URL + "api/getActions",
                     {
-                        headers:{
+                      headers:{
                             "Authorization" : sessionId
                         }
                     }
@@ -532,7 +500,7 @@ export const useEtapeStore = defineStore("etapeStore", {
 
 
 
-        /////////////////////////////////// MBOLA MILA ALEFA BACKEND /////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////////////////////////
 
         // async getHistorique(demandeCode) {
         //     if (!demandeCode || demandeCode === "-") {

@@ -19,6 +19,7 @@ const tab = ref("prepa");
 
 
 const loadingEtapes = ref(false);
+const loadingActionPrepa = ref(false);
 
 const storeDemande = useDemandeMaintenance();
 const storeMaint = maintStore();
@@ -119,9 +120,7 @@ const synchroniserDonnees = async () => {
       } else {
         const voitNum =
           itemData.value?.demande_VOITURE ||
-          itemData.value?.DEMANDE_VOITURE ||
-          linkedDemande.value?.demande_VOITURE ||
-          linkedDemande.value?.DEMANDE_VOITURE;
+          linkedDemande.value?.demande_VOITURE 
 
         if (voitNum) {
           try {
@@ -139,7 +138,6 @@ const synchroniserDonnees = async () => {
 const displayCode = computed(() => {
       return (
         itemData.value?.maint_CODE ||
-        itemData.value?.MAINT_CODE ||
         linkedMaintenance.value?.maint_CODE ||
         itemData.value?.demande_CODE ||
         "DEMANDE"
@@ -362,25 +360,27 @@ const addBusinessDays = (date, days) => {
       let remaining = days;
       while (remaining > 0) {
         result = result.add(1, "day");
-        const dow = result.day(); // 0=dim, 6=sam
+        const dow = result.day();                           // 0=dim, 6=sam
         if (dow !== 0 && dow !== 6) remaining--;
       }
       return result;
     };
 
-const loadingActionPrepa = ref(false);
 
-    // Validation d'une étape PREPA
+
+
+
+
 const validerEtapePrepaAction = async (item) => {
       const code = getMaintCode();
       if (!code) {
-        console.warn("[validerEtapePrepaAction] Aucun code maintenance trouvé");
         return;
       }
       loadingActionPrepa.value = true;
       try {
-        const user = localStorage.getItem("username") || "Admin";
+        //const user = localStorage.getItem("username") || "Admin";
         // await storeEtape.validerEtapePrepa(code, item.code || item.etape_LIBELLE, user);
+
         await storeEtape.validerEtapePrepa(code, item.code || item.etape_LIBELLE);
         await chargerDonneesEtEtapes(false);
       } catch (err) {
@@ -690,17 +690,19 @@ const choisirOngletInitial = () => {
     //     etapesReal.value = [];
     //   }
     // };
-const getMaintCode = (maintCode = null) =>
-  maintCode ||
-  itemData.value?.maint_CODE ||
-  itemData.value?.MAINT_CODE ||
+
+
+const getMaintCode = (maintCode = null) => maintCode ||  itemData.value?.maint_CODE ||
   itemData.value?.maint_CODE_LIGNE ||
-  itemData.value?.MAINT_CODE_LIGNE ||
   linkedMaintenance.value?.maint_CODE ||
-  linkedMaintenance.value?.MAINT_CODE ||
   props.maintenance?.maint_CODE ||
-  props.maintenance?.MAINT_CODE ||
   props.maintenance?.raw?.maint_CODE;
+
+
+
+
+
+
 
 const toIso = (d) => (d ? dayjs(d).toISOString() : null);
 
@@ -713,7 +715,6 @@ const code = getMaintCode(maintCode);
       return;
     }
 const repApi = await storeEtape.getListePrepaMaint(code);
-    console.log("Étapes PREPA récupérées depuis l'API :", repApi);
 
     if (Array.isArray(repApi) && repApi.length > 0) {
       const liste = repApi.map((item, index) => ({
@@ -721,7 +722,7 @@ const repApi = await storeEtape.getListePrepaMaint(code);
         etape_LIBELLE: item.maint_ETAPE_LIGNE,
         etape_DATE_PREV: toIso(item.maint_ETAPE_PREVU),
         etape_DATE: item.maint_ETAPE_REEL ?? null,
-        etape_USER: item.maint_ETAPE_USER ?? item.intervenant ?? item.MAINT_INTERVENANT ?? item.maint_USER ?? item.MAINT_USER ?? "", 
+        etape_USER: item.maint_ETAPE_USER ?? item.intervenant ??item.maint_USER ?? "", 
         enCours: Number(item.maint_ETAPE_ETAT) === 1,
         valide: Number(item.maint_ETAPE_ETAT) === 2,
         menuOpen: false,
@@ -751,13 +752,8 @@ const listEtapeReal = async (maintCode = null) => {
   loadingEtapes.value = true;
   try {
 const code = getMaintCode(maintCode);
-    console.log("[listEtapeReal] code maintenance résolu :", code);
-    
 const repApi = await storeEtape.getListeRealMaint(code);
     // console.log("Étapes REAL tao amleAPI :", repApi);
-
-
-
     if (Array.isArray(repApi) && repApi.length > 0) {
 
 
@@ -830,10 +826,7 @@ const calculerDemandeTerminee = () => {
 const chargerDonneesEtEtapes = async (choisirOnglet = true) => {
       loadingEtapes.value = true;
       try {
-        console.log("[chargerDonneesEtEtapes] props.maintenance.maint_CODE:", props.maintenance?.maint_CODE);
         await synchroniserDonnees();
-        console.log("[chargerDonneesEtEtapes] getMaintCode() =", getMaintCode());
-
         const dmdCode =
           itemData.value?.demande_CODE ||
           itemData.value?.maint_DEMANDE ||
@@ -872,14 +865,12 @@ const fermerDmd = async () => {
       };
 
 
-// Quand l'action est "VERIFICATION", vider Marque, Fournisseur et Prix
+// Quand l'action  "VERIFICATION",  Marque, Fournisseur sy Prix videee
 const isVerification = (item) => {
       return String(item.action || "").toUpperCase() === "VERIFICATION";
     };
     
-const actReparation = (item) => {
-      return String(item.action || "").toUpperCase() === "REPARATION";
-    };
+
 
   const requis = (item) => String(item.action || "").toUpperCase().startsWith("REMPLAC");
 
@@ -1412,7 +1403,7 @@ const onActionChange = (item) => {
                   <v-text-field
                   v-model.number="item.prix"
                   type="number"
-                  min="0"
+                  min="100"
                   step="1"
                   placeholder="Prix"
                   density="compact"

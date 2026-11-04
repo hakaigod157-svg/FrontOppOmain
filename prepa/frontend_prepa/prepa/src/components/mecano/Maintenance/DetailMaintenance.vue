@@ -30,6 +30,10 @@ const linkedDemande = ref(null);
 const fetchedKm = ref(null);
 const etapeEnCoursData = ref(null);
 
+
+const formatKm = (valeur) =>
+  String(valeur).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+
 const formatDate = (date) => {
       if (!date) return "-";
       if (typeof date === "string" && /^\d{2}\/\d{2}\/\d{4}/.test(date)) {
@@ -49,6 +53,12 @@ const itemData = computed(() => {
    
 const listeTypesActions = computed(() => {
       return (storeEtape.actions)
+        .map((e) => e.enum_CODE)
+        .filter(Boolean);
+});
+
+const listeTypesExecution = computed(() => {
+      return (storeEtape.exect)
         .map((e) => e.enum_CODE)
         .filter(Boolean);
 });
@@ -116,7 +126,7 @@ const synchroniserDonnees = async () => {
         linkedMaintenance.value?.maint_KM;
 
       if (kmFromMaint !== null && kmFromMaint !== undefined && kmFromMaint !== "") {
-        fetchedKm.value = kmFromMaint;
+        fetchedKm.value = formatKm(kmFromMaint);
       } else {
         const voitNum =
           itemData.value?.demande_VOITURE ||
@@ -202,7 +212,7 @@ const displayKm = computed(() => {
         itemData.value?.VOIT_KM;
 
       if (km !== null && km !== undefined && km !== "") {
-        return `${km} km`;
+        return `${formatKm(km)} km`;
       }
       return "-";
     });
@@ -328,6 +338,7 @@ const headersEtapesReal = [
       { title: "Intervention", key: "etape_LIBELLE", align: "start", minWidth: "180px" },
       { title: "Date prévue", key: "etape_DATE_PREV", align: "start", width: "115px" },
       { title: "Action", key: "action", align: "start", width: "140px" },
+      { title: "Type d'exécution", key: "exect", align: "start", width: "140px" },
       { title: "Fournisseur", key: "fournisseur", align: "start", width: "140px" },
       { title: "Marque", key: "marque", align: "start", width: "120px" },
       { title: "Prix (Ar)", key: "prix", align: "end", width: "115px" },
@@ -401,9 +412,10 @@ const validerEtapeRealDirect = async (item) => {
         const verif = isVerification(item);
         await storeEtape.validerEtapeReal(code, {
           intervReal: item.etape_LIBELLE || item.code,
-          action: item.action ,
-          fournisseur: verif ? "" : (item.fournisseur || ""),
-          marque: verif ? "" : (item.marque || ""),
+          action: item.action || null,
+          exect: item.exect || null,
+          fournisseur: verif ? null : (item.fournisseur || null),
+          marque: verif ? null : (item.marque || null),
           prix: verif ? null : (item.prix !== null && item.prix !== undefined && item.prix !== "" ? Number(item.prix) : null),
           dateReal: null, 
         });
@@ -419,9 +431,9 @@ const dialogAjoutReal = ref(false);
 const loadingAjoutReal = ref(false);
 const erreurAjoutReal = ref("");
 const formAjoutReal = ref({
-      intervReal: "",
+      intervReal:null,
       datePrevu: dayjs().format("YYYY-MM-DD"),
-      action: "",
+      action: null,
       // fournisseur: "",
       // marque: "",
       // prix: null,
@@ -475,9 +487,9 @@ const formAjoutReal = ref({
 
   const ouvrirDialogAjoutReal = () => {
       formAjoutReal.value = {
-        intervReal: "",
+        intervReal: null,
         datePrevu: dayjs().format("YYYY-MM-DD"),
-         action: "",
+         action: null,
         // fournisseur: "",
         // marque: "",
         // prix: null,
@@ -753,7 +765,6 @@ const listEtapeReal = async (maintCode = null) => {
   try {
 const code = getMaintCode(maintCode);
 const repApi = await storeEtape.getListeRealMaint(code);
-    // console.log("Étapes REAL tao amleAPI :", repApi);
     if (Array.isArray(repApi) && repApi.length > 0) {
 
 
@@ -761,13 +772,16 @@ const repApi = await storeEtape.getListeRealMaint(code);
         etapesPrepa.value.every((e) => Number(e.etat_ID) === 2);
 
       const liste = repApi.map((item, index) => {
-        const action = item.maint_ACTION_REAL ?? item.MAINT_ACTION_REAL ?? item.maintActionReal ?? item.action ?? "";
-        const fnr = item.maint_FNR_REAL ?? item.MAINT_FNR_REAL ?? item.maintFnrReal ?? item.fournisseur ?? "";
-        const prix = item.maint_PRIX_REAL ?? item.MAINT_PRIX_REAL ?? item.maintPrixReal ?? item.prix ?? null;
-        const marque = item.maint_MRAQUE_MARQUE ?? item.MAINT_MRAQUE_MARQUE ?? item.maint_MARQUE_REAL ?? item.MAINT_MARQUE_REAL ?? item.maintMraqueMarque ?? item.maintMarqueReal ?? item.marque ?? "";
-        const dateReal = item.maint_DATE_REAL ?? item.MAINT_DATE_REAL ?? item.maintDateReal ?? null;
-        const datePrev = item.maint_DATE_PREVU ?? item.MAINT_DATE_PREVU ?? item.maintDatePrevu ?? null;
-        const interv = item.maint_INTERV_REAL ?? item.MAINT_INTERV_REAL ?? item.maintIntervReal ?? "";
+        // const action = item.maint_ACTION_REAL ?? item.MAINT_ACTION_REAL ?? item.maintActionReal ?? item.action ?? "";
+        const action = item.maint_ACTION_REAL ;
+        const exect = item.maint_EXECUTION ?? null;
+        // const fnr = item.maint_FNR_REAL ?? item.MAINT_FNR_REAL ?? item.maintFnrReal ?? item.fournisseur ?? "";
+        const fnr = item.maint_FNR_REAL;
+        const prix = item.maint_PRIX_REAL ?? 100;
+        const marque = item.maint_MRAQUE_MARQUE  ?? null;
+        const dateReal = item.maint_DATE_REAL ?? null;
+        const datePrev = item.maint_DATE_PREVU ??  null;
+        const interv = item.maint_INTERV_REAL;
 
         return {
           ligne_NUMERO: index + 1,
@@ -776,6 +790,7 @@ const repApi = await storeEtape.getListeRealMaint(code);
           etape_DATE: dateReal ? toIso(dateReal) : null,
           etape_USER: item.maint_USER ?? item.MAINT_USER ?? "",
           action: action,
+          exect: exect,
           fournisseur: fnr,
           prix: prix,
           marque: marque,
@@ -838,6 +853,7 @@ const chargerDonneesEtEtapes = async (choisirOnglet = true) => {
 
         await listEtape();
         await listEtapeReal();
+        
         calculerDemandeTerminee();
         if (choisirOnglet) choisirOngletInitial();
       } finally {
@@ -872,7 +888,7 @@ const isVerification = (item) => {
     
 
 
-  const requis = (item) => String(item.action || "").toUpperCase().startsWith("REMPLAC");
+const requis = (item) => String(item.action || "").toUpperCase().startsWith("REMPLAC");
 
 const incomplet = (item) => requis(item) && (!item.fournisseur || !item.marque || !(Number(item.prix) > 0)) ;
 
@@ -907,6 +923,7 @@ const onActionChange = (item) => {
     onMounted(async () => {
       await chargerDonneesEtEtapes();
       await storeEtape.getTypeActionReal();
+      await storeEtape.getTypeExecution();
       await storeEtape.getFournisseurs();
       await storeEtape.getMarques();
 
@@ -1347,6 +1364,25 @@ const onActionChange = (item) => {
                 </template>
                 <template v-else>
                   <span class="text-caption">{{ item.action || "-" }}</span>
+                </template>
+              </template>
+
+              <!-- Colonne Type d'exécution -->
+              <template v-slot:[`item.exect`]="{ item }">
+                <template v-if="!item.etape_DATE && item.enCours">
+                  <v-autocomplete
+                    v-model="item.exect"
+                    :items="listeTypesExecution"
+                    placeholder="Exécution..."
+                    density="compact"
+                    variant="underlined"
+                    clearable
+                    hide-details
+                    class="table-inline-input"
+                  />
+                </template>
+                <template v-else>
+                  <span class="text-caption">{{ item.exect || "-" }}</span>
                 </template>
               </template>
 

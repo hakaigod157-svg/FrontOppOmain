@@ -1,5 +1,8 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from "vue";
+import { maintStore } from "@/store/Maintenance/maintenance_store";
+import { useEtapeStore } from "@/store/Maintenance/etape_store";
+import { useDemandeMaintenance } from "@/store/Maintenance/demande_store";
 
 // ----------------------------------------------------
 // ÉTAT GLOBAL DU CALENDRIER
@@ -38,11 +41,325 @@ const snackbar = ref({
 
 // Indicateur heure actuelle pour la vue semaine
 const now = ref(new Date());
+const maintenanceStore = maintStore();
+const etapeStore = useEtapeStore();
+const demandeStore = useDemandeMaintenance();
+const calendarMaintenances = ref([]);
+const loadingMaintenances = ref(false);
+const maintenanceFilter = ref("all");
+const maintenanceFilterOptions = [
+  { title: "Toutes les maintenances", value: "all" },
+  { title: "En cours uniquement", value: "in-progress" },
+  // { title: "Masquer les terminées", value: "hide-completed" }
+];
 let timeInterval = null;
 
+const visibleCalendarMaintenances = computed(() => {
+  if (maintenanceFilter.value === "in-progress") {
+    return calendarMaintenances.value.filter((maintenance) => maintenance.isInProgress);
+  }
+
+  if (maintenanceFilter.value === "hide-completed") {
+    return calendarMaintenances.value.filter((maintenance) => !maintenance.isComplete);
+  }
+
+  return calendarMaintenances.value;
+});
+
+const classificationStyles = [
+  { match: "PREVENT", color: "#2563eb", icon: "mdi-shield-check" },
+  { match: "CURAT", color: "#ea580c", icon: "mdi-wrench" },
+  { match: "CORRECT", color: "#dc2626", icon: "mdi-alert-circle" },
+  { match: "PNEU", color: "#7c3aed", icon: "mdi-tire" }
+];
+
+const getClassificationStyle = (classification = "") => {
+  const normalized = String(classification).toUpperCase();
+  const knownStyle = classificationStyles.find(({ match }) =>
+    normalized.includes(match)
+  );
+
+  if (knownStyle) return knownStyle;
+
+  let hash = 0;
+  for (let index = 0; index < normalized.length; index++) {
+    hash = (hash * 31 + normalized.charCodeAt(index)) % 360;
+  }
+
+  return { color: `hsl(${hash || 175}, 68%, 38%)`, icon: "mdi-car-wrench" };
+};
+
+const dateOnly = (value) => {
+  if (!value) return null;
+
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return new Date(value.getFullYear(), value.getMonth(), value.getDate());
+  }
+
+  const text = String(value).trim();
+  const iso = text.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) return new Date(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3]));
+
+  const french = text.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+  if (french) {
+    return new Date(
+      Number(french[3]),
+      Number(french[2]) - 1,
+      Number(french[1])
+    );
+  }
+
+  const parsed = new Date(text);
+  if (Number.isNaN(parsed.getTime())) return null;
+
+  return new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
+};
+
+const getEventsForDate = (date) => {
+  const selectedDay = dateOnly(date);
+  if (!selectedDay) return [];
+
+  const selectedTime = selectedDay.getTime();
+
+  return visibleCalendarMaintenances.value.filter((maintenance) => {
+    const startTime = maintenance.startDate.getTime();
+    const endTime = maintenance.endDate.getTime();
+
+    return selectedTime >= startTime && selectedTime <= endTime;
+  }).map((maintenance) => {
+    const stepsForDate = getStepsForDate(maintenance, selectedDay);
+
+    return {
+      ...maintenance,
+      stepLabel: getStepLabelForDate(maintenance, selectedDay),
+      isStepComplete:
+        stepsForDate.length > 0 && stepsForDate.every((step) => step.isComplete),
+      isStepInProgress: stepsForDate.some((step) => step.isSelected)
+    };
+  });
+};
+
+const selectedDayMaintenances = computed(() =>
+  getEventsForDate(selectedDate.value)
+);
+
+const slotMaintenances = computed(() => getEventsForDate(slotDialog.value.date));
+
+const getMaintenanceTitle = (item) =>
+  `${item.vehicle || item.code} · ${item.type || item.classification || "Maintenance"}`;
+
+const getBubbleLayoutStyle = (maintenanceCount) => {
+  const rowCount = Math.max(1, Math.ceil(maintenanceCount / 3));
+  const scale = Math.max(0.4, 1 - (rowCount - 1) * 0.15);
+
+  return {
+    "--bubble-rows": rowCount,
+    "--bubble-scale": scale
+  };
+};
+
+const getPlannedDates = (steps, dateField, alternateDateField) => {
+  return (steps || [])
+    .map((step) => dateOnly(step[dateField] ?? step[alternateDateField]))
+    .filter(Boolean)
+    .sort((firstDate, secondDate) => firstDate - secondDate);
+};
+
+const getPlannedSteps = (
+  steps,
+  dateField,
+  alternateDateField,
+  labelField,
+  alternateLabelField,
+  nature
+) => {
+  return (steps || [])
+    .map((step) => {
+      const status = Number(step.maint_ETAPE_ETAT);
+      const actualDate = step.maint_DATE_REAL ;
+
+      return {
+        date: dateOnly(step[dateField] ?? step[alternateDateField]),
+        label: step[labelField] || step[alternateLabelField] || "Étape à préciser",
+        nature,
+        isSelected: nature === "Préparation" && status === 1,
+        isComplete: nature === "Préparation" ? status === 2 : Boolean(actualDate)
+      };
+    })
+    .filter((step) => step.date)
+    .sort((firstStep, secondStep) => firstStep.date - secondStep.date);
+};
+
+const getMaintenanceDateRange = async (maintenanceCode) => {
+  const preparationSteps = await etapeStore.getListePrepaMaint(maintenanceCode);
+  const realizationSteps = await etapeStore.getListeRealMaint(maintenanceCode);
+
+  const preparationDates = getPlannedDates(
+    preparationSteps,
+    "maint_ETAPE_PREVU",
+    "MAINT_ETAPE_PREVU"
+  );
+  const realizationDates = getPlannedDates(
+    realizationSteps,
+    "maint_DATE_PREVU",
+    "MAINT_DATE_PREVU"
+  );
+
+  const preparationPlan = getPlannedSteps(
+    preparationSteps,
+    "maint_ETAPE_PREVU",
+    "MAINT_ETAPE_PREVU",
+    "maint_ETAPE_LIGNE",
+    "MAINT_ETAPE_LIGNE",
+    "Préparation"
+  );
+  const realizationPlan = getPlannedSteps(
+    realizationSteps,
+    "maint_DATE_PREVU",
+    "MAINT_DATE_PREVU",
+    "maint_INTERV_REAL",
+    "MAINT_INTERV_REAL",
+    "Réalisation"
+  );
+  const steps = [...preparationPlan, ...realizationPlan].sort(
+    (firstStep, secondStep) => firstStep.date - secondStep.date
+  );
+
+  const preparationIsComplete =
+    preparationPlan.length === 0 ||
+    preparationPlan.every((step) => step.isComplete);
+  const nextRealization = realizationPlan.find((step) => !step.isComplete);
+
+  if (preparationIsComplete && nextRealization) {
+    nextRealization.isSelected = true;
+  }
+
+  const startDate = preparationDates[0] || realizationDates[0];
+  const endDate =
+    realizationDates[realizationDates.length - 1] ||
+    preparationDates[preparationDates.length - 1];
+
+  if (!startDate || !endDate) return null;
+
+  return {
+    startDate,
+    endDate: endDate < startDate ? startDate : endDate,
+    steps
+  };
+};
+
+const getStepsForDate = (maintenance, date) => {
+  const dateTime = date.getTime();
+  const stepsForDate = maintenance.steps.filter(
+    (step) => step.date.getTime() === dateTime
+  );
+
+  if (stepsForDate.length) return stepsForDate;
+
+  const nextStep = maintenance.steps.find(
+    (step) => step.date.getTime() >= dateTime
+  );
+  const lastStep = maintenance.steps[maintenance.steps.length - 1];
+
+  return nextStep || lastStep ? [nextStep || lastStep] : [];
+};
+
+const getStepLabelForDate = (maintenance, date) => {
+  const steps = getStepsForDate(maintenance, date);
+  return steps.length
+    ? steps.map((step) => `${step.nature} : ${step.label}`).join(" · ")
+    : "Maintenance planifiée";
+};
+
+const isMaintenanceComplete = (steps) =>
+  steps.length > 0 && steps.every((step) => step.isComplete);
+
+const isMaintenanceNotInProgress = (steps) =>
+  steps.length > 0 &&
+  steps.some((step) => step.isComplete) &&
+  steps.every((step) => !step.isSelected);
+
+const isMaintenanceUnselected = (steps, demand) => {
+  if (isMaintenanceComplete(steps)) return false;
+
+  const demandStatus = Number(demand?.demande_ETAT ?? demand?.DEMANDE_ETAT);
+  const hasNoSelectedStep =
+    steps.length > 0 &&
+    steps.every((step) => !step.isSelected && !step.isComplete);
+
+  return demandStatus === 1 || hasNoSelectedStep;
+};
+
+const getMaintenanceStatusLabel = (maintenance) => {
+  if (maintenance.isComplete) return "Terminée";
+  if (maintenance.isNotInProgress) return "Arrêtée après validation";
+  if (maintenance.isUnselected) return "Nouvelle demande non sélectionnée";
+  return "Étape à faire";
+};
+
+const getLinkedDemand = (maintenance) => {
+  const demandCode = maintenance.maint_DEMANDE || maintenance.MAINT_DEMANDE;
+
+  return demandeStore.demandes.find((demand) => {
+    const currentDemandCode = demand.demande_CODE || demand.DEMANDE_CODE || "";
+    return String(currentDemandCode) === String(demandCode || "");
+  });
+};
+
+const getVehicleNumber = (maintenance, demand) => {
+  return (
+    maintenance.maint_VOITURE ||
+    maintenance.maint_NUMVOITURE ||
+    demand?.demande_VOITURE ||
+    ""
+  );
+};
+
+const loadCalendarMaintenances = async () => {
+  if (loadingMaintenances.value) return;
+  loadingMaintenances.value = true;
+  try {
+    await maintenanceStore.getMaintenances();
+    await demandeStore.fetchDemandes();
+    const events = [];
+    for (const maintenance of maintenanceStore.maintnces) {
+      const code = maintenance.maint_CODE || maintenance.code;
+      if (!code) continue;
+      // Le store d'étapes garde les résultats dans une propriété partagée :
+      // les deux lectures doivent rester séquentielles.
+      const dateRange = await getMaintenanceDateRange(code);
+      if (!dateRange) continue;
+
+      const classification = maintenance.maint_CLASSIFICATION ;
+      const linkedDemand = getLinkedDemand(maintenance);
+      const style = getClassificationStyle(classification);
+
+      events.push({
+        id: code,
+        code,
+        ...dateRange,
+        classification,
+        type: maintenance.maint_TYPE,
+        vehicle: getVehicleNumber(maintenance, linkedDemand),
+        isComplete: isMaintenanceComplete(dateRange.steps),
+        isInProgress: dateRange.steps.some((step) => step.isSelected),
+        isNotInProgress: isMaintenanceNotInProgress(dateRange.steps),
+        isUnselected: isMaintenanceUnselected(dateRange.steps, linkedDemand),
+        color: style.color,
+        icon: style.icon
+      });
+    }
+    calendarMaintenances.value = events;
+  } finally {
+    loadingMaintenances.value = false;
+  }
+};
+
 onMounted(() => {
+  loadCalendarMaintenances();
   timeInterval = setInterval(() => {
     now.value = new Date();
+    loadCalendarMaintenances();
   }, 60000); // Mise à jour chaque minute
 });
 
@@ -213,7 +530,8 @@ const monthCells = computed(() => {
       dayNumber: cellDate.getDate(),
       isCurrentMonth,
       isToday,
-      isWeekend
+      isWeekend,
+      maintenances: getEventsForDate(cellDate)
     });
   }
 
@@ -244,7 +562,8 @@ const weekDaysList = computed(() => {
       dayName,
       dayNumber: dayDate.getDate(),
       monthShort,
-      isToday: isSameDay(dayDate, today)
+      isToday: isSameDay(dayDate, today),
+      maintenances: getEventsForDate(dayDate)
     });
   }
 
@@ -397,6 +716,18 @@ const showSnackbar = (text) => {
             />
           </div>
 
+          <v-select
+            v-model="maintenanceFilter"
+            :items="maintenanceFilterOptions"
+            item-title="title"
+            item-value="value"
+            label="Filtrer les maintenances"
+            density="compact"
+            variant="outlined"
+            hide-details
+            class="maintenance-filter"
+          />
+
           <!-- Sélecteur de vues : Mensuel / Hebdomadaire / Par jour -->
           <v-btn-toggle
             v-model="currentView"
@@ -429,7 +760,9 @@ const showSnackbar = (text) => {
             prepend-icon="mdi-information-outline"
             class="d-none d-sm-inline-flex"
           >
-            0 événement planifié
+            {{ loadingMaintenances
+              ? "Chargement…"
+              : `${visibleCalendarMaintenances.length} maintenance${visibleCalendarMaintenances.length === 1 ? "" : "s"}` }}
           </v-chip>
         </div>
       </div>
@@ -480,9 +813,34 @@ const showSnackbar = (text) => {
               </span>
             </div>
 
-            <!-- Corps vide de la case -->
-            <div class="day-cell-body">
-              <div class="empty-cell-hint">
+            <!-- Maintenances prévues ce jour -->
+            <div
+              class="day-cell-body"
+              :style="getBubbleLayoutStyle(cell.maintenances.length)"
+            >
+              <button
+                v-for="maintenance in cell.maintenances"
+                :key="maintenance.id"
+                type="button"
+                class="maintenance-calendar-chip"
+                :class="{ 'is-validated': maintenance.isStepComplete }"
+                :style="{ '--badge-color': maintenance.color }"
+                :title="`${getMaintenanceTitle(maintenance)} · ${formatDateFull(maintenance.startDate)} – ${formatDateFull(maintenance.endDate)}`"
+                @click.stop="openSlotDialog(cell.date, null)"
+              >
+                <v-icon class="maintenance-chip-icon classification-badge">
+                  {{ maintenance.icon }}
+                </v-icon>
+                <span
+                  v-if="maintenance.isUnselected"
+                  class="new-request-indicator"
+                  :title="getMaintenanceStatusLabel(maintenance)"
+                ></span>
+                <span class="maintenance-chip-copy">
+                  <strong>{{ maintenance.vehicle || maintenance.code }}</strong>
+                </span>
+              </button>
+              <div v-if="!cell.maintenances.length" class="empty-cell-hint">
                 <v-icon size="x-small" class="hint-icon">mdi-plus</v-icon>
                 <span class="hint-text">Libre</span>
               </div>
@@ -527,7 +885,32 @@ const showSnackbar = (text) => {
               :key="'allday-' + idx"
               class="all-day-slot"
             >
-              <span class="empty-badge">Aucune intervention</span>
+              <div v-if="day.maintenances.length" class="week-maintenance-list">
+                <button
+                  type="button"
+                  v-for="maintenance in day.maintenances"
+                  :key="maintenance.id"
+                  class="week-maintenance-chip"
+                  :class="{ 'is-validated': maintenance.isStepComplete }"
+                  :style="{ '--badge-color': maintenance.color }"
+                  :title="`${getMaintenanceTitle(maintenance)} · ${maintenance.stepLabel}`"
+                  @click.stop="openSlotDialog(day.date, null)"
+                >
+                  <v-icon class="classification-badge">
+                    {{ maintenance.icon }}
+                  </v-icon>
+                  <span
+                    v-if="maintenance.isUnselected"
+                    class="new-request-indicator"
+                    title="Nouvelle demande non sélectionnée"
+                  ></span>
+                  <span class="week-maintenance-copy">
+                    <strong>{{ maintenance.vehicle || maintenance.code }}</strong>
+                    <small>{{ maintenance.stepLabel }}</small>
+                  </span>
+                </button>
+              </div>
+              <span v-else class="empty-badge">Aucune intervention</span>
             </div>
           </div>
 
@@ -582,7 +965,10 @@ const showSnackbar = (text) => {
         <!-- Bannière du jour sélectionné -->
         <div class="day-view-banner pa-4 d-flex flex-wrap align-center justify-space-between ga-3">
           <div class="d-flex align-center ga-3">
-            <div class="day-large-number-box text-center" :class="{ 'is-today-box': isDaySelectedToday }">
+          <div
+            class="day-large-number-box text-center"
+            :class="{ 'is-today-box': isDaySelectedToday }"
+          >
               <span class="day-large-num">{{ selectedDayNumber }}</span>
               <span class="day-large-month text-uppercase">{{ selectedDayMonthShort }}</span>
             </div>
@@ -591,7 +977,8 @@ const showSnackbar = (text) => {
                 {{ selectedDayLongName }}
               </h3>
               <p class="text-caption text-medium-emphasis mb-0">
-                Semaine {{ selectedWeekNumber }} &bull; {{ isDaySelectedToday ? "Aujourd'hui" : "Jour sélectionné" }}
+                Semaine {{ selectedWeekNumber }} &bull;
+                {{ isDaySelectedToday ? "Aujourd'hui" : "Jour sélectionné" }}
               </p>
             </div>
           </div>
@@ -604,12 +991,44 @@ const showSnackbar = (text) => {
               size="small"
               prepend-icon="mdi-check-circle-outline"
             >
-              Journée libre ({{ hoursList.length }} créneaux disponibles)
+              {{ selectedDayMaintenances.length
+                ? `${selectedDayMaintenances.length} maintenance(s) prévue(s)`
+                : `Journée libre (${hoursList.length} créneaux disponibles)` }}
             </v-chip>
           </div>
         </div>
 
         <v-divider />
+
+        <div v-if="selectedDayMaintenances.length" class="day-maintenance-list pa-4">
+          <div class="text-caption text-medium-emphasis mb-2">Maintenances prévues ce jour</div>
+          <div
+            v-for="maintenance in selectedDayMaintenances"
+            :key="maintenance.id"
+            class="slot-maintenance-item"
+          >
+            <v-icon
+              :color="maintenance.isStepComplete ? '#94a3b8' : maintenance.color"
+              size="small"
+            >
+              {{ maintenance.icon }}
+            </v-icon>
+            <span
+              v-if="maintenance.isUnselected"
+              class="new-request-indicator-inline"
+              title="Nouvelle demande non sélectionnée"
+            ></span>
+            <div>
+              <strong>{{ getMaintenanceTitle(maintenance) }}</strong>
+              <div class="maintenance-step-label">
+                {{ maintenance.stepLabel }}
+              </div>
+              <div class="text-caption text-medium-emphasis">
+                {{ formatDateFull(maintenance.startDate) }} – {{ formatDateFull(maintenance.endDate) }}
+              </div>
+            </div>
+          </div>
+        </div>
 
         <!-- Liste horaire de la journée -->
         <div class="day-schedule-wrapper">
@@ -677,6 +1096,7 @@ const showSnackbar = (text) => {
           </div>
 
           <v-alert
+            v-if="!slotMaintenances.length"
             type="info"
             variant="tonal"
             density="compact"
@@ -688,6 +1108,73 @@ const showSnackbar = (text) => {
               Ce créneau est actuellement libre dans le calendrier de l'atelier.
             </div>
           </v-alert>
+          <div v-else class="slot-maintenance-list">
+            <div
+              v-for="maintenance in slotMaintenances"
+              :key="maintenance.id"
+              class="slot-maintenance-entry"
+            >
+              <v-expansion-panels
+                v-if="maintenance.isComplete"
+                variant="accordion"
+                density="compact"
+              >
+                <v-expansion-panel class="slot-maintenance-panel">
+                  <v-expansion-panel-title>
+                    <div class="slot-maintenance-summary">
+                      <v-icon color="grey" size="small">
+                        {{ maintenance.icon }}
+                      </v-icon>
+                      <div class="slot-maintenance-summary-copy">
+                        <strong>{{ maintenance.vehicle || maintenance.code }}</strong>
+                        <span>{{ maintenance.stepLabel }}</span>
+                      </div>
+                    </div>
+                  </v-expansion-panel-title>
+
+                  <v-expansion-panel-text>
+                    <div class="slot-maintenance-details">
+                      <div class="font-weight-medium">
+                        {{ getMaintenanceTitle(maintenance) }}
+                      </div>
+                      <div>Statut : Terminée</div>
+                      <div>
+                        Période : {{ formatDateFull(maintenance.startDate) }} –
+                        {{ formatDateFull(maintenance.endDate) }}
+                      </div>
+                      <div v-if="maintenance.classification">
+                        Classification : {{ maintenance.classification }}
+                      </div>
+                    </div>
+                  </v-expansion-panel-text>
+                </v-expansion-panel>
+              </v-expansion-panels>
+
+              <div v-else class="slot-maintenance-item">
+                <v-icon :color="maintenance.color" size="small">
+                  {{ maintenance.icon }}
+                </v-icon>
+                <span
+                  v-if="maintenance.isUnselected"
+                  class="new-request-indicator-inline"
+                  :title="getMaintenanceStatusLabel(maintenance)"
+                ></span>
+                <div>
+                  <strong>{{ getMaintenanceTitle(maintenance) }}</strong>
+                  <div class="maintenance-step-label">
+                    {{ maintenance.stepLabel }}
+                  </div>
+                  <div class="text-caption text-medium-emphasis">
+                    Statut : {{ getMaintenanceStatusLabel(maintenance) }}
+                  </div>
+                  <div class="text-caption text-medium-emphasis">
+                    {{ formatDateFull(maintenance.startDate) }} –
+                    {{ formatDateFull(maintenance.endDate) }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </v-card-text>
 
         <v-card-actions class="pa-3 justify-end ga-2">
@@ -741,6 +1228,16 @@ const showSnackbar = (text) => {
 .calendar-page {
   font-family: inherit;
   width: 100%;
+  font-size: 1.05em;
+}
+
+.calendar-page :deep(.text-caption) {
+  font-size: 0.8rem !important;
+}
+
+.calendar-page :deep(.text-body-1),
+.calendar-page :deep(.text-subtitle-1) {
+  font-size: 1.05rem !important;
 }
 
 .calendar-toolbar-card {
@@ -758,7 +1255,7 @@ const showSnackbar = (text) => {
   border: 1px solid #dcdfe6;
   border-radius: 6px;
   padding: 5px 10px;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   color: #333333;
   outline: none;
   background-color: #fafafa;
@@ -775,12 +1272,17 @@ const showSnackbar = (text) => {
   overflow: hidden;
 }
 
+.maintenance-filter {
+  width: 235px;
+  min-width: 210px;
+}
+
 /* ====================================================
    1. VUE MENSUELLE
    ==================================================== */
 .month-header-grid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   background-color: #f4f6f8;
   border-bottom: 1px solid #e5e7eb;
 }
@@ -788,7 +1290,7 @@ const showSnackbar = (text) => {
 .month-header-cell {
   padding: 10px 8px;
   text-align: center;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   font-weight: 600;
   color: #4b5563;
 
@@ -800,22 +1302,24 @@ const showSnackbar = (text) => {
 
 .month-days-grid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  grid-auto-rows: minmax(105px, 1fr);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-template-rows: repeat(6, minmax(0, 1fr));
+  height: min(690px, max(300px, calc(100dvh - 330px)));
   background-color: #e5e7eb;
   gap: 1px; /* Créer des bordures nettes entre cellules */
 }
 
 .month-day-cell {
   background-color: #ffffff;
-  padding: 8px;
+  padding: 10px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   cursor: pointer;
   transition: background-color 0.15s ease, box-shadow 0.15s ease;
-  min-height: 105px;
+  min-height: 0;
   position: relative;
+  overflow: hidden;
 
   &:hover {
     background-color: #f9fbf9;
@@ -846,7 +1350,7 @@ const showSnackbar = (text) => {
 }
 
 .day-cell-header {
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   font-weight: 600;
 }
 
@@ -868,7 +1372,7 @@ const showSnackbar = (text) => {
 }
 
 .today-text {
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   font-weight: 600;
   color: #2e7d32;
   background-color: #e8f5e9;
@@ -878,9 +1382,297 @@ const showSnackbar = (text) => {
 
 .day-cell-body {
   flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: repeat(var(--bubble-rows, 1), minmax(0, 1fr));
+  align-content: start;
+  align-items: stretch;
+  gap: 3px;
+  padding-top: 4px;
+  overflow: hidden;
+}
+
+.maintenance-calendar-chip,
+.week-maintenance-chip {
   display: flex;
   align-items: center;
+  gap: 10px;
+  min-width: 0;
+  margin: 4px 0;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 9px;
+  color: #17324d;
+  background-color: #e8f0fb;
+  font-family: inherit;
+  text-align: left;
+  font-size: 0.87rem;
+  line-height: 1.35;
+  cursor: pointer;
+  overflow: hidden;
+  box-shadow: 0 2px 5px rgba(15, 23, 42, 0.14);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 9px rgba(15, 23, 42, 0.2);
+  }
+
+  &:focus-visible {
+    outline: 3px solid #0f172a;
+    outline-offset: 2px;
+  }
+}
+
+.maintenance-calendar-chip.is-validated,
+.week-maintenance-chip.is-validated {
+  color: #245b35;
+  background-color: #f0f8f0;
+
+  &:hover {
+    background-color: #e2f2e2;
+  }
+}
+
+.maintenance-calendar-chip {
+  position: relative;
+  display: grid;
+  grid-template-rows: calc(13px * var(--bubble-scale, 1)) minmax(0, 1fr);
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  margin: 0;
+  padding: 2px;
+  gap: 1px;
+  border-radius: calc(12px * var(--bubble-scale, 1));
+}
+
+.week-maintenance-chip {
+  width: 100%;
+  min-height: 48px;
+  margin: 3px 0;
+  padding: 7px;
+  border: 0;
+  font-size: 0.8rem;
+}
+
+.maintenance-chip-icon {
+  justify-self: start;
+  align-self: start;
+  width: calc(13px * var(--bubble-scale, 1));
+  height: calc(13px * var(--bubble-scale, 1));
+  font-size: calc(10px * var(--bubble-scale, 1));
+}
+
+.maintenance-calendar-chip .classification-badge {
+  flex-basis: calc(13px * var(--bubble-scale, 1));
+  width: calc(13px * var(--bubble-scale, 1));
+  height: calc(13px * var(--bubble-scale, 1));
+  font-size: calc(8px * var(--bubble-scale, 1));
+}
+
+.classification-badge {
+  display: inline-flex;
+  flex: 0 0 20px;
+  align-items: center;
   justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: var(--badge-color);
+  color: #fff;
+}
+
+.week-maintenance-chip .classification-badge {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+}
+
+.week-maintenance-chip {
+  position: relative;
+  padding-left: 32px;
+}
+
+.new-request-indicator {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 9px;
+  height: 9px;
+  border: 2px solid #e8f0fb;
+  border-radius: 50%;
+  background-color: #f59e0b;
+  box-shadow: 0 0 0 1px rgba(120, 53, 15, 0.18);
+}
+
+.new-request-indicator-inline {
+  display: inline-block;
+  flex: 0 0 9px;
+  width: 9px;
+  height: 9px;
+  margin: 0 2px;
+  border-radius: 50%;
+  background-color: #f59e0b;
+  box-shadow: 0 0 0 2px #fff;
+}
+
+.maintenance-calendar-chip.is-validated .new-request-indicator,
+.week-maintenance-chip.is-validated .new-request-indicator {
+  border-color: #f0f8f0;
+}
+
+.maintenance-calendar-chip .new-request-indicator {
+  top: 2px;
+  right: 2px;
+  width: calc(9px * var(--bubble-scale, 1));
+  height: calc(9px * var(--bubble-scale, 1));
+}
+
+.week-maintenance-chip .new-request-indicator {
+  top: 5px;
+  right: 5px;
+}
+
+.maintenance-chip-copy,
+.week-maintenance-copy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.maintenance-chip-copy {
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.maintenance-chip-copy strong {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: max(0.5rem, calc(0.76rem * var(--bubble-scale, 1)));
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.week-maintenance-copy strong {
+  font-size: 0.87rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.maintenance-chip-copy small {
+  font-size: 0.68rem;
+  line-height: 1.1;
+  opacity: 0.9;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.week-maintenance-copy small {
+  display: block;
+  max-width: 100%;
+  color: #40566e;
+  font-size: 0.77rem;
+  line-height: 1.25;
+  white-space: normal;
+}
+
+.week-maintenance-copy strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.week-maintenance-copy small {
+  overflow: hidden;
+}
+
+.week-maintenance-list {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.view-month {
+  width: 100%;
+}
+
+.slot-maintenance-list {
+  display: grid;
+  gap: 6px;
+}
+
+.slot-maintenance-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 10px;
+  border-left: 3px solid #cbd5e1;
+  border-radius: 6px;
+  background: #f1f5f9;
+}
+
+.slot-maintenance-panel {
+  overflow: hidden;
+  border-radius: 8px !important;
+  background: #f1f5f9;
+  box-shadow: none !important;
+}
+
+.slot-maintenance-panel :deep(.v-expansion-panel-title) {
+  min-height: 54px;
+  padding: 8px 12px;
+}
+
+.slot-maintenance-panel :deep(.v-expansion-panel-text__wrapper) {
+  padding: 0 12px 12px;
+}
+
+.slot-maintenance-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+}
+
+.slot-maintenance-summary-copy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.slot-maintenance-summary-copy strong,
+.slot-maintenance-summary-copy span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.slot-maintenance-summary-copy span {
+  color: #475569;
+  font-size: 0.83rem;
+}
+
+.slot-maintenance-details {
+  display: grid;
+  gap: 4px;
+  padding-top: 8px;
+  border-top: 1px solid #dbe2ea;
+  color: #475569;
+  font-size: 0.85rem;
+}
+
+.maintenance-step-label {
+  margin: 3px 0;
+  color: #253f59;
+  font-size: 0.95rem;
+  font-weight: 600;
 }
 
 .empty-cell-hint {
@@ -888,7 +1680,7 @@ const showSnackbar = (text) => {
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   color: #66bb6a;
   background-color: #e8f5e9;
   padding: 3px 8px;
@@ -900,13 +1692,13 @@ const showSnackbar = (text) => {
    2. VUE HEBDOMADAIRE
    ==================================================== */
 .week-scroller {
-  overflow-x: auto;
+  overflow-x: hidden;
   max-width: 100%;
 }
 
 .week-header-grid {
   display: grid;
-  grid-template-columns: 70px repeat(7, minmax(110px, 1fr));
+  grid-template-columns: 52px repeat(7, minmax(0, 1fr));
   border-bottom: 2px solid #e0e0e0;
   background-color: #f8fafc;
   position: sticky;
@@ -939,7 +1731,7 @@ const showSnackbar = (text) => {
 }
 
 .week-day-name {
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   font-weight: 600;
   color: #64748b;
 }
@@ -947,7 +1739,7 @@ const showSnackbar = (text) => {
 .week-day-badge {
   display: inline-block;
   margin-top: 2px;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   font-weight: 700;
   color: #1e293b;
   padding: 2px 8px;
@@ -961,13 +1753,13 @@ const showSnackbar = (text) => {
 
 .all-day-row {
   display: grid;
-  grid-template-columns: 70px repeat(7, minmax(110px, 1fr));
+  grid-template-columns: 52px repeat(7, minmax(0, 1fr));
   border-bottom: 1px solid #e5e7eb;
   background-color: #fafbfc;
 }
 
 .all-day-label {
-  font-size: 0.72rem;
+  font-size: 0.77rem;
   font-weight: 600;
   text-transform: uppercase;
   color: #94a3b8;
@@ -985,14 +1777,14 @@ const showSnackbar = (text) => {
 }
 
 .empty-badge {
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   color: #9ca3af;
   font-style: italic;
 }
 
 .week-body-grid {
   display: grid;
-  grid-template-columns: 70px repeat(7, minmax(110px, 1fr));
+  grid-template-columns: 52px repeat(7, minmax(0, 1fr));
   position: relative;
 }
 
@@ -1005,7 +1797,7 @@ const showSnackbar = (text) => {
   height: 54px;
   padding-right: 8px;
   text-align: right;
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   font-weight: 600;
   color: #64748b;
   display: flex;
@@ -1064,7 +1856,7 @@ const showSnackbar = (text) => {
 
 .slot-hover-content {
   opacity: 0;
-  font-size: 0.72rem;
+  font-size: 0.77rem;
   color: #2e7d32;
   font-weight: 600;
   display: flex;
@@ -1112,7 +1904,7 @@ const showSnackbar = (text) => {
 }
 
 .day-large-month {
-  font-size: 0.65rem;
+  font-size: 0.7rem;
   font-weight: 700;
   letter-spacing: 0.5px;
   color: #64748b;
@@ -1157,7 +1949,7 @@ const showSnackbar = (text) => {
   border-right: 2px solid #e2e8f0;
 
   .time-text {
-    font-size: 0.85rem;
+    font-size: 0.9rem;
     font-weight: 700;
     color: #475569;
   }

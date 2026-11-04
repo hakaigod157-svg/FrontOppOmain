@@ -19,6 +19,11 @@ const props= defineProps ({
     type: Array,
     default: () => ['maint_date', 'maint_date_cree', 'maint_date_modif', 'maint_demande_date', 'maint_demande_date_cree', 'demande_date_modif','demande_DATE']
   },
+  numCols: {
+    type: Array,
+    default: () => ['demande_KM','maint_KM']
+  },
+  
 
   totalDoublons: { type: Number, default: 0 },
   showNbDoublons: { type: Boolean, default: false },
@@ -47,6 +52,9 @@ const toogleOpened = (item, index, field) => {
   const k = voirPlus(item, index, field);
   mapDeveloppe[k] = !mapDeveloppe[k];
 };
+
+const formatKm = (valeur) =>
+  String(valeur).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
 
 const tokonyApotraToogle = (item, field) => {
   const text = String(item?.[field] ?? '').trim();
@@ -128,6 +136,11 @@ const filteredItems = computed(() => {
         {{ formatDateTime(item[col]) }}
       </template>
 
+
+      <template v-for="col in numCols" :key="'-KM' + col" v-slot:[`item.${col}`]="{ item }">
+        {{ formatKm(item[col]) + ' km' }}
+      </template>
+
       <!-- Gestion dynamique des TEXTES LONGS -->
       <template v-for="col in longTextCols" :key="'long-' + col" v-slot:[`item.${col}`]="{ item, index }">
         <v-tooltip location="bottom" :disabled="!tokonyApotraToogle(item, col)">
@@ -198,14 +211,18 @@ const filteredItems = computed(() => {
   color: #d9dbe8 !important;
   font-weight: bold;
   white-space: nowrap;
-  font-size: 11px !important;
+  font-size: 12px !important;
   padding: 0 4px !important;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
+
+/* ETO TAILLE TEXTE SANATRIA */
+
+
 :deep(.maint_header .v-table__wrapper > table > tbody > tr > td) {
-  font-size: 11px !important;
+  font-size: 12px !important;
   padding: 0 4px !important;
   overflow: hidden;
   text-overflow: ellipsis;

@@ -27,7 +27,15 @@ const loading = ref(false);
 const preparing = ref(false);
 const erreur = ref("");
 
+
+const detailsVoiture = ref(null);
+const loadingDetails = ref(false);
+
 const userID = localStorage.getItem("userID");
+
+
+const formatKm = (valeur) =>
+  String(valeur).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
 
 const visible = computed({
   get: () => props.modelValue,
@@ -44,21 +52,22 @@ const dateDuJour = () => {
 const form = reactive({
   DEMANDE_CODE: "",
   DEMANDE_DATE: dateDuJour(),
-  DEMANDE_VOITURE: "",
-  DEMANDE_MARQUE: "",
+  DEMANDE_VOITURE: null,
+  DEMANDE_MARQUE: null,
   DEMANDE_TYPE: props.typeDemande,
   DEMANDE_AUTEUR: userID ?? "",
-  DEMANDE_DESCR: "",
+  DEMANDE_DESCR: null,
 });
 
 const resetForm = () => {
   form.DEMANDE_CODE = props.code;
   form.DEMANDE_DATE = dateDuJour();
-  form.DEMANDE_VOITURE = "";
-  form.DEMANDE_MARQUE = "";
+  form.DEMANDE_VOITURE = null;
+  form.DEMANDE_KM =null;
+  form.DEMANDE_MARQUE = null;
   form.DEMANDE_TYPE = props.typeDemande;
   form.DEMANDE_AUTEUR = userID ?? "";
-  form.DEMANDE_DESCR = "";
+  form.DEMANDE_DESCR = null;
   erreur.value = "";
 };
 
@@ -69,7 +78,7 @@ const listeVoitNum = computed(() => {
 });
 
 const listeTypesMaintenance = computed(() => {
-  return (store.enumerations || [])
+  return (store.typeMaintenance || [])
     .map((e) => e.enum_CODE)
     .filter(Boolean);
 });
@@ -109,12 +118,36 @@ watch(
   }
 );
 
+// watch(
+//   () => form.DEMANDE_VOITURE ,
+// )
+
 watch(
   () => props.typeDemande,
   (nouveauType) => {
     form.DEMANDE_TYPE = nouveauType;
   }
 );
+
+watch(
+  () => form.DEMANDE_VOITURE,
+  async (immat) => {
+    if (!immat) {
+      detailsVoiture.value = null; 
+      form.DEMANDE_KM = null;
+      return;
+    }
+
+    loadingDetails.value = true;
+    try {
+      detailsVoiture.value = await store.getKmVoiture(immat);
+      form.DEMANDE_KM = detailsVoiture.value;
+    } finally {
+      loadingDetails.value = false;
+    }
+  }
+);
+
 
 const fermer = () => {
   if (loading.value) return;
@@ -139,6 +172,7 @@ const save = async () => {
   try {
     const payload = {
       DEMANDE_VOITURE: form.DEMANDE_VOITURE,
+      DEMANDE_KM: form.DEMANDE_KM,
       DEMANDE_MARQUE: form.DEMANDE_MARQUE,
       DEMANDE_TYPE: form.DEMANDE_TYPE,
       DEMANDE_AUTEUR: form.DEMANDE_AUTEUR,
@@ -233,6 +267,16 @@ const save = async () => {
             />
           </v-col>
 
+          <v-col cols="12"  v-if="loadingDetails">
+            <v-progress-linear indeterminate />
+              </v-col>
+              <v-col cols="12"  md="6"  v-else-if="detailsVoiture">
+              <div class="details-voiture">
+              Km de la Voiture actuel :  {{ formatKm(detailsVoiture) }} km
+              </div>
+              
+          </v-col>
+
           <!-- MARQUE -->
           <v-col cols="12" md="6">
             <v-text-field
@@ -240,6 +284,8 @@ const save = async () => {
               label="Marque"
               variant="outlined"
               density="compact"
+              placeholder="La marque est optionnelle"
+
             />
           </v-col>
 
@@ -304,5 +350,19 @@ const save = async () => {
   opacity: 0.35;
   backdrop-filter: blur(25px);
   -webkit-backdrop-filter: blur(25px);
+}
+
+
+.details-voiture {
+  background: #eefff0;            /* fond différent du reste du formulaire */
+  border-left: 4px solid #0b3b17; /* petit trait de couleur à gauche */
+  border-radius: 6px;
+  padding: 12px 16px;
+}
+
+.details-titre {
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #1976d2;
 }
 </style>

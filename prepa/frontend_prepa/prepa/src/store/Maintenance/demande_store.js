@@ -13,6 +13,7 @@ export const useDemandeMaintenance = defineStore("demandeMaintenance", {
         voitures: [],
         enumerations: [],
         typeRefus: [],
+        typeMaintenance: [],
         loading: false,
     }),
 
@@ -458,7 +459,8 @@ export const useDemandeMaintenance = defineStore("demandeMaintenance", {
                             demandeVoiture: payload.DEMANDE_VOITURE,
                             demandeMarque: payload.DEMANDE_MARQUE,
                             demandeType: payload.DEMANDE_TYPE,
-                            demandeDescr: payload.DEMANDE_DESCR
+                            demandeDescr: payload.DEMANDE_DESCR,
+                            demandeKm:payload.DEMANDE_KM
                         },
                         headers: {
                             Authorization: sessionId
@@ -679,16 +681,16 @@ export const useDemandeMaintenance = defineStore("demandeMaintenance", {
                 );
 
                 if (response.status === 204 || !response.data) {
-                    this.enumerations = [];
+                    this.typeMaintenance = [];
                     return null;
                 }
 
                 console.log("Enumeration récupérée :", response.data);
 
                 if (Array.isArray(response.data)) {
-                    this.enumerations = response.data;
+                    this.typeMaintenance = response.data;
                 } else {
-                    this.enumerations = [];
+                    this.typeMaintenance = [];
                 }
 
                 return response.data;

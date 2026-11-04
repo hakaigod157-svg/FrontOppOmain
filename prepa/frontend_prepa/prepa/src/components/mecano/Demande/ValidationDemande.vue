@@ -43,6 +43,7 @@ const emit = defineEmits([
 const store = useDemandeMaintenance();
 
 const isRefus = computed(() => props.mode === "refuser");
+const isConsultation = computed(() => props.mode === "consulter");
 
 const visible = computed({
   get: () => props.modelValue,
@@ -108,6 +109,17 @@ const demandeDescr = computed(() => {
   return d.demande_DESCR  || "";
 });
 
+// Données du refus récupérées depuis la BDD (champs DEMANDE_REFUS / DEMANDE_REFUS_DESCR)
+const refusMotif = computed(() => {
+  const d = props.demande || {};
+  return d.demande_REFUS || d.DEMANDE_REFUS || "";
+});
+
+const refusDescription = computed(() => {
+  const d = props.demande || {};
+  return d.demande_REFUS_DESCR || d.DEMANDE_REFUS_DESCR || "";
+});
+
 
 const chargerClassifications = async () => {
   if (!isPonctuelle.value) return;
@@ -163,7 +175,7 @@ const listeTypeRefus = computed(() =>
 
 const chargerTypesRefus = async () => {
   loadingEnum.value = true;
-  erreur.value = "";
+  erreur.value = null;
   try {
     const result = await store.getTypeRefus();
     typesRefus.value = Array.isArray(result) ? result : [];
@@ -329,8 +341,8 @@ watch(
       <!-- En-tête -->
       <v-card-title class="d-flex align-center justify-space-between">
         <div class="d-flex align-center ga-2">
-          <v-icon :color="isRefus ? 'error' : 'success'" size="26">
-            {{ isRefus ? "mdi-close-circle-outline" : "mdi-check-circle-outline" }}
+          <v-icon :color="isConsultation ? 'error' : (isRefus ? 'error' : 'success')" size="26">
+            {{ isConsultation ? "mdi-alert-circle-outline" : (isRefus ? "mdi-close-circle-outline" : "mdi-check-circle-outline") }}
           </v-icon>
           
         </div>
@@ -360,22 +372,50 @@ watch(
           <v-col cols="12">
             <div
               class="confirmation-box pa-4 rounded-lg text-center"
-              :class="{ 'confirmation-box--refus': isRefus }"
+              :class="{
+                'confirmation-box--refus': isRefus || isConsultation,
+              }"
             >
-              <div class="text-subtitle-1 font-weight-bold mb-1">
-                {{ isRefus ? "Refuser la demande" : "Confirmer la demande" }}
-              </div>
-              <div class="text-body-2 text-medium-emphasis">
-                <template v-if="isRefus">
+              <!-- Mode CONSULTATION dmd REFUSÉE TY -->
+              <template v-if="isConsultation">
+                <div class="text-subtitle-1 font-weight-bold mb-2" style="color: #c62828">
+                  <v-icon color="error" size="20" class="mr-1">mdi-cancel</v-icon>
+                  Demande refusée
+                </div>
+                <div class="text-caption text-grey">L'équipe de Maintenance n'a pas pu donner suite à votre demande </div>
+                <v-divider class="my-2" />
+                <div class="text-left mt-3">
+                  <div class="text-caption text-grey mb-1">Motif du refus</div>
+                  <div class="text-body-2 font-weight-bold" style="color: #b71c1c">
+                    {{ refusMotif || "Non renseigné" }}
+                  </div>
+                </div>
+                <div v-if="refusDescription" class="text-left mt-3">
+                  <div class="text-caption text-grey mb-1">Description complémentaire</div>
+                  <v-card variant="flat" color="#fff5f5" class="pa-3 rounded border" style="border-color: #f3c9c9">
+                    <p class="text-body-2 mb-0" style="white-space: pre-wrap; color: #424242">
+                      {{ refusDescription }}
+                    </p>
+                  </v-card>
+                </div>
+              </template>
+
+              <!-- Mode REFUS (formulaire) -->
+              <template v-else-if="isRefus">
+                <div class="text-subtitle-1 font-weight-bold mb-1">
+                  Refuser la demande
+                </div>
+                <div class="text-body-2 text-medium-emphasis">
                   Voulez-vous vraiment refuser cette demande de maintenance de type
                   <strong class="text-error">{{ demandeType }}</strong> ?
                   <v-autocomplete
                     v-model="typeRefus"
-                  :items="listeTypeRefus"
+                    :items="listeTypeRefus"
                     item-title="title"
                     item-value="value"
                     label="Motif du refus"
                     variant="outlined"
+                    placeholder="Choisir la nature du refus : "
                     density="compact"
                     clearable
                     :loading="loadingEnum"
@@ -393,12 +433,19 @@ watch(
                     counter="255"
                     class="mt-3 text-left"
                   />
-                </template>
-                <template v-else>
+                </div>
+              </template>
+
+              <!-- Mode VALIDER -->
+              <template v-else>
+                <div class="text-subtitle-1 font-weight-bold mb-1">
+                  Confirmer la demande
+                </div>
+                <div class="text-body-2 text-medium-emphasis">
                   Voulez-vous valider cette demande de maintenance de type
                   <strong class="text-primary">{{ demandeType }}</strong> ?
-                </template>
-              </div>
+                </div>
+              </template>
               
             </div>
           </v-col>
@@ -412,6 +459,11 @@ watch(
               <div class="text-caption text-grey">Code</div>
               <div class="text-body-2 font-weight-bold">{{ demandeCode || "—" }}</div>
             </v-col>
+             <v-col v-if="demandeDate" cols="6" sm="4"> 
+                <div class="text-caption text-grey">Date Demande</div>
+                <div div class="text-body-2 font-weight-bold">{{ formatDate(demandeDate) }}
+              </div>
+             </v-col>
             <v-col cols="6" sm="4">
               <div class="text-caption text-grey">Véhicule</div>
               <div class="text-body-2 font-weight-bold">{{ vehicleText || "—" }}</div>
@@ -424,11 +476,6 @@ watch(
               <div class="text-caption text-grey">Description</div>
               <div class="text-body-2 font-weight-bold">{{ demandeDescr }}</div>
             </v-col>
-           <v-col v-if="demandeDate" cols="6" sm="4"> 
-              <div class="text-caption text-grey">Date Demande</div>
-              <div div class="text-body-2 font-weight-bold">{{ formatDate(demandeDate) }}
-           </div>
-          </v-col>
           </v-row>
         </div>
 
@@ -485,23 +532,34 @@ watch(
 
       <!-- Actions -->
       <v-card-actions class="justify-end px-4 pb-3">
-        <v-btn
-          variant="text"
-          :disabled="loading"
-          @click="fermer"
-        >
-          Annuler
-        </v-btn>
-        <v-btn
-          :color="isRefus ? 'error' : 'success'"
-          variant="flat"
-          :prepend-icon="isRefus ? 'mdi-close-thick' : 'mdi-check-bold'"
-          :loading="loading"
-          :disabled="loading || (isPonctuelle && !classification) || (isRefus && (!typeRefus || loadingEnum))"
-          @click="confirmer"
-        >
-          {{ isRefus ? "Refuser la demande" : "Valider la demande" }}
-        </v-btn>
+        <template v-if="isConsultation">
+          <v-btn
+            variant="outlined"
+            color="grey-darken-1"
+            @click="fermer"
+          >
+            Fermer
+          </v-btn>
+        </template>
+        <template v-else>
+          <v-btn
+            variant="text"
+            :disabled="loading"
+            @click="fermer"
+          >
+            Annuler
+          </v-btn>
+          <v-btn
+            :color="isRefus ? 'error' : 'success'"
+            variant="flat"
+            :prepend-icon="isRefus ? 'mdi-close-thick' : 'mdi-check-bold'"
+            :loading="loading"
+            :disabled="loading || (isPonctuelle && !classification) || (isRefus && (!typeRefus || loadingEnum))"
+            @click="confirmer"
+          >
+            {{ isRefus ? "Refuser la demande" : "Valider la demande" }}
+          </v-btn>
+        </template>
       </v-card-actions>
     </v-card>
   </v-dialog>

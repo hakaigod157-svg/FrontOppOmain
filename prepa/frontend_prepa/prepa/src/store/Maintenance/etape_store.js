@@ -14,6 +14,7 @@ export const useEtapeStore = defineStore("etapeStore", {
         actions :[],
         fournisseurs :[],
         marques :[],
+        exect :[],
         loading: false,
     }),
 
@@ -280,6 +281,7 @@ export const useEtapeStore = defineStore("etapeStore", {
                             MAINT_CODE_REAL: maintCode,
                             MAINT_INTERV_REAL: data.intervReal,
                             MAINT_ACTION_REAL:  data.action ,
+                            MAINT_EXECUTION: data.exect,
                             MAINT_FNR_REAL:  data.fournisseur ,
                             MAINT_PRIX_REAL: data.prix ?? 0,
                             MAINT_MRAQUE_MARQUE: data.marque ,
@@ -317,7 +319,7 @@ export const useEtapeStore = defineStore("etapeStore", {
                             MAINT_CODE_REAL: maintCode,
                             MAINT_INTERV_REAL: data.intervReal ,
                             MAINT_DATE_PREVU: data.datePrevu || null,
-                            MAINT_ACTION_REAL: data.actionReal || "",
+                            MAINT_ACTION_REAL: data.actionReal || null,
                             // MAINT_FNR_REAL: data.fnrReal || "",
                             // MAINT_PRIX_REAL: data.prixReal || 0,
                             // MAINT_MRAQUE_MARQUE: data.marqueReal || "",
@@ -487,6 +489,47 @@ export const useEtapeStore = defineStore("etapeStore", {
                     );
                 }
                 return this.marques;
+            } catch (error) {
+                console.error("Tena tsy azo ilay marques mec : " , error);
+                if (error?.response?.status === 401) {
+                    await handleLogout();
+                }
+                return null;
+            }
+
+        },
+        
+        async getTypeExecution(){
+            const sessionId = localStorage.getItem("sessionId");
+            const { handleLogout } = useLogout();
+            
+            this.loading = true;
+            try {
+                const execution = await axios.get(Config.SERVER_URL + "api/getTypeExecution",
+                    {
+                        headers:{
+                            "Authorization" : sessionId
+                        }
+                    }
+                );
+                if (Array.isArray(execution.data)) {
+                    this.exect = execution.data.map(
+                        (mrkp) => ({ ...mrkp })
+                    );
+                } else if (
+                    execution.data &&
+                    Array.isArray(execution.data.target)
+                ) {
+                    this.exect = execution.data.target.map(
+                        (mrkp) => ({ ...mrkp })
+                    );
+                } else {
+                    this.exect = [];
+                    console.log(
+                        "TSISY Marques ao am base fa mande requeten'ise"
+                    );
+                }
+                return this.exect;
             } catch (error) {
                 console.error("Tena tsy azo ilay marques mec : " , error);
                 if (error?.response?.status === 401) {

@@ -1,6 +1,6 @@
 <script setup>
 /* global defineProps, defineEmits */
-import { ref, computed, watch } from "vue";
+import { ref, computed, watch, onMounted } from "vue";
 import dayjs from "dayjs";
 import { useDemandeMaintenance } from "@/store/Maintenance/demande_store";
 
@@ -179,7 +179,7 @@ const chargerDemande = async () => {
       }
       return;
     }
-
+    await store.getTypeMaint();
     const norm = normalizeDemande(data);
     form.value = {
       ...form.value,
@@ -198,10 +198,11 @@ const chargerDemande = async () => {
 };
 
 const listeTypesMaintenance = computed(() => {
-  return (store.enumerations || [])
+  return (store.typeMaintenance || [])
     .map((e) => e.enum_CODE)
     .filter(Boolean);
 });
+
 
 
 watch(
@@ -223,6 +224,16 @@ watch(
     }
   }
 );
+
+watch(
+  () => store.typeMaintenance,
+  (val) => {
+    console.log("Énumérations :", val);
+  },
+  { immediate: true, deep: true }
+);
+
+
 
 const fermer = () => {
   if (saving.value) return;
@@ -335,7 +346,6 @@ const enregistrer = async () => {
             text="Cette demande n'est plus en attente : elle est gérée dans Maintenance et n'est plus modifiable ici."
           />
 
-          <!-- Formulaire reprenant exactement la mise en page de editDemande -->
           <v-form ref="formRef" @submit.prevent="enregistrer">
             <v-row>
               <!-- CODE (Lecture seule / désactivé) -->
@@ -350,7 +360,7 @@ const enregistrer = async () => {
                 />
               </v-col>
 
-              <!-- DATE (Lecture seule / désactivé) -->
+              <!-- DATE -->
               <v-col cols="12" md="4">
                 <v-text-field
                   v-model="form.demande_DATE"
@@ -363,7 +373,7 @@ const enregistrer = async () => {
                 />
               </v-col>
 
-              <!-- TYPE (Modifiable uniquement si en attente) -->
+              <!-- TYPE -->
               <v-col cols="12" md="4">
                <v-select
                 v-model="form.demande_TYPE"
@@ -376,7 +386,7 @@ const enregistrer = async () => {
                 />
               </v-col>
 
-              <!-- VOITURE (Lecture seule / désactivé) -->
+              <!-- -->
               <v-col cols="12" md="4">
                 <v-text-field
                   v-model="form.demande_VOITURE"
@@ -388,7 +398,7 @@ const enregistrer = async () => {
                 />
               </v-col>
 
-              <!-- MARQUE (Lecture seule / désactivé) -->
+              <!-- MARQUE  -->
               <v-col cols="12" md="4">
                 <v-text-field
                   v-model="form.demande_MARQUE"
@@ -400,7 +410,7 @@ const enregistrer = async () => {
                 />
               </v-col>
 
-              <!-- AUTEUR (Visible dans Edit comme demandé, en lecture seule / désactivé) -->
+              <!-- AUTEUR (Visible dans Edit comme demandé) -->
               <v-col cols="12" md="4">
                 <v-text-field
                   v-model="form.demande_AUTEUR"

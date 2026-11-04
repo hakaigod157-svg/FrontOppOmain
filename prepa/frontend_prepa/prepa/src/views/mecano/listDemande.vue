@@ -69,12 +69,10 @@ const headersDemandes = [
   { title: "Auteur", key: "demande_AUTEUR" ,width:"90px"},
   { title: "Description", key: "demande_DESCR" , width:"500px" },
   {
-    title: "État",
-    key: "statut",
-    align: "center",
-    cellProps: ({ item }) => ({
+    title: "État",key: "statut",align: "center",cellProps: ({ item }) => ({
       style: getStatusCellStyle(item),
       class: "statut-col-td",
+      width:"90px"
     }),
   },
   // { title: "Étape en cours", key: "etape_EN_COURS" , width:"150px"},
@@ -84,7 +82,7 @@ const headersDemandes = [
   {
   title: "Actions",
   key: "actions",
-  width: "px",   
+  width: "180px",   
   sortable: false,
   align: "center",  
 },
@@ -171,6 +169,7 @@ const getStatusCellStyle = (item) => {
 };
 
 const ETAT_EN_ATTENTE = 1;
+const ETAT_REFUSEE = 3;
 
 const getEtat = (item) => item?.demande_ETAT ?? item?.DEMANDE_ETAT;
 const estEnAttente = (item) => {
@@ -179,6 +178,12 @@ const estEnAttente = (item) => {
   const s = String(item?.statut || "").toUpperCase().trim();
   if (s.includes("CRE") || s.includes("ATTENTE")) return true;
   return false;
+};
+const estRefusee = (item) => {
+  const etat = Number(getEtat(item));
+  if (etat === ETAT_REFUSEE) return true;
+  const s = String(item?.statut || "").toUpperCase().trim();
+  return s.includes("REFUS") || s.includes("ANNUL");
 };
 const dmdValider = (item) => !estEnAttente(item);
 
@@ -194,6 +199,13 @@ const refuserDemande = (item) => {
   if (!item) return;
   demandeAValider.value = item;
   modeValidation.value = "refuser";
+  ponctuelValider.value = true;
+};
+
+const consulterRefus = (item) => {
+  if (!item) return;
+  demandeAValider.value = item;
+  modeValidation.value = "consulter";
   ponctuelValider.value = true;
 };
 
@@ -222,9 +234,13 @@ const modifierDemande = (itemOrCode) => {
 const handleRowClick = (item) => {
   arreterClignotement(item);
   selectedDemande.value = item;
-  if (estEnAttente(item) || item.demande_ETAT==3 ){
-    dialogVisibleDetail.value=false
-    return
+  if (estEnAttente(item)) {
+    dialogVisibleDetail.value = false;
+    return;
+  }
+  if (estRefusee(item)) {
+    consulterRefus(item);
+    return;
   }
   dialogVisibleDetail.value = true;
 };
@@ -249,7 +265,7 @@ onMounted(async () => {
   <div class="page-demandes" :class="{ 'blur-effect': dialogVisibleDetail }">
 
     <v-card-actions density="compact" class="demandes__actions">
-      <h2>Demandes</h2>
+      <h2>DEMANDES</h2>
       <v-spacer />
       <v-btn 
       variant="elevated" color="#144f0e"
@@ -265,8 +281,7 @@ onMounted(async () => {
       </v-btn>
       <FormDialog
         v-model="showForm"
-        type-demande="Maintenance"
-        @saved="onSaved"
+        s@saved="onSaved"
       />
       <EditDialog
         v-model="showEdit"
@@ -324,56 +339,35 @@ onMounted(async () => {
       </template>
 
       <template v-slot:[`item.actions`]="{ item }">
-        <div class="actions-row-col">
+        <div class="d-flex align-center justify-center ga-1">
           <template v-if="estEnAttente(item)">
-            <v-btn
-              icon
-              size="x-small"
-              variant="text"
-              color="success"
-              aria-label="Valider"
-              @click.stop="arreterClignotement(item); validerDemande(item)"
-            >
-              <v-icon>mdi-check-circle-outline</v-icon>
-              <v-tooltip activator="parent" location="top">Valider</v-tooltip>
+            <v-btn icon size="small" variant="text" color="success" title="Valider"
+              @click.stop="arreterClignotement(item); validerDemande(item)">
+              <v-icon size="20">mdi-check-circle-outline</v-icon>
             </v-btn>
 
-            <v-btn
-              icon
-              size="x-small"
-              variant="text"
-              color="error"
-              aria-label="Refuser"
-              @click.stop="arreterClignotement(item); refuserDemande(item)"
-            >
-              <v-icon>mdi-close-circle-outline</v-icon>
-              <v-tooltip activator="parent" location="top">Refuser</v-tooltip>
+            <v-btn icon size="small" variant="text" color="error" title="Refuser"
+              @click.stop="arreterClignotement(item); refuserDemande(item)">
+              <v-icon size="20">mdi-close-circle-outline</v-icon>
             </v-btn>
 
-            <v-btn
-              icon
-              size="x-small"
-              variant="text"
-              color="warning"
-              aria-label="Modifier"
-              @click.stop="arreterClignotement(item); modifierDemande(item)"
-            >
-              <v-icon>mdi-pencil-outline</v-icon>
-              <v-tooltip activator="parent" location="top">Modifier</v-tooltip>
+            <v-btn icon size="small" variant="text" color="warning" title="Modifier"
+              @click.stop="arreterClignotement(item); modifierDemande(item)">
+              <v-icon size="20">mdi-pencil</v-icon>
+            </v-btn>
+          </template>
+
+          <template v-else-if="estRefusee(item)">
+            <v-btn icon size="small" variant="text" color="error" title="Voir le motif du refus"
+              @click.stop="consulterRefus(item)">
+              <v-icon size="20">mdi-eye-outline</v-icon>
             </v-btn>
           </template>
 
           <template v-else>
-            <v-btn
-              icon
-              size="x-small"
-              variant="text"
-              color="primary"
-              aria-label="Voir la maintenance"
-              @click.stop="handleRowClick(item)"
-            >
-              <v-icon>mdi-eye-outline</v-icon>
-              <v-tooltip activator="parent" location="top">Voir</v-tooltip>
+            <v-btn icon size="small" variant="text" color="primary" title="Voir la maintenance"
+              @click.stop="handleRowClick(item)">
+              <v-icon size="20">mdi-eye-outline</v-icon>
             </v-btn>
           </template>
         </div>
@@ -514,25 +508,7 @@ onMounted(async () => {
   text-align: center !important;
 }
 
-.actions-vertical-col {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  width: 100%;
-  min-width: 90px;
-  padding: 3px 0;
-}
 
-.action-btn-stacked {
-  font-size: 11px !important;
-  font-weight: 600 !important;
-  text-transform: none !important;
-  height: 22px !important;
-  min-height: 22px !important;
-  width: 100% !important;
-  padding: 0 8px !important;
-  justify-content: flex-start !important;
-}
 </style>
 
 <style>

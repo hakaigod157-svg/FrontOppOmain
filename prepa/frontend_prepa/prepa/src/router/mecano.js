@@ -4,7 +4,8 @@ import listeMaintenance from "@/views/mecano/listeMaintenance.vue";
 
 import useCheckSessionID from "@/composables/useCheckSessionID";
 import EditDemande from "@/views/mecano/editDemande.vue";
-import Calendrier from "@/views/mecano/calendrier.vue";
+// import Calendrier from "@/views/mecano/calendrier.vue";
+import Calendrier from "@/views/mecano/calendrier/Calendrier.vue";
 import NouvelleDMD from "@/views/mecano/nouvelleDMD.vue";
 
 const { checkSessionID } = useCheckSessionID();

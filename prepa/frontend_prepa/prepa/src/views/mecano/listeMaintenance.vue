@@ -22,7 +22,6 @@ const headersMaintenance = [
     align: "center",
   },
   { title: "Code", key: "maint_CODE", align: "start" },
-  // { title: "Date", key: "maint_DATE", align: "center" },
   { title: "Date Création", key: "maint_DATECRE" },
   { title: "Demande", key: "maint_DEMANDE" , align: "center" },
   { title: "Classification", key: "maint_CLASSIFICATION", align: "center" },
@@ -34,13 +33,14 @@ const headersMaintenance = [
       class: "statut-col-td",
     }),
   },
-  { title: "Étape en cours", key: "etape_EN_COURS" , width:"150px" },
-  // { title: "Liste", key: "liste" ,width:"150px" },
+  // { title: "Étape en cours", key: "etape_EN_COURS" , width:"150px" },
   { title: "Durée en jours", key: "duree" , align: "center"},
-  // { title: "Créé par", key: "maint_USERCRE", align: "center" },
-  // { title: "Date Modif.", key: "maint_DATEMODIF" , align: "center"},
-  // { title: "Modifié par", key: "maint_USERMODIF" , align: "center"},
   { title: "Actions", key: "actions", sortable: true, align: "center" },
+  // { title: "Modifié par", key: "maint_USERMODIF" , align: "center"},
+  // { title: "Date", key: "maint_DATE", align: "center" },
+  // { title: "Date Modif.", key: "maint_DATEMODIF" , align: "center"},
+  // { title: "Créé par", key: "maint_USERCRE", align: "center" },
+  // { title: "Liste", key: "liste" ,width:"150px" },
 ];
 
 const getStatusColor = (item) => {

@@ -38,7 +38,6 @@ export const useEtapeStore = defineStore("etapeStore", {
                         }
                     }
                 );
-                console.log("Efa nande tsara tany am base");
                 if (Array.isArray(response.data)) {
                     this.etapes = response.data.map(
                         (etp) => ({ ...etp })
@@ -180,8 +179,6 @@ export const useEtapeStore = defineStore("etapeStore", {
         },
 
 
-
-
         async getEtapeEnCours(demandeCode) {
             if (!demandeCode || demandeCode === "-") {
                 return null;
@@ -202,7 +199,7 @@ export const useEtapeStore = defineStore("etapeStore", {
                         }
                     }
                 );
-                console.log("Étape en cours récupérée depuis l'API :", response.data);
+                // console.log("Étape en cours récupérée depuis l'API :", response.data);
 
                 if (response.status === 204 || !response.data) {
                     this.etapeEnCours = null;
@@ -251,7 +248,7 @@ export const useEtapeStore = defineStore("etapeStore", {
                         }
                     }
                 );
-                console.log("[validerEtapePrepa] Étape PREPA validée :", response.data);
+                // console.log("[validerEtapePrepa] Étape PREPA validée :", response.data);
                 return response.data;
             } catch (error) {
                 console.error("Erreur lors de la validation PREPA :", error);
@@ -289,7 +286,6 @@ export const useEtapeStore = defineStore("etapeStore", {
                         }
                     }
                 );
-                console.log("[validerEtapeReal] Étape REAL validée :", response.data);
                 return response.data;
             } catch (error) {
                 console.error("Erreur lors de la validation REAL :", error);
@@ -326,7 +322,6 @@ export const useEtapeStore = defineStore("etapeStore", {
                         }
                     }
                 );
-                console.log("[ajouterEtapeReal] Étape REAL ajoutée :", response.data);
                 return response.data;
             } catch (error) {
                 console.error("Erreur lors de l'ajout d'étape REAL :", error);

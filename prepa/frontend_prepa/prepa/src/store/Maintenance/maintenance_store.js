@@ -147,9 +147,9 @@ export const maintStore = defineStore("maintStore", {
                         }
                     }
                 );
-                console.log(
-                    "Ireto ny données hitako" , response.data
-                );
+                // console.log(
+                //     "Ireto ny données hitako" , response.data
+                // );
                 if (Array.isArray(response.data)) {
                     this.maintnces = response.data.map(
                         (mtnce) => ({ ...mtnce })

@@ -1,22 +1,29 @@
-<!-- <script setup>
-// Légende du calendrier. Composant visuel : la liste arrive par props,
-// il suffit donc d'ajouter une entrée dans Calendrier.vue pour ajouter une ligne ici.
+<script setup>
 defineProps({
-  // [{ label, type?: 'badge' | 'dot' | 'validated', color?, icon? }]
-  // 'badge' (par défaut) = pastille colorée avec icône (classification)
+  // [{ label, type?: 'badge' | 'swatch' | 'status' | 'dot' | 'validated', color?, textColor?, icon? }]
   items: { type: Array, required: true },
-  title: { type: String, default: "Légende" }
+  title: { type: String, default: "Repères" },
+  label: { type: String, default: "Légende" }
 });
 </script>
 
 <template>
-  <section class="calendar-legend" aria-label="Légende du calendrier">
+  <section class="calendar-legend" :aria-label="label">
     <span class="legend-title">{{ title }}</span>
-
     <ul class="legend-list">
       <li v-for="item in items" :key="item.label" class="legend-item">
+        <span
+          v-if="item.type === 'swatch'"
+          class="legend-swatch"
+          :style="{ '--swatch-color': item.color }"
+        ></span>
+        <span
+          v-else-if="item.type === 'status'"
+          class="legend-status"
+          :style="{ '--status-bg': item.color, '--status-fg': item.textColor || '#334155' }"
+        ></span>
         <v-icon
-          v-if="!item.type || item.type === 'badge'"
+          v-else-if="!item.type || item.type === 'badge'"
           class="legend-badge"
           :style="{ '--badge-color': item.color }"
         >
@@ -24,7 +31,6 @@ defineProps({
         </v-icon>
         <span v-else-if="item.type === 'dot'" class="legend-dot"></span>
         <span v-else-if="item.type === 'validated'" class="legend-validated"></span>
-
         <span class="legend-label">{{ item.label }}</span>
       </li>
     </ul>
@@ -36,25 +42,23 @@ defineProps({
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px 20px;
-  padding: 10px 16px;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  background-color: #ffffff;
+  gap: 6px 16px;
+  padding: 8px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background-color: #fafafa;
 }
 
 .legend-title {
-  font-size: 0.85rem;
-  font-weight: 700;
-  letter-spacing: 0.4px;
-  text-transform: uppercase;
   color: #64748b;
+  font-size: 0.72rem;
+  font-weight: 600;
 }
 
 .legend-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px 20px;
+  gap: 6px 14px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -63,47 +67,62 @@ defineProps({
 .legend-item {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .legend-label {
-  font-size: 0.95rem;
-  color: #334155;
+  color: #475569;
+  font-size: 0.78rem;
 }
 
-/* Pastille de classification (même rendu que dans les puces) */
+.legend-swatch,
+.legend-status {
+  display: inline-block;
+  flex: 0 0 16px;
+  width: 16px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+.legend-swatch {
+  background-color: var(--swatch-color);
+}
+
+.legend-status {
+  background-color: var(--status-bg);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--status-fg) 12%, transparent);
+}
+
 .legend-badge {
   display: inline-flex;
-  flex: 0 0 22px;
+  flex: 0 0 18px;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
   background-color: var(--badge-color);
   color: #ffffff;
-  font-size: 14px;
+  font-size: 12px;
 }
 
-/* Point orange : nouvelle demande non sélectionnée */
 .legend-dot {
   display: inline-block;
-  flex: 0 0 10px;
-  width: 10px;
-  height: 10px;
+  flex: 0 0 9px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
   background-color: #f59e0b;
   box-shadow: 0 0 0 2px #ffffff, 0 0 0 3px rgba(120, 53, 15, 0.18);
 }
 
-/* Puce verte pâle : étape terminée */
 .legend-validated {
   display: inline-block;
-  flex: 0 0 24px;
-  width: 24px;
-  height: 14px;
+  flex: 0 0 18px;
+  width: 18px;
+  height: 12px;
   border: 1px solid #bcd9bc;
-  border-radius: 5px;
+  border-radius: 4px;
   background-color: #f0f8f0;
 }
-</style> -->
+</style>

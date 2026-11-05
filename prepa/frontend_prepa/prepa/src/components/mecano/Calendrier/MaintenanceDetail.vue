@@ -24,6 +24,10 @@ const unselectedTitle = computed(() =>
     ? props.maintenance.statusLabel
     : "Nouvelle demande non sélectionnée"
 );
+
+const emit = defineEmits(["view-maintenance"]);
+
+const viewMaintenance = () => emit("view-maintenance", props.maintenance);
 </script>
 
 <template>
@@ -56,13 +60,28 @@ const unselectedTitle = computed(() =>
           <div v-if="maintenance.classification">
             Classification : {{ maintenance.classification }}
           </div>
+          <v-btn
+            size="small"
+            variant="tonal"
+            color="primary"
+            prepend-icon="mdi-open-in-new"
+            class="mt-2 align-self-start"
+            @click.stop="viewMaintenance"
+          >
+            Voir maintenance
+          </v-btn>
         </div>
       </v-expansion-panel-text>
     </v-expansion-panel>
   </v-expansion-panels>
 
   <!-- Cas général -->
-  <div v-else class="slot-maintenance-item">
+  <div
+    v-else
+    class="slot-maintenance-item"
+    :class="{ 'is-clickable': !maintenance.isComplete }"
+    @click="!maintenance.isComplete && viewMaintenance()"
+  >
     <v-icon :color="iconColor" size="small">
       {{ maintenance.icon }}
     </v-icon>
@@ -83,6 +102,17 @@ const unselectedTitle = computed(() =>
         {{ maintenance.period }}
       </div>
     </div>
+    <v-btn
+      v-if="maintenance.isComplete"
+      size="small"
+      variant="tonal"
+      color="primary"
+      prepend-icon="mdi-open-in-new"
+      class="view-maintenance-button"
+      @click.stop="viewMaintenance"
+    >
+      Voir maintenance
+    </v-btn>
   </div>
 </template>
 
@@ -95,6 +125,22 @@ const unselectedTitle = computed(() =>
   border-left: 3px solid #cbd5e1;
   border-radius: 6px;
   background: #f1f5f9;
+  transition:
+    background-color 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
+
+  &:hover {
+    background: #dbeafe;
+    border-left-color: #2563eb;
+    box-shadow: 0 3px 10px rgba(30, 64, 175, 0.2);
+    transform: translateY(-1px);
+  }
+}
+
+.slot-maintenance-item.is-clickable {
+  cursor: pointer;
 }
 
 .new-request-indicator-inline {
@@ -106,6 +152,11 @@ const unselectedTitle = computed(() =>
   border-radius: 50%;
   background-color: #f59e0b;
   box-shadow: 0 0 0 2px #fff;
+}
+
+.slot-maintenance-item > div {
+  flex: 1;
+  min-width: 0;
 }
 
 .maintenance-step-label {
@@ -120,6 +171,36 @@ const unselectedTitle = computed(() =>
   border-radius: 8px !important;
   background: #f1f5f9;
   box-shadow: none !important;
+  transition:
+    background-color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
+}
+
+.slot-maintenance-panel:hover {
+  background: #dbeafe;
+  box-shadow: 0 3px 10px rgba(30, 64, 175, 0.2) !important;
+  transform: translateY(-1px);
+}
+
+.slot-maintenance-panel:hover :deep(.v-expansion-panel-title) {
+  background: #dbeafe;
+}
+
+.view-maintenance-button {
+  flex-shrink: 0;
+  align-self: center;
+  margin-left: auto;
+}
+
+@media (max-width: 600px) {
+  .slot-maintenance-item {
+    flex-wrap: wrap;
+  }
+
+  .view-maintenance-button {
+    margin-left: auto;
+  }
 }
 
 .slot-maintenance-panel :deep(.v-expansion-panel-title) {

@@ -1559,7 +1559,7 @@ const onActionChange = (item) => {
    
     <v-card-actions class="px-4 py-2">
   <div class="text-caption text-medium-emphasis ml-2">
-    Module Maintenance &bull; ERPO
+    OMAIN &bull; ERPO
   </div>
   <v-spacer />
 

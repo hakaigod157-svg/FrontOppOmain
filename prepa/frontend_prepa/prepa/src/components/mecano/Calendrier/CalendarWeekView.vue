@@ -8,6 +8,7 @@ defineProps({
   days: { type: Array, required: true },
   // Créneaux affichés : [{ value: 7, label: "07:00" }, ...]
   hours: { type: Array, required: true },
+  loading: { type: Boolean, default: false },
   isInWorkHours: { type: Boolean, default: false },
   topPercent: { type: Number, default: 0 }
 });
@@ -52,16 +53,23 @@ const emit = defineEmits(["open-day", "open-slot"]);
           :key="'allday-' + idx"
           class="all-day-slot"
         >
-          <div v-if="day.maintenances.length" class="week-maintenance-list">
-            <MaintenanceChip
-              v-for="maintenance in day.maintenances"
-              :key="maintenance.id"
-              :maintenance="maintenance"
-              variant="week"
-              @select="emit('open-slot', day.date, null)"
-            />
-          </div>
-          <span v-else class="empty-badge">Aucune intervention</span>
+          <v-skeleton-loader
+            v-if="loading"
+            type="chip"
+            class="week-cell-skeleton"
+          />
+          <template v-else>
+            <div v-if="day.maintenances.length" class="week-maintenance-list">
+              <MaintenanceChip
+                v-for="maintenance in day.maintenances"
+                :key="maintenance.id"
+                :maintenance="maintenance"
+                variant="week"
+                @select="emit('open-slot', day.date, null)"
+              />
+            </div>
+            <span v-else class="empty-badge">Aucune intervention</span>
+          </template>
         </div>
       </div>
 
@@ -101,7 +109,12 @@ const emit = defineEmits(["open-day", "open-slot"]);
             class="week-time-slot"
             @click="emit('open-slot', day.date, hour.value)"
           >
-            <div class="slot-hover-content">
+            <v-skeleton-loader
+              v-if="loading"
+              type="text"
+              class="week-slot-skeleton"
+            />
+            <div v-else class="slot-hover-content">
               <v-icon size="x-small">mdi-plus</v-icon>
               <span>Libre ({{ hour.label }})</span>
             </div>
@@ -198,6 +211,16 @@ const emit = defineEmits(["open-day", "open-slot"]);
   justify-content: center;
 }
 
+.week-cell-skeleton {
+  width: min(100%, 110px);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.week-cell-skeleton :deep(.v-skeleton-loader__chip) {
+  margin: 0 auto;
+}
+
 .week-maintenance-list {
   display: flex;
   flex-direction: column;
@@ -272,6 +295,7 @@ const emit = defineEmits(["open-day", "open-slot"]);
   align-items: center;
   justify-content: center;
   transition: background-color 0.15s ease;
+  position: relative;
 
   &:hover {
     background-color: #e8f5e9;
@@ -280,6 +304,11 @@ const emit = defineEmits(["open-day", "open-slot"]);
       opacity: 1;
     }
   }
+}
+
+.week-slot-skeleton {
+  width: 58%;
+  opacity: 0.7;
 }
 
 .slot-hover-content {

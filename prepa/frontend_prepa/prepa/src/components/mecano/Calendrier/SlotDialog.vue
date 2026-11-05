@@ -1,19 +1,24 @@
 <script setup>
-// Dialogue "Détail du créneau" (date, plage horaire, maintenances).
-// Composant visuel : la date et la plage horaire arrivent déjà formatées.
+import { computed } from "vue";
 import MaintenanceDetail from "./MaintenanceDetail.vue";
 
-defineProps({
+const props = defineProps({
   modelValue: { type: Boolean, default: false },
   dateLabel: { type: String, default: "" },
-  // Ex. "09:00 - 10:00" ; vide quand le dialogue concerne toute la journée
   hourLabel: { type: String, default: "" },
   maintenances: { type: Array, default: () => [] },
   canJumpToDay: { type: Boolean, default: true }
 });
 
+const maintenancesEnCours = computed(() =>
+  props.maintenances.filter((m) => !m.isComplete)
+);
+const maintenancesTerminees = computed(() =>
+  props.maintenances.filter((m) => m.isComplete)
+);
+
 // update:modelValue : ouverture/fermeture (v-model) · open-day : bouton "Voir ce jour"
-const emit = defineEmits(["update:modelValue", "open-day"]);
+const emit = defineEmits(["update:modelValue", "open-day", "open-maintenance"]);
 </script>
 
 <template>
@@ -60,14 +65,48 @@ const emit = defineEmits(["update:modelValue", "open-day"]);
             Ce créneau est actuellement libre dans le calendrier de l'atelier.
           </div>
         </v-alert>
-        <div v-else class="slot-maintenance-list">
-          <MaintenanceDetail
-            v-for="maintenance in maintenances"
-            :key="maintenance.id"
-            :maintenance="maintenance"
-            variant="dialog"
-          />
-        </div>
+
+        <template v-else>
+          <!-- En cours -->
+          <div v-if="maintenancesEnCours.length" class="mb-4">
+            <div class="slot-section-title">
+              <!-- <v-icon size="16" color="primary" class="mr-1">mdi-progress-wrench</v-icon> -->
+              En cours
+              <v-chip size="x-small" color="primary" variant="tonal" class="ml-2">
+                {{ maintenancesEnCours.length }}
+              </v-chip>
+            </div>
+            <div class="slot-maintenance-list">
+              <MaintenanceDetail
+                v-for="maintenance in maintenancesEnCours"
+                :key="maintenance.id"
+                :maintenance="maintenance"
+                variant="dialog"
+                @view-maintenance="emit('open-maintenance', $event)"
+              />
+            </div>
+          </div>
+
+          <!-- Terminées -->
+          <div v-if="maintenancesTerminees.length">
+            <div class="slot-section-title slot-section-title--done">
+              <!-- <v-icon size="16" color="success" class="mr-1">mdi-check-circle-outline</v-icon> -->
+              Terminées
+              <v-chip size="x-small" color="success" variant="tonal" class="ml-2">
+                {{ maintenancesTerminees.length }}
+              </v-chip>
+            </div>
+            <div class="slot-maintenance-list">
+              <MaintenanceDetail
+                v-for="maintenance in maintenancesTerminees"
+                :key="maintenance.id"
+                :maintenance="maintenance"
+                variant="dialog"
+                @view-maintenance="emit('open-maintenance', $event)"
+              />
+            </div>
+          </div>
+        </template>
       </v-card-text>
 
       <v-card-actions class="pa-3 justify-end ga-2">
@@ -111,5 +150,20 @@ const emit = defineEmits(["update:modelValue", "open-day"]);
 .slot-maintenance-list {
   display: grid;
   gap: 6px;
+}
+
+.slot-section-title {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #1e40af;
+}
+
+.slot-section-title--done {
+  color: #166534;
 }
 </style>

@@ -53,27 +53,20 @@ export const useDemandeMaintenance = defineStore("demandeMaintenance", {
                     );
 
                 } else {
-
                     this.demandes = [];
-
                     console.log(
                         "vide be nenla base , tsy misy na 1 ary"
                     );
                 }
-
             } catch (error) {
-
                 console.error(
                     "Erreur lors du chargement des demandes :",
                     error
                 );
-
                 this.demandes = [];
-
                 await handleLogout();
-
+                alert("Vous avez été déconnecté")
             } finally {
-
                 this.loading = false;
             }
         },
@@ -179,6 +172,7 @@ export const useDemandeMaintenance = defineStore("demandeMaintenance", {
 
                 if (error.response?.status === 401) {
                     await handleLogout();
+                    alert("Vous avez été déconnecté")
                 }
             } finally {
                 this.loading = false;
@@ -225,6 +219,7 @@ export const useDemandeMaintenance = defineStore("demandeMaintenance", {
                        console.error("Erreur de récuperation ACTIONS (/getTypeRefus) : " , error);
                        if (error?.response?.status === 401) {
                            await handleLogout();
+                           alert("Vous avez été déconnecté")
                        }
                        return null;
                    } finally {
@@ -257,6 +252,7 @@ export const useDemandeMaintenance = defineStore("demandeMaintenance", {
                 console.error("Erreur lors de la validation de la demande :", error);
                 if (error.response?.status === 401) {
                     await handleLogout();
+                    alert("Vous avez été déconnecté")
                 }
                 throw error;
             } finally {
@@ -287,6 +283,7 @@ export const useDemandeMaintenance = defineStore("demandeMaintenance", {
                 console.error("Erreur lors de la validation de la demande :", error);
                 if (error.response?.status === 401) {
                     await handleLogout();
+                    alert("Vous avez été déconnecté")
                 }
             } finally {
                 this.loading = false;
@@ -330,6 +327,7 @@ export const useDemandeMaintenance = defineStore("demandeMaintenance", {
                 );
                 this.marques = [];
                 await handleLogout();
+                alert("Vous avez été déconnecté")
             } finally {
                 this.loading = false;
             }
@@ -363,6 +361,7 @@ export const useDemandeMaintenance = defineStore("demandeMaintenance", {
                 );
                 if (error?.response?.status === 401) {
                     await handleLogout();
+                    alert("Vous avez été déconnecté")
                 }
                 return null;
             } finally {
@@ -395,6 +394,7 @@ export const useDemandeMaintenance = defineStore("demandeMaintenance", {
 
                 if (error.response?.status === 401) {
                     await handleLogout();
+                    alert("Vous avez été déconnecté")
                 }
 
                 throw error;
@@ -435,6 +435,7 @@ export const useDemandeMaintenance = defineStore("demandeMaintenance", {
 
                 if (error.response?.status === 401) {
                     await handleLogout();
+                    alert("Vous avez été déconnecté")
                 }
 
                 throw error;
@@ -479,6 +480,7 @@ export const useDemandeMaintenance = defineStore("demandeMaintenance", {
 
                 if (error.response?.status === 401) {
                     await handleLogout();
+                    alert("Vous avez été déconnecté")
                 }
 
                 throw error;
@@ -617,6 +619,7 @@ export const useDemandeMaintenance = defineStore("demandeMaintenance", {
 
                 if (error?.response?.status === 401) {
                     await handleLogout();
+                    alert("Vous avez été déconnecté")
                 }
 
                 return null;
@@ -661,6 +664,7 @@ export const useDemandeMaintenance = defineStore("demandeMaintenance", {
 
                 if (error?.response?.status === 401) {
                     await handleLogout();
+                    alert("Vous avez été déconnecté")
                 }
 
                 return null;
@@ -700,6 +704,7 @@ export const useDemandeMaintenance = defineStore("demandeMaintenance", {
 
                 if (error?.response?.status === 401) {
                     await handleLogout();
+                    alert("Vous avez été déconnecté")
                 }
 
                 return null;
@@ -743,6 +748,7 @@ export const useDemandeMaintenance = defineStore("demandeMaintenance", {
 
                 if (error?.response?.status === 401) {
                     await handleLogout();
+                    alert("Vous avez été déconnecté")
                 }
 
                 return null;

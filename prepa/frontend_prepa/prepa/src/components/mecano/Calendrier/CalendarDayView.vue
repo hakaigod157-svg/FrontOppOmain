@@ -4,15 +4,15 @@
 import MaintenanceDetail from "./MaintenanceDetail.vue";
 
 defineProps({
-  // { number, monthShort, longName, weekNumber, isToday }
+  
   day: { type: Object, required: true },
   maintenances: { type: Array, default: () => [] },
-  // Créneaux affichés : [{ value: 7, label: "07:00" }, ...]
+  loading: { type: Boolean, default: false },
   hours: { type: Array, required: true }
 });
 
 // open-slot : clic sur un créneau horaire (heure)
-const emit = defineEmits(["open-slot"]);
+const emit = defineEmits(["open-slot", "open-maintenance"]);
 </script>
 
 <template>
@@ -40,7 +40,13 @@ const emit = defineEmits(["open-slot"]);
 
       <!-- Info créneaux disponibles -->
       <div class="d-flex align-center ga-2">
+        <v-skeleton-loader
+          v-if="loading"
+          type="chip"
+          class="day-summary-skeleton"
+        />
         <v-chip
+          v-else
           color="success"
           variant="tonal"
           size="small"
@@ -55,13 +61,23 @@ const emit = defineEmits(["open-slot"]);
 
     <v-divider />
 
-    <div v-if="maintenances.length" class="day-maintenance-list pa-4">
+    <div v-if="loading" class="day-maintenance-list pa-4">
+      <div class="text-caption text-medium-emphasis mb-2">Chargement des maintenances…</div>
+      <v-skeleton-loader
+        v-for="index in 2"
+        :key="`day-maintenance-skeleton-${index}`"
+        type="list-item-two-line"
+        class="day-maintenance-skeleton"
+      />
+    </div>
+    <div v-else-if="maintenances.length" class="day-maintenance-list pa-4">
       <div class="text-caption text-medium-emphasis mb-2">Maintenances prévues ce jour</div>
       <MaintenanceDetail
         v-for="maintenance in maintenances"
         :key="maintenance.id"
         :maintenance="maintenance"
         variant="day"
+        @view-maintenance="emit('open-maintenance', $event)"
       />
     </div>
 
@@ -80,7 +96,12 @@ const emit = defineEmits(["open-slot"]);
 
         <!-- Contenu de la plage horaire -->
         <div class="day-schedule-slot">
-          <div class="empty-slot-card">
+          <v-skeleton-loader
+            v-if="loading"
+            type="text"
+            class="day-slot-skeleton"
+          />
+          <div v-else class="empty-slot-card">
             <div class="d-flex align-center justify-space-between w-100">
               <div class="d-flex align-center ga-2 text-medium-emphasis">
                 <v-icon size="small" color="grey">mdi-wrench-clock-outline</v-icon>
@@ -196,6 +217,29 @@ const emit = defineEmits(["open-slot"]);
   padding-left: 16px;
   display: flex;
   align-items: center;
+}
+
+.day-summary-skeleton {
+  width: 190px;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.day-summary-skeleton :deep(.v-skeleton-loader__chip) {
+  margin: 0;
+}
+
+.day-maintenance-skeleton {
+  margin-bottom: 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+}
+
+.day-slot-skeleton {
+  width: 100%;
+  height: 42px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
 }
 
 .empty-slot-card {

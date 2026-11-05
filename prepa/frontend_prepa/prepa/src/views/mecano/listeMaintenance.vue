@@ -1,23 +1,42 @@
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import TableVirtuelle from "@/components/mecano/TableVirtuelle.vue";
 import DetailMaintenance from "@/components/mecano/Maintenance/DetailMaintenance.vue";
+import CalendarLegend from "@/components/mecano/Calendrier/CalendarLegend.vue";
 import { maintStore } from "@/store/Maintenance/maintenance_store";
 import { useEtapeStore } from "@/store/Maintenance/etape_store";
+import { useDemandeMaintenance } from "@/store/Maintenance/demande_store";
+import { getMaintenanceTypeColor } from "@/utils/maintenanceTypeColor";
 
 const searchQuery = ref("");
 const loading = ref(false);
 const storeMtnce = maintStore();
 const storeEtape = useEtapeStore();
+const demandeStore = useDemandeMaintenance();
+const route = useRoute();
+const router = useRouter();
+const highlightedMaintenanceCode = computed(() =>
+  String(route.query.highlightMaint || "")
+);
 
 const dialogVisible = ref(false);
 const selectedMaintenance = ref(null);
+
+const clearMaintenanceHighlight = (item) => {
+  const code = String(item?.maint_CODE || item?.MAINT_CODE || "");
+  if (!code || code !== highlightedMaintenanceCode.value) return;
+
+  const query = { ...route.query };
+  delete query.highlightMaint;
+  router.replace({ name: "maintenance-liste", query });
+};
 
 const headersMaintenance = [
   {
     title: "",
     key: "badge_statut",
-    width: "14px",
+    width: "70px",
     sortable: false,
     align: "center",
   },
@@ -42,38 +61,6 @@ const headersMaintenance = [
   // { title: "Créé par", key: "maint_USERCRE", align: "center" },
   // { title: "Liste", key: "liste" ,width:"150px" },
 ];
-
-const getStatusColor = (item) => {
-  if (!item) return "#1976d2";
-  const s = String(item.statut || "").toUpperCase().trim();
-
-  if (s.includes("TERMIN") ||
-    s.includes("CLOTUR") ||
-    s.includes("FINI") ||
-    s.includes("PRET")
-  ) {
-    return "#0b3b17";
-  }
-
-  if (s.includes("EN COURS") || s.includes("COURS")) {return "#f57c00";
-  }
-
-  return "#1976d2";
-};
-
-const getStatusTooltip = (item) => {
-  if (!item) return "";
-  const s = String(item.statut || "").toUpperCase().trim();
-  if (
-    s.includes("TERMIN") ||
-    s.includes("CLOTUR") ||
-    s.includes("FINI") ||
-    s.includes("PRET")
-  ) {return item.statut || "Prêt à terminer";
-  }
-  if (s.includes("EN COURS") || s.includes("COURS")) return "Demande en cours";
-  return "Attente validation";
-};
 
 const getStatusText = (item) => {
   if (!item) return "ATTENTE VALIDATION";
@@ -110,11 +97,31 @@ const getStatusCellStyle = (item) => {
   };
 };
 
+const maintenanceLegendItems = computed(() => {
+  const types = [...new Set(
+    (demandeStore.typeMaintenance || [])
+      .map((entry) => String(entry?.enum_CODE ?? entry?.ENUM_CODE ?? entry?.enum_code ?? entry ?? "").trim())
+      .filter(Boolean)
+  )].sort((first, second) => first.localeCompare(second));
+
+  return [
+    ...types.map((type) => ({
+      label: type,
+      type: "swatch",
+      color: getMaintenanceTypeColor(type, demandeStore.typeMaintenance)
+    })),
+    // { label: "À valider / en attente", type: "status", color: "#dbeafe", textColor: "#1e40af" },
+    // { label: "En cours", type: "status", color: "#ffedd5", textColor: "#9a3412" },
+    // { label: "Terminée", type: "status", color: "#dcfce7", textColor: "#0b3b17" },
+    // { label: "Refusée / annulée", type: "status", color: "#fee2e2", textColor: "#991b1b" }
+  ];
+});
+
 const chargerMaintenances = async () => {
-  await storeMtnce.getMaintenances();
+  await Promise.all([storeMtnce.getMaintenances(), demandeStore.getTypeMaint()]);
   await Promise.all(
     storeMtnce.maintnces.map(async (item) => {
-      const code = item.maint_DEMANDE;
+      const code = item.maint_DEMANDE ;
       if (code && code !== "-") {
         const etape = await storeEtape.getEtapeEnCours(code);
         if (etape) {
@@ -132,6 +139,7 @@ onMounted(async () => {
 });
 
 const handleRowClick = (item) => {
+  clearMaintenanceHighlight(item);
   selectedMaintenance.value = item;
   dialogVisible.value = true;
 };
@@ -143,6 +151,7 @@ const fermerDialog = async () => {
 };
 
 const voir = (item) => {
+  clearMaintenanceHighlight(item);
   selectedMaintenance.value = item;
   dialogVisible.value = true;
 };
@@ -178,6 +187,7 @@ const voir = (item) => {
       :search="searchQuery"
       :loading="loading || storeMtnce.loading"
       :height="550"
+      :highlighted-maintenance-code="highlightedMaintenanceCode"
       :date-cols="['maint_DATE', 'maint_DATECRE', 'maint_DATEMODIF']"
       @click:row="handleRowClick"
     >
@@ -185,8 +195,8 @@ const voir = (item) => {
         <div class="badge-col-wrapper">
           <span
             class="status-badge-indicator"
-            :style="{ backgroundColor: getStatusColor(item) }"
-            :title="getStatusTooltip(item)"
+            :style="{ backgroundColor: getMaintenanceTypeColor(item.maint_TYPE, demandeStore.typeMaintenance) }"
+            :title="item.maint_TYPE || 'Type non renseigné'"
           ></span>
         </div>
       </template>
@@ -210,13 +220,19 @@ const voir = (item) => {
       </template>
     </TableVirtuelle>
 
+    <CalendarLegend
+      :items="maintenanceLegendItems"
+      title="Type et statut"
+      label="Légende de la liste des maintenances"
+    />
+
     <v-dialog
       v-if="dialogVisible"
       v-model="dialogVisible"
       :persistent="true"
       width="1610px"
       max-width="100vw"
-      height="720px"
+      height="750px"
       class="maintenance-dialog"
     >
       <DetailMaintenance
@@ -288,8 +304,8 @@ const voir = (item) => {
 
 .status-badge-indicator {
   display: inline-block;
-  width: 5px;
-  height: 22px;
+  width: 70px;
+  height: 30px;
   border-radius: 3px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
   transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s ease;
@@ -299,6 +315,14 @@ const voir = (item) => {
 .status-badge-indicator:hover {
   transform: scaleY(1.15) scaleX(1.4);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+
+@keyframes maintenance-row-clignote {
+  50% { background-color: #fff3bf; }
+}
+
+:deep(.maintenance-calendrier-clignote > td) {
+  animation: maintenance-row-clignote 1s ease-in-out infinite;
 }
 
 .statut-col-cell {

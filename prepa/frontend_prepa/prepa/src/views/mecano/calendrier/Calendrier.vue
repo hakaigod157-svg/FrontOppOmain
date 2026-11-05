@@ -14,13 +14,16 @@
  *   7. Dialogue, snackbar et actions
  */
 import { computed, onMounted, onUnmounted, ref } from "vue";
+import { useRouter } from "vue-router";
 import { maintStore } from "@/store/Maintenance/maintenance_store";
 import { useEtapeStore } from "@/store/Maintenance/etape_store";
 import { useDemandeMaintenance } from "@/store/Maintenance/demande_store";
+import { getMaintenanceTypeColor } from "@/utils/maintenanceTypeColor";
 import CalendarDayView from "@/components/mecano/Calendrier/CalendarDayView.vue";
 import CalendarMonthView from "@/components/mecano/Calendrier/CalendarMonthView.vue";
 import CalendarWeekView from "@/components/mecano/Calendrier/CalendarWeekView.vue";
 import SlotDialog from "@/components/mecano/Calendrier/SlotDialog.vue";
+import CalendarLegend from "@/components/mecano/Calendrier/CalendarLegend.vue";
 
 // ====================================================
 // 1. CONFIGURATION
@@ -31,7 +34,6 @@ import SlotDialog from "@/components/mecano/Calendrier/SlotDialog.vue";
 // Heures affichées dans les vues semaine et jour (07:00 à 19:00)
 const HOURS = Array.from({ length: 13 }, (_, index) => index + 7);
 
-// Lundi en premier
 const WEEK_DAYS = [
   "Lundi",
   "Mardi",
@@ -61,12 +63,12 @@ const MAINTENANCE_FILTERS = [
   // }
 ];
 
-// Style par classification (le premier `match` trouvé gagne).
+// Icône par classification ; la couleur vient du type de maintenance de l'API.
 const CLASSIFICATION_STYLES = [
-  { match: "PREVENT", color: "#2563eb", icon: "mdi-shield-check" },
-  { match: "CURAT", color: "#ea580c", icon: "mdi-wrench" },
-  { match: "CORRECT", color: "#dc2626", icon: "mdi-alert-circle" },
-  { match: "PNEU", color: "#7c3aed", icon: "mdi-tire" }
+  { match: "PREVENT", icon: "mdi-shield-check" },
+  { match: "CURAT", icon: "mdi-wrench" },
+  { match: "CORRECT", icon: "mdi-alert-circle" },
+  { match: "PNEU", icon: "mdi-tire" }
 ];
 const FALLBACK_CLASSIFICATION_ICON = "mdi-car-wrench";
 
@@ -76,7 +78,7 @@ const STATUS_LABELS = [
   ["isNotInProgress", "Arrêtée après validation"],
   ["isUnselected", "Nouvelle demande non sélectionnée"]
 ];
-const DEFAULT_STATUS_LABEL = "Étape à faire";
+const DEFAULT_STATUS_LABEL = "En cours";
 
 // Comment lire chaque famille d'étapes renvoyée par le store d'étapes.
 const STEP_SOURCES = {
@@ -218,22 +220,12 @@ const parseInputValue = (value) => {
 const pickFirst = (source, fields) =>
   fields.map((field) => source[field]).find((value) => value != null);
 
-const getClassificationStyle = (classification = "") => {
+const getClassificationIcon = (classification = "") => {
   const normalized = String(classification).toUpperCase();
   const known = CLASSIFICATION_STYLES.find(({ match }) =>
     normalized.includes(match)
   );
-  if (known) return known;
-
-  // Couleur stable dérivée du texte pour les classifications inconnues.
-  let hash = 0;
-  for (let index = 0; index < normalized.length; index++) {
-    hash = (hash * 31 + normalized.charCodeAt(index)) % 360;
-  }
-  return {
-    color: `hsl(${hash || 175}, 68%, 38%)`,
-    icon: FALLBACK_CLASSIFICATION_ICON
-  };
+  return known?.icon ?? FALLBACK_CLASSIFICATION_ICON;
 };
 
 /** Transforme les étapes brutes d'une source en étapes normalisées, triées. */
@@ -252,11 +244,15 @@ const buildStepPlan = (rawSteps, source) =>
     .sort((first, second) => first.date - second.date);
 
 /** Construit { startDate, endDate, steps } ou null si aucune date exploitable. */
-const buildSchedule = ({ preparation, realization }) => {
+const buildSchedule = ({ preparation, realization, maintenanceCreatedAt }) => {
   const prepPlan = buildStepPlan(preparation, STEP_SOURCES.preparation);
   const realPlan = buildStepPlan(realization, STEP_SOURCES.realization);
 
-  const startDate = prepPlan[0]?.date ?? realPlan[0]?.date;
+  // Les dates prévues des étapes sont des échéances. La maintenance commence
+  // à sa création/confirmation ; les anciennes données sans cette date gardent
+  // le repli sur leur première étape planifiée.
+  const startDate =
+    dateOnly(maintenanceCreatedAt) ?? prepPlan[0]?.date ?? realPlan[0]?.date;
   const endDate = realPlan.at(-1)?.date ?? prepPlan.at(-1)?.date;
   if (!startDate || !endDate) return null;
 
@@ -301,14 +297,18 @@ const getVehicleNumber = (maintenance, demand) =>
   "";
 
 const getDemandCode = (demand) =>
-  String(demand.demande_CODE || demand.DEMANDE_CODE || "");
+  String(demand.demande_CODE);
 
 const getMaintenanceDemandCode = (maintenance) =>
-  String(maintenance.maint_DEMANDE || maintenance.MAINT_DEMANDE || "");
+  String(maintenance.maint_DEMANDE);
 
 const buildMaintenanceEvent = ({ maintenance, code, schedule, demand }) => {
   const classification = maintenance.maint_CLASSIFICATION;
-  const { color, icon } = getClassificationStyle(classification);
+  const color = getMaintenanceTypeColor(
+    maintenance.maint_TYPE,
+    demandeStore.typeMaintenance
+  );
+  const icon = getClassificationIcon(classification);
 
   return {
     id: code,
@@ -361,9 +361,43 @@ const projectOnDate = (event, day) => {
 const maintenanceStore = maintStore();
 const etapeStore = useEtapeStore();
 const demandeStore = useDemandeMaintenance();
+const router = useRouter();
+
+const getMaintenanceTypeLabel = (entry) =>
+  String(entry?.enum_CODE ?? entry?.ENUM_CODE ?? entry?.enum_code ?? entry ?? "").trim();
+
+const legendItems = computed(() => {
+  const types = [...new Set(
+    (demandeStore.typeMaintenance || []).map(getMaintenanceTypeLabel).filter(Boolean)
+  )].sort((first, second) => first.localeCompare(second));
+
+  return [
+    ...types.map((type) => ({
+      label: type,
+      type: "swatch",
+      color: getMaintenanceTypeColor(type, demandeStore.typeMaintenance)
+    })),
+    // { label: "Demande à sélectionner", type: "dot" },
+    { label: "Étape terminée", type: "validated" }
+  ];
+});
+
+const openMaintenanceInList = (maintenance) => {
+  const code = maintenance?.code || maintenance?.maint_CODE || maintenance?.MAINT_CODE;
+  if (!code) return;
+
+  router.push({
+    name: "maintenance-liste",
+    query: { highlightMaint: String(code) }
+  });
+};
 
 const events = ref([]);
-const loading = ref(false);
+// Affiche les placeholders dès l'ouverture, y compris pendant le chargement
+// initial de la liste des types de maintenance.
+const loading = ref(true);
+const loadingRequest = ref(false);
+const hasLoadedOnce = ref(false);
 const maintenanceFilter = ref(MAINTENANCE_FILTERS[0].value);
 
 const visibleEvents = computed(() => {
@@ -392,8 +426,9 @@ const fetchRawSteps = async (code) => {
 };
 
 const loadMaintenances = async () => {
-  if (loading.value) return;
-  loading.value = true;
+  if (loadingRequest.value) return;
+  loadingRequest.value = true;
+  if (!hasLoadedOnce.value) loading.value = true;
 
   try {
     await Promise.all([
@@ -410,7 +445,11 @@ const loadMaintenances = async () => {
       const code = maintenance.maint_CODE || maintenance.code;
       if (!code) continue;
 
-      const schedule = buildSchedule(await fetchRawSteps(code));
+      const schedule = buildSchedule({
+        ...(await fetchRawSteps(code)),
+        maintenanceCreatedAt:
+          maintenance.maint_DATECRE ?? maintenance.MAINT_DATECRE
+      });
       if (!schedule) continue;
 
       result.push(
@@ -424,10 +463,12 @@ const loadMaintenances = async () => {
     }
 
     events.value = result;
+    hasLoadedOnce.value = true;
   } catch (error) {
     console.error("Chargement des maintenances impossible :", error);
   } finally {
     loading.value = false;
+    loadingRequest.value = false;
   }
 };
 
@@ -455,7 +496,8 @@ const topPercent = computed(() => {
 let refreshTimer = null;
 let clockTimer = null;
 
-onMounted(() => {
+onMounted(async () => {
+  await demandeStore.getTypeMaint();
   loadMaintenances();
   refreshTimer = setInterval(loadMaintenances, REFRESH_INTERVAL_MS);
   clockTimer = setInterval(() => {
@@ -627,6 +669,12 @@ const jumpToDayView = (date) => {
 };
 </script>
 
+
+
+
+
+
+
 <template>
   <div class="calendar-page">
     <!-- BARRE D'OUTILS PRINCIPALE DU CALENDRIER -->
@@ -738,6 +786,7 @@ const jumpToDayView = (date) => {
         v-if="currentView === 'month'"
         :cells="monthCells"
         :week-day-names="WEEK_DAYS"
+        :loading="loading"
         @select-day="selectDay"
         @open-day="jumpToDayView"
         @open-slot="openSlotDialog"
@@ -749,6 +798,7 @@ const jumpToDayView = (date) => {
         :hours="HOUR_SLOTS"
         :is-in-work-hours="isInWorkHours"
         :top-percent="topPercent"
+        :loading="loading"
         @open-day="jumpToDayView"
         @open-slot="openSlotDialog"
       />
@@ -758,9 +808,17 @@ const jumpToDayView = (date) => {
         :day="selectedDay"
         :maintenances="selectedDayMaintenances"
         :hours="HOUR_SLOTS"
+        :loading="loading"
         @open-slot="(hour) => openSlotDialog(selectedDate, hour)"
+        @open-maintenance="openMaintenanceInList"
       />
     </v-card>
+
+    <CalendarLegend
+      :items="legendItems"
+      title="Types et repères"
+      label="Légende du calendrier des maintenances"
+    />
 
     <!-- DIALOGUE INTERACTIF DU CRÉNEAU / DU JOUR -->
     <SlotDialog
@@ -770,6 +828,7 @@ const jumpToDayView = (date) => {
       :maintenances="dialogMaintenances"
       :can-jump-to-day="currentView !== 'day'"
       @open-day="jumpToDayView(dialogDate)"
+      @open-maintenance="openMaintenanceInList"
     />
 
     <!-- SNACKBAR DE CONFIRMATION INTERACTION -->

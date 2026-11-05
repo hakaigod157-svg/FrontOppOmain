@@ -9,7 +9,8 @@ const props= defineProps ({
     search: {type:String , default:''},
     loading: {type:Boolean , default:false},
     height: {type:[String,Number] , default:600},
-    highlightedCode: { type: String, default: "" },
+    highlightedDemandCode: { type: String, default: "" },
+    highlightedMaintenanceCode: { type: String, default: "" },
 
     longTextCols: {
     type: Array,
@@ -73,11 +74,25 @@ const skeletonRows = computed(() => {
 });
 
 const rowProps = ({ item }) => {
-  const demande = item?.raw ?? item;
-  const code = demande?.demande_CODE ?? demande?.DEMANDE_CODE;
-  return code && code === props.highlightedCode
-    ? { class: "nouvelle-demande-clignote" }
-    : {};
+  const row = item?.raw ?? item;
+  const demandeCode = row?.demande_CODE ?? row?.DEMANDE_CODE;
+  const maintenanceCode = row?.maint_CODE ?? row?.MAINT_CODE;
+
+  if (
+    demandeCode &&
+    String(demandeCode) === String(props.highlightedDemandCode)
+  ) {
+    return { class: "nouvelle-demande-clignote" };
+  }
+
+  if (
+    maintenanceCode &&
+    String(maintenanceCode) === String(props.highlightedMaintenanceCode)
+  ) {
+    return { class: "maintenance-calendrier-clignote" };
+  }
+
+  return {};
 };
 
 
@@ -181,7 +196,7 @@ const filteredItems = computed(() => {
         </v-col>
 
         <v-col cols="6" class="text-right font-weight-bold text-error" v-if="showNbDoublons">
-          ⚠ {{ totalDoublons }} Doublons détectés
+           {{ totalDoublons }} Doublons détectés
         </v-col>
       </v-row>
     </v-card>

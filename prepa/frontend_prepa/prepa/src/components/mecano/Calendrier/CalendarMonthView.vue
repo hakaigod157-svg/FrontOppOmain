@@ -1,12 +1,12 @@
 <script setup>
-// Vue mensuelle : grille de 42 cases. Composant visuel, sans logique de dates.
 import MaintenanceChip from "./MaintenanceChip.vue";
 
 defineProps({
   // Chaque case : { date, dayNumber, isCurrentMonth, isToday, isWeekend, isSelected, maintenances }
   cells: { type: Array, required: true },
   // Noms des 7 jours, Lundi en premier
-  weekDayNames: { type: Array, required: true }
+  weekDayNames: { type: Array, required: true },
+  loading: { type: Boolean, default: false }
 });
 
 // select-day : clic sur la case · open-day : double clic · open-slot : clic sur une puce
@@ -69,17 +69,24 @@ const getBubbleLayoutStyle = (maintenanceCount) => {
           class="day-cell-body"
           :style="getBubbleLayoutStyle(cell.maintenances.length)"
         >
-          <MaintenanceChip
-            v-for="maintenance in cell.maintenances"
-            :key="maintenance.id"
-            :maintenance="maintenance"
-            variant="month"
-            @select="emit('open-slot', cell.date)"
+          <v-skeleton-loader
+            v-if="loading"
+            type="chip"
+            class="calendar-cell-skeleton"
           />
-          <div v-if="!cell.maintenances.length" class="empty-cell-hint">
-            <v-icon size="x-small" class="hint-icon">mdi-plus</v-icon>
-            <span class="hint-text">Libre</span>
-          </div>
+          <template v-else>
+            <MaintenanceChip
+              v-for="maintenance in cell.maintenances"
+              :key="maintenance.id"
+              :maintenance="maintenance"
+              variant="month"
+              @select="emit('open-slot', cell.date)"
+            />
+            <div v-if="!cell.maintenances.length" class="empty-cell-hint">
+              <v-icon size="x-small" class="hint-icon">mdi-plus</v-icon>
+              <span class="hint-text">Libre</span>
+            </div>
+          </template>
         </div>
       </div>
     </div>
@@ -202,6 +209,17 @@ const getBubbleLayoutStyle = (maintenanceCount) => {
   gap: 3px;
   padding-top: 4px;
   overflow: hidden;
+}
+
+.calendar-cell-skeleton {
+  grid-column: 1 / -1;
+  width: min(100%, 110px);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.calendar-cell-skeleton :deep(.v-skeleton-loader__chip) {
+  margin: 0;
 }
 
 .empty-cell-hint {

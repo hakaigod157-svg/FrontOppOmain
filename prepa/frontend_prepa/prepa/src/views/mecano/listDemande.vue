@@ -1,14 +1,16 @@
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed } from "vue";
 
 import TableVirtuelle from "@/components/mecano/TableVirtuelle.vue";
 import FormDialog from "@/components/mecano/Demande/FormDialog.vue";
 import EditDialog from "@/components/mecano/Demande/EditDialog.vue";
 import ValidationDemande from "@/components/mecano/Demande/ValidationDemande.vue";
 import DetailMaintenance from "@/components/mecano/Maintenance/DetailMaintenance.vue";
+import CalendarLegend from "@/components/mecano/Calendrier/CalendarLegend.vue";
 
 import { useDemandeMaintenance } from "@/store/Maintenance/demande_store";
 import { useEtapeStore } from "@/store/Maintenance/etape_store";
+import { getMaintenanceTypeColor } from "@/utils/maintenanceTypeColor";
 
 const searchQuery = ref("");
 const store = useDemandeMaintenance();
@@ -30,7 +32,7 @@ const nouvelleDemande = () => {
 };
 
 const chargerDemandes = async () => {
-  await store.fetchDemandes();
+  await Promise.all([store.fetchDemandes(), store.getTypeMaint()]);
   await Promise.all(
     store.demandes.map(async (item) => {
       const code = item.demande_CODE;
@@ -55,7 +57,7 @@ const headersDemandes = [
   {
     title: "",
     key: "badge_statut",
-    width: "14px",
+    width: "70px",
     sortable: true,
     align: "center",
   },
@@ -87,45 +89,6 @@ const headersDemandes = [
   align: "center",  
 },
 ];
-
-const getStatusColor = (item) => {
-  if (!item) return "#1976d2";
-  const s = String(item.statut || "").toUpperCase().trim();
-  const etat = Number(item.demande_ETAT);
-
-  if (s.includes("REFUS") || s.includes("ANNUL") || etat === 3) {
-    return "#e53935";
-  }
-  if (
-    s.includes("TERMIN") ||
-    s.includes("CLOTUR") ||
-    s.includes("FINI") ||
-    s.includes("PRET")
-  ) {
-    return "#0b3b17";
-  }
-  if (s.includes("EN COURS") || s.includes("COURS") || etat === 2) {
-    return "#f57c00";
-  }
-  return "#1976d2";
-};
-
-const getStatusTooltip = (item) => {
-  if (!item) return "";
-  const s = String(item.statut || "").toUpperCase().trim();
-  const etat = Number(item.demande_ETAT);
-  if (s.includes("REFUS") || s.includes("ANNUL") || etat === 3) return "Demande refusée";
-  if (
-    s.includes("TERMIN") ||
-    s.includes("CLOTUR") ||
-    s.includes("FINI") ||
-    s.includes("PRET")
-  ) {
-    return item.statut || "Prêt à terminer";
-  }
-  if (s.includes("EN COURS") || s.includes("COURS") || etat === 2) return "Demande en cours";
-  return "Attente validation";
-};
 
 const getStatusText = (item) => {
   if (item.statut) return item.statut;
@@ -167,6 +130,26 @@ const getStatusCellStyle = (item) => {
     color: "#1e40af",
   };
 };
+
+const demandeLegendItems = computed(() => {
+  const types = [...new Set(
+    (store.typeMaintenance || [])
+      .map((entry) => String(entry?.enum_CODE ?? entry?.ENUM_CODE ?? entry?.enum_code ?? entry ?? "").trim())
+      .filter(Boolean)
+  )].sort((first, second) => first.localeCompare(second));
+
+  return [
+    ...types.map((type) => ({
+      label: type,
+      type: "swatch",
+      color: getMaintenanceTypeColor(type, store.typeMaintenance)
+    })),
+    // { label: "À valider / en attente", type: "status", color: "#dbeafe", textColor: "#1e40af" },
+    // { label: "En cours", type: "status", color: "#ffedd5", textColor: "#9a3412" },
+    // { label: "Terminée", type: "status", color: "#dcfce7", textColor: "#0b3b17" },
+    // { label: "Refusée / annulée", type: "status", color: "#fee2e2", textColor: "#991b1b" }
+  ];
+});
 
 const ETAT_EN_ATTENTE = 1;
 const ETAT_REFUSEE = 3;
@@ -247,7 +230,12 @@ const handleRowClick = (item) => {
 
 const arreterClignotement = (item) => {
   const code = item?.demande_CODE || item?.DEMANDE_CODE;
-  if (code && code === demandeClignotante.value) demandeClignotante.value = "";
+  if (
+    code &&
+    String(code) === String(demandeClignotante.value)
+  ) {
+    demandeClignotante.value = "";
+  }
 };
 
 const fermerDialogDetail = () => {
@@ -310,7 +298,7 @@ onMounted(async () => {
       :headers="headersDemandes"
       :items="store.demandes"
       :search="searchQuery"
-      :highlighted-code="demandeClignotante"
+      :highlighted-demand-code="demandeClignotante"
       :loading="store.loading"
       :height="550"
       :long-text-cols="['demande_DESCR']"
@@ -325,8 +313,8 @@ onMounted(async () => {
         <div class="badge-col-wrapper">
           <span
             class="status-badge-indicator"
-            :style="{ backgroundColor: getStatusColor(item) }"
-            :title="getStatusTooltip(item)"
+            :style="{ backgroundColor: getMaintenanceTypeColor(item.demande_TYPE, store.typeMaintenance) }"
+            :title="item.demande_TYPE || 'Type non renseigné'"
           ></span>
         </div>
       </template>
@@ -374,6 +362,12 @@ onMounted(async () => {
       </template>
     </TableVirtuelle>
 
+    <CalendarLegend
+      :items="demandeLegendItems"
+      title="Type et statut"
+      label="Légende de la liste des demandes"
+    />
+
     <!-- Dialog détail demande / étapes avec background blur -->
     <v-dialog
       v-if="dialogVisibleDetail"
@@ -381,7 +375,7 @@ onMounted(async () => {
       :persistent="true"
       width="1610"
       max-width="100vw"
-      height="720px"
+      height="750px"
       class="maintenance-dialog"
     >
       <DetailMaintenance
@@ -466,9 +460,9 @@ onMounted(async () => {
 
 .status-badge-indicator {
   display: inline-block;
-  width: 15px;
-  height: 22px;
-  border-radius: 3px;
+  width: 120px;
+  height: 30px;
+  border-radius: 6px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
   transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s ease;
   cursor: pointer;

@@ -336,33 +336,35 @@ export const useEtapeStore = defineStore("etapeStore", {
 
    
 
-        async cloturerDemande(demandeCode){
+        async cloturerMaintenance(maintCode){
+            if (!maintCode) return false;
+
             const sessionId = localStorage.getItem("sessionId");
             const { handleLogout } = useLogout();
 
             this.loading = true;
             try {
-                const reponseValid = await axios.post(Config.SERVER_URL + "api/terminerDmd",null,
+                await axios.post(Config.SERVER_URL + "api/terminerDmd",null,
                     {
                         headers: {
                             Authorization: sessionId
                         },
                         params:{
-                            DEMANDE_CODE: demandeCode
+                            MAINT_CODE: maintCode
                         }
                     }
                 );
-                console.log("demande vita " )
-                
+                return true;
                 
             } catch (error) {
-                console.error("Erreur lors de la validation de la demande :", error);
+                console.error("Erreur lors de la clôture de la maintenance :", error);
                 if (error.response?.status === 401) {
                     await handleLogout();
                 }
                 else if(error.response?.status === 500) {
                     console.log(error)
                 }
+                return false;
                 
             }finally {
                 this.loading = false;

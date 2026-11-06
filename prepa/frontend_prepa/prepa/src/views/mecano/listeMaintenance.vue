@@ -37,7 +37,7 @@ const headersMaintenance = [
     title: "",
     key: "badge_statut",
     width: "70px",
-    sortable: false,
+    sortable: true,
     align: "center",
   },
   { title: "Code", key: "maint_CODE", align: "start" },
@@ -231,8 +231,8 @@ const voir = (item) => {
       v-model="dialogVisible"
       :persistent="true"
       width="1610px"
-      max-width="100vw"
-      height="750px"
+      max-width="120vw"
+      height="850px"
       class="maintenance-dialog"
     >
       <DetailMaintenance

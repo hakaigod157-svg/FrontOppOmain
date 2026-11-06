@@ -165,6 +165,18 @@ const chargerClassifications = async () => {
 };
 
 const listeClassifications = computed(() => classifications.value);
+
+// Calcul de la largeur uniforme des capsules : basée sur le label le plus long
+const pillMinWidth = computed(() => {
+  if (!classifications.value.length) return "120px";
+  const longest = classifications.value.reduce(
+    (a, b) => (a.length >= b.length ? a : b),
+    ""
+  );
+  // ~9px par caractère + padding interne (48px pour icon + gap + marges)
+  const estimated = longest.length * 9 + 56;
+  return `${Math.max(estimated, 100)}px`;
+});
 const listeTypeRefus = computed(() =>
   typesRefus.value.map((item) => {
     if (typeof item === "string") return { title: item, value: item };
@@ -504,16 +516,15 @@ watch(
                   type="button"
                   class="classification-pill"
                   :class="{ active: classification === item }"
+                  :style="{ minWidth: pillMinWidth }"
                   :aria-pressed="classification === item"
                   :disabled="loadingEnum"
                   @click="classification = item"
                 >
-                  <v-icon
-                    v-if="classification === item"
-                    icon="mdi-check-circle"
-                    size="18"
-                  />
-                  {{ item }}
+                  <span class="pill-indicator">
+                    <span class="pill-dot" :class="{ filled: classification === item }"></span>
+                  </span>
+                  <span class="pill-label">{{ item }}</span>
                 </button>
               </div>
 
@@ -577,12 +588,12 @@ watch(
   border-color: #e0e0e0;
 }
 
-/* ===== Conteneur de classification (capsules modernes & centrées) ===== */
+/* ===== Conteneur de classification (capsules premium & uniformes) ===== */
 .classification-container {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
   width: 100%;
 }
 
@@ -596,79 +607,185 @@ watch(
 }
 
 .classification-label {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: #2e384d;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
 }
 
 .classification-options {
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: stretch;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 10px;
   width: 100%;
   padding: 4px 0;
 }
 
 .classification-pill {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  width:max-content;
-  min-height: 42px;
-  padding: 8px 22px;
-  border: 1.5px solid #e0e0e0;
+  min-height: 44px;
+  padding: 10px 24px;
+  border: 1.5px solid #e2e2e8;
   border-radius: 9999px;
-  background: #ffffff;
-  color: #424242;
+  background: #fafafe;
+  color: #4a4a5a;
   font: inherit;
-  font-size: 13.5px;
+  font-size: 13px;
   font-weight: 500;
+  letter-spacing: 0.2px;
   cursor: pointer;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
-  transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  transform: scale(1) translateY(0);
+  transition:
+    background 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+    color 0.3s ease,
+    border-color 0.35s ease,
+    box-shadow 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+    font-weight 0.3s ease;
+  overflow: hidden;
+}
+
+/* Subtle shimmer overlay */
+.classification-pill::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  opacity: 0;
+  background: linear-gradient(135deg, rgba(125, 47, 220, 0.06) 0%, transparent 60%);
+  transition: opacity 0.35s ease;
+  pointer-events: none;
+}
+
+/* Soft violet glow ring behind active pill */
+.classification-pill::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: inherit;
+  opacity: 0;
+  background: transparent;
+  box-shadow: 0 0 16px rgba(124, 58, 237, 0.3);
+  transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+  z-index: -1;
+}
+
+.classification-pill:hover:not(:disabled)::before {
+  opacity: 1;
 }
 
 .classification-pill:hover:not(:disabled) {
-  border-color: #7d2fdc;
-  color: #7d2fdc;
-  background: #faf6ff;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(125, 47, 220, 0.15);
+  border-color: rgba(125, 47, 220, 0.35);
+  color: #6b21a8;
+  transform: scale(1.03) translateY(-1px);
+  box-shadow: 0 3px 12px rgba(125, 47, 220, 0.12);
 }
 
+/* Active / selected state — premium violet, white text */
 .classification-pill.active {
-  background: linear-gradient(135deg, #7d2fdc 0%, #5916a6 100%);
-  border-color: #5916a6;
-  color: #ffffff;
+  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 50%, #5b21b6 100%);
+  border-color: transparent;
+  color: #fff;
   font-weight: 600;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(125, 47, 220, 0.35);
+  transform: scale(1.04) translateY(-1px);
+  box-shadow:
+    0 4px 16px rgba(109, 40, 217, 0.3),
+    0 0 0 1px rgba(109, 40, 217, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+.classification-pill.active::before {
+  opacity: 0;
+}
+
+.classification-pill.active::after {
+  opacity: 1;
+}
+
+.classification-pill.active .pill-label,
+.classification-pill.active .pill-indicator,
+.classification-pill.active .pill-dot {
+  color: #fff;
+}
+
+/* Radio-style indicator dot */
+.pill-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid #c4c4ce;
+  flex-shrink: 0;
+  transition:
+    border-color 0.35s ease,
+    transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.classification-pill.active .pill-indicator {
+  border-color: rgba(255, 255, 255, 0.75);
+  transform: scale(1.1);
+}
+
+.pill-dot {
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: transparent;
+  transition:
+    width 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+    height 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+    background 0.25s ease,
+    box-shadow 0.35s ease;
+}
+
+.pill-dot.filled {
+  width: 7px;
+  height: 7px;
+  background: #ffffff;
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.6);
+}
+
+.classification-pill:hover:not(:disabled) .pill-indicator {
+  border-color: rgba(125, 47, 220, 0.45);
+}
+
+.pill-label {
+  text-transform: capitalize;
+  transition: color 0.3s ease;
 }
 
 .classification-pill:focus-visible {
-  outline: 2px solid #7d2fdc;
-  outline-offset: 3px;
+  outline: 2px solid #7c3aed;
+  outline-offset: 2px;
 }
 
 .classification-pill:disabled {
-  opacity: 0.6;
-  cursor: wait;
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .classification-hint {
-  font-size: 12.5px;
+  font-size: 11.5px;
   line-height: 1.5;
-  color: #616161;
+  color: #8e8e9a;
   text-align: center;
+  letter-spacing: 0.1px;
 }
 
 .classification-error {
   font-size: 12px;
-  color: #d32f2f;
+  color: #dc2626;
   font-weight: 500;
   text-align: center;
 }
@@ -690,8 +807,9 @@ watch(
     gap: 8px;
   }
   .classification-pill {
-    padding: 6px 16px;
-    font-size: 12.5px;
+    padding: 8px 16px;
+    font-size: 12px;
+    min-height: 40px;
   }
 }
 

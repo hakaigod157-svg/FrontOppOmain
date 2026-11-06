@@ -28,7 +28,6 @@ const storeEtape = useEtapeStore();
 const linkedMaintenance = ref(null);
 const linkedDemande = ref(null);
 const fetchedKm = ref(null);
-const etapeEnCoursData = ref(null);
 
 
 const formatKm = (valeur) =>
@@ -77,14 +76,11 @@ const listeMarquePiece = computed(() => {
 
 
 
-
 const synchroniserDonnees = async () => {
       const dmdCode =
         itemData.value?.demande_CODE || itemData.value?.maint_DEMANDE 
       
-
-      const mntCode =
-        itemData.value?.maint_CODE;
+      const mntCode = itemData.value?.maint_CODE;
 
       if (!storeMaint.maintnces || storeMaint.maintnces.length === 0) {
         try {
@@ -105,19 +101,22 @@ const synchroniserDonnees = async () => {
         }
       }
 
-      if (dmdCode && (!itemData.value?.demande_VOITURE || !itemData.value?.demande_DESCR)) {
-        let d = (storeDemande.demandes || []).find(
+      if (dmdCode) {
+        let demande = (storeDemande.demandes || []).find(
           (item) => (item.demande_CODE ) === dmdCode
         );
-        if (!d) {
+        const etatDisponible =
+          itemData.value?.demande_ETAT ??
+          demande?.demande_ETAT ;
+        if (!demande || etatDisponible == null) {
           try {
-            d = await storeDemande.getDemandeByDmdCode(dmdCode);
+            demande = await storeDemande.getDemandeByDmdCode(dmdCode);
           } catch (e) {
             console.error("Erreur chargement demande reliée :", e);
           }
         }
-        if (d) {
-          linkedDemande.value = d;
+        if (demande) {
+          linkedDemande.value = demande;
         }
       }
 
@@ -286,36 +285,10 @@ const isMaintenanceActive = computed(() => {
     });
 
 const statusChipColor = computed(() => {
-      const s = String(etapeEnCoursData.value?.statut || "").toUpperCase().trim();
-
-      if (s.includes("REFUS") || s.includes("ANNUL")) return "#e53935";
-      if (
-        s.includes("TERMIN") ||
-        s.includes("CLOTUR") ||
-        s.includes("FINI") ||
-        s.includes("PRET")
-      )
-        return "#0b3b17";
-      if (s.includes("EN COURS") || s.includes("COURS")) return "#f57c00";
-      if (s.includes("CRE") || s.includes("ATTENTE")) return "#1976d2";
-
       return isMaintenanceActive.value ? "#f57c00" : "#1976d2";
     });
 
 const statusChipText = computed(() => {
-      const raw = etapeEnCoursData.value?.statut;
-      if (raw) {
-        const s = String(raw).toUpperCase().trim();
-        if (s.includes("EN COURS") || s.includes("COURS")) {
-          const etape = etapeEnCoursData.value?.etape_EN_COURS || "";
-          return etape ? `EN COURS — ${etape}` : "EN COURS";
-        }
-        if (s.includes("CRE") || s.includes("ATTENTE")) {
-          return "ATTENTE VALIDATION";
-        }
-        return raw;
-      }
-
       return isMaintenanceActive.value
         ? "MAINTENANCE ACTIVE"
         : "ATTENTE VALIDATION";
@@ -584,10 +557,19 @@ const soumettreAjoutReal = async () => {
 
 const demandeTerminee = ref(false);
 const loadingCloture = ref(false);
+const dialogConfirmationCloture = ref(false);
+const demandeEtat = computed(() => Number(
+  itemData.value?.demande_ETAT ??
+  itemData.value?.DEMANDE_ETAT ??
+  itemData.value?.demande_etat ??
+  linkedDemande.value?.demande_ETAT ??
+  linkedDemande.value?.DEMANDE_ETAT ??
+  linkedDemande.value?.demande_etat
+));
+const demandeCloturee = computed(() => demandeTerminee.value || demandeEtat.value === 99);
 
-const toutesEtapesValidees = computed(() => {
-  const all = [...etapesPrepa.value, ...etapesReal.value];
-  return all.length > 0 && all.every((e) => e.valide);
+const toutesEtapesRealValidees = computed(() => {
+  return etapesReal.value.length > 0 && etapesReal.value.every((e) => e.valide);
 });
 
 const choisirOngletInitial = () => {
@@ -829,54 +811,32 @@ const repApi = await storeEtape.getListeRealMaint(code);
 };
 
 
-const calculerDemandeTerminee = () => {
-  const allPrepaOk = etapesPrepa.value.length > 0 &&
-    etapesPrepa.value.every((e) => Number(e.etat_ID) === 2);
-  const allRealOk = etapesReal.value.length > 0 &&
-    etapesReal.value.every((e) => e.valide);
-  demandeTerminee.value = allPrepaOk && allRealOk;
-};
-
-
 const chargerDonneesEtEtapes = async (choisirOnglet = true) => {
       loadingEtapes.value = true;
       try {
         await synchroniserDonnees();
-        const dmdCode =
-          itemData.value?.demande_CODE ||
-          itemData.value?.maint_DEMANDE ||
-          displayDemandeCode.value;
-        if (dmdCode && dmdCode !== "-") {
-          const res = await storeEtape.getEtapeEnCours(dmdCode);
-          if (res) etapeEnCoursData.value = res;
-        }
-
         await listEtape();
         await listEtapeReal();
-        
-        calculerDemandeTerminee();
         if (choisirOnglet) choisirOngletInitial();
       } finally {
         loadingEtapes.value = false;
       }
     };
 
-const fermerDmd = async () => {
-        const code =
-          itemData.value?.demande_CODE ||
-          itemData.value?.maint_DEMANDE ||
-          displayDemandeCode.value;
+const cloturerMaintenance = async () => {
+        const code = getMaintCode();
         if (!code || code === "-") return;
 
         loadingCloture.value = true;
         try {
-          const ok = await storeEtape.cloturerDemande(code);
-          if (ok) demandeTerminee.value = true;
-          await chargerDonneesEtEtapes();
-          
+          const ok = await storeEtape.cloturerMaintenance(code);
+          if (ok) {
+            demandeTerminee.value = true;
+            dialogConfirmationCloture.value = false;
+            await chargerDonneesEtEtapes();
+          }
         } finally {
           loadingCloture.value = false;
-          
         }
       };
 
@@ -916,6 +876,7 @@ const onActionChange = (item) => {
     watch(
       () => props.maintenance,
       async () => {
+        demandeTerminee.value = false;
         await chargerDonneesEtEtapes();
       }
     );
@@ -1029,7 +990,7 @@ const onActionChange = (item) => {
                     label="Type"
                     variant="outlined"
                     density="compact"
-                    :model-value="displayType"
+                    :model-value="displayClassification"
                     readonly
                     hide-details
                     class="readonly-field"
@@ -1279,6 +1240,7 @@ const onActionChange = (item) => {
                 variant="flat"
                 prepend-icon="mdi-plus-circle"
                 class="text-none font-weight-bold"
+                :disabled="demandeCloturee"
                 @click="ouvrirDialogAjoutReal"
               >
                 Ajouter une réalisation
@@ -1515,6 +1477,33 @@ const onActionChange = (item) => {
               </template>
             </v-data-table>
 
+            <div
+              v-if="(toutesEtapesRealValidees && !demandeCloturee) || demandeCloturee"
+              class="d-flex justify-center py-3"
+            >
+              <v-chip
+                v-if="demandeCloturee"
+                size="medium"
+                color="green-darken-1"
+                variant="flat"
+                class="font-weight-bold closure-control"
+                prepend-icon="mdi-check-decagram"
+              >
+                Demande clôturée
+              </v-chip>
+              <v-btn
+                v-else
+                color="success"
+                variant="flat"
+                class="px-5 font-weight-bold closure-control"
+                prepend-icon="mdi-flag-checkered"
+                :loading="loadingCloture"
+                @click="dialogConfirmationCloture = true"
+              >
+                Clôturer la demande
+              </v-btn>
+            </div>
+
             <div v-if="!loadingEtapes" class="summary-line mt-2">
               <b>{{ etapesReal.length }}</b> étape<span v-if="etapesReal.length > 1">s</span> de réalisation &bull;
               <b>{{ etapesRealRealiseesCount }}</b> réalisée<span v-if="etapesRealRealiseesCount > 1">s</span> &bull;
@@ -1563,30 +1552,6 @@ const onActionChange = (item) => {
   </div>
   <v-spacer />
 
-  <v-chip
-    v-if="demandeTerminee"
-    size="medium &"
-    color="green-darken-1"
-    variant="flat"
-    class="mr-3 font-weight-bold"
-    prepend-icon="mdi-check-decagram"
-  >
-    Demande clôturée
-  </v-chip>
-
-  <v-btn
-    v-if="toutesEtapesValidees && !demandeTerminee"
-    color="success"
-    variant="flat"
-    density="compact"
-    class="px-4 mr-3 font-weight-bold"
-    prepend-icon="mdi-flag-checkered"
-    :loading="loadingCloture"
-    @click="fermerDmd()"
-  >
-    CLOTURER DEMANDE
-  </v-btn>
-
   <v-btn
     color="red-darken-1"
     density="compact"
@@ -1597,6 +1562,33 @@ const onActionChange = (item) => {
     Fermer
   </v-btn>
 </v-card-actions>
+
+    <v-dialog v-model="dialogConfirmationCloture" max-width="460">
+      <v-card>
+        <v-card-title class="text-h6">Clôturer la demande ?</v-card-title>
+        <v-card-text>
+          Confirmez-vous la clôture de la maintenance {{ getMaintCode() }} ?
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn
+            variant="text"
+            :disabled="loadingCloture"
+            @click="dialogConfirmationCloture = false"
+          >
+            Annuler
+          </v-btn>
+          <v-btn
+            color="success"
+            variant="flat"
+            :loading="loadingCloture"
+            @click="cloturerMaintenance"
+          >
+            Valider
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
 
 
     <!-- Dialog Ajout Étape Réalisation -->
@@ -1920,6 +1912,13 @@ const onActionChange = (item) => {
   color: #2e7d32;
   padding: 6px 12px;
   text-align: left;
+}
+
+.detail-maintenance-card .closure-control {
+  width: 210px;
+  min-width: 210px;
+  height: 36px;
+  justify-content: center;
 }
 
 .detail-maintenance-card .cell-with-button {

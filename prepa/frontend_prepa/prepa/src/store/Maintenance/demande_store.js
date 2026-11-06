@@ -480,8 +480,9 @@ export const useDemandeMaintenance = defineStore("demandeMaintenance", {
 
                 if (error.response?.status === 401) {
                     await handleLogout();
-                    alert("Vous avez été déconnecté")
                 }
+               
+                
 
                 throw error;
 

@@ -48,22 +48,16 @@ const CLOCK_INTERVAL_MS = 60_000;
 const REFRESH_INTERVAL_MS = 60_000;
 const MONTH_GRID_SIZE = 42;
 
-// Filtres de maintenances : un filtre = une ligne.
 const MAINTENANCE_FILTERS = [
   { title: "Toutes les maintenances", value: "all", predicate: () => true },
   {
-    title: "En cours uniquement",
+    title: "Maintenance en Cours",
     value: "in-progress",
-    predicate: (maintenance) => maintenance.isInProgress
+    predicate: (maintenance) =>
+      maintenance.steps.some((step) => !step.isComplete)
   }
-  // {
-  //   title: "Masquer les terminées",
-  //   value: "hide-completed",
-  //   predicate: (maintenance) => !maintenance.isComplete
-  // }
 ];
 
-// Icône par classification ; la couleur vient du type de maintenance de l'API.
 const CLASSIFICATION_STYLES = [
   { match: "PREVENT", icon: "mdi-shield-check" },
   { match: "CURAT", icon: "mdi-wrench" },
@@ -72,7 +66,6 @@ const CLASSIFICATION_STYLES = [
 ];
 const FALLBACK_CLASSIFICATION_ICON = "mdi-car-wrench";
 
-// Libellés de statut, par ordre de priorité.
 const STATUS_LABELS = [
   ["isComplete", "Terminée"],
   ["isNotInProgress", "Arrêtée après validation"],
@@ -80,7 +73,6 @@ const STATUS_LABELS = [
 ];
 const DEFAULT_STATUS_LABEL = "En cours";
 
-// Comment lire chaque famille d'étapes renvoyée par le store d'étapes.
 const STEP_SOURCES = {
   preparation: {
     nature: "Préparation",
@@ -124,10 +116,8 @@ const FORMATTERS = {
 const formatDateFull = (date) => FORMATTERS.full.format(date);
 const formatHour = (hour) => `${String(hour).padStart(2, "0")}:00`;
 
-// Créneaux passés aux vues semaine et jour : { value: 7, label: "07:00" }
 const HOUR_SLOTS = HOURS.map((hour) => ({ value: hour, label: formatHour(hour) }));
 
-/** Normalise une valeur (Date, "YYYY-MM-DD…", "DD/MM/YYYY…") en date à minuit. */
 const dateOnly = (value) => {
   if (!value) return null;
 
@@ -244,15 +234,14 @@ const buildStepPlan = (rawSteps, source) =>
     .sort((first, second) => first.date - second.date);
 
 /** Construit { startDate, endDate, steps } ou null si aucune date exploitable. */
-const buildSchedule = ({ preparation, realization, maintenanceCreatedAt }) => {
+const buildSchedule = ({ preparation, realization, dateCreationMaint }) => {
   const prepPlan = buildStepPlan(preparation, STEP_SOURCES.preparation);
   const realPlan = buildStepPlan(realization, STEP_SOURCES.realization);
 
   // Les dates prévues des étapes sont des échéances. La maintenance commence
   // à sa création/confirmation ; les anciennes données sans cette date gardent
   // le repli sur leur première étape planifiée.
-  const startDate =
-    dateOnly(maintenanceCreatedAt) ?? prepPlan[0]?.date ?? realPlan[0]?.date;
+  const startDate = dateOnly(dateCreationMaint) ?? prepPlan[0]?.date ?? realPlan[0]?.date;
   const endDate = realPlan.at(-1)?.date ?? prepPlan.at(-1)?.date;
   if (!startDate || !endDate) return null;
 
@@ -276,7 +265,7 @@ const computeStatus = (steps, demand) => {
   const isNotInProgress =
     hasSteps && steps.some((step) => step.isComplete) && !isInProgress;
 
-  const demandStatus = Number(demand?.demande_ETAT ?? demand?.DEMANDE_ETAT);
+  const demandStatus = Number(demand?.demande_ETAT );
   const hasNoActiveStep =
     hasSteps && steps.every((step) => !step.isSelected && !step.isComplete);
   const isUnselected = !isComplete && (demandStatus === 1 || hasNoActiveStep);
@@ -341,16 +330,19 @@ const getStepsForDate = (event, day) => {
 /** Événement enrichi pour un jour : libellés prêts à afficher par les composants. */
 const projectOnDate = (event, day) => {
   const steps = getStepsForDate(event, day);
+  const isStepComplete = steps.length > 0 && steps.every((step) => step.isComplete);
 
   return {
     ...event,
     title: getMaintenanceTitle(event),
-    statusLabel: getStatusLabel(event),
+    // Dans un créneau, le statut décrit l'étape affichée, pas l'ensemble
+    // de la maintenance qui peut encore avoir des étapes à venir.
+    statusLabel: isStepComplete ? "Terminée" : getStatusLabel(event),
     period: `${formatDateFull(event.startDate)} – ${formatDateFull(event.endDate)}`,
     stepLabel: steps.length
       ? steps.map((step) => `${step.nature} : ${step.label}`).join(" · ")
       : "Maintenance planifiée",
-    isStepComplete: steps.length > 0 && steps.every((step) => step.isComplete),
+    isStepComplete,
     isStepInProgress: steps.some((step) => step.isSelected)
   };
 };
@@ -412,9 +404,14 @@ const getEventsForDate = (date) => {
   const day = dateOnly(date);
   if (!day) return [];
 
+  const showUnfinishedStepsOnly = maintenanceFilter.value === "in-progress";
+
   return visibleEvents.value
     .filter((event) => isActiveOn(event, day))
-    .map((event) => projectOnDate(event, day));
+    .map((event) => projectOnDate(event, day))
+    .filter((maintenance) =>
+      !showUnfinishedStepsOnly || !maintenance.isStepComplete
+    );
 };
 
 // Le store d'étapes garde ses résultats dans une propriété partagée :
@@ -447,7 +444,7 @@ const loadMaintenances = async () => {
 
       const schedule = buildSchedule({
         ...(await fetchRawSteps(code)),
-        maintenanceCreatedAt:
+        dateCreationMaint:
           maintenance.maint_DATECRE ?? maintenance.MAINT_DATECRE
       });
       if (!schedule) continue;
@@ -668,7 +665,6 @@ const jumpToDayView = (date) => {
   showSnackbar(`Affichage de la journée du ${formatDateFull(date)}`);
 };
 </script>
-
 
 
 
@@ -914,3 +910,6 @@ const jumpToDayView = (date) => {
   overflow: hidden;
 }
 </style>
+
+
+

@@ -163,7 +163,7 @@ const save = async () => {
   }
 
   if (!form.DEMANDE_VOITURE || !form.DEMANDE_DESCR.trim()) {
-    erreur.value = "Veuillez renseigner la voiture et la description.";
+    erreur.value = "Veuillez renseigner tous les champs.";
     return;
   }
 
@@ -187,7 +187,7 @@ const save = async () => {
     visible.value = false;
   } catch (error) {
     console.error("Erreur lors de la création :", error);
-    erreur.value = "Erreur lors de la création de la demande.";
+    erreur.value = "Erreur lors de la création de la demande :" , error;
   } finally {
     loading.value = false;
   }

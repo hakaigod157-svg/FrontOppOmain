@@ -11,10 +11,10 @@ const props = defineProps({
 });
 
 const maintenancesEnCours = computed(() =>
-  props.maintenances.filter((m) => !m.isComplete)
+  props.maintenances.filter((m) => !m.isStepComplete)
 );
 const maintenancesTerminees = computed(() =>
-  props.maintenances.filter((m) => m.isComplete)
+  props.maintenances.filter((m) => m.isStepComplete)
 );
 
 // update:modelValue : ouverture/fermeture (v-model) · open-day : bouton "Voir ce jour"

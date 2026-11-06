@@ -374,8 +374,8 @@ onMounted(async () => {
       v-model="dialogVisibleDetail"
       :persistent="true"
       width="1610"
-      max-width="100vw"
-      height="750px"
+      max-width="120vw"
+      height="850px"
       class="maintenance-dialog"
     >
       <DetailMaintenance

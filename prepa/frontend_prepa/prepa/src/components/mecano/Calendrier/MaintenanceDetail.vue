@@ -13,11 +13,10 @@ const isDialog = computed(() => props.variant === "dialog");
 const label = computed(() => props.maintenance.vehicle || props.maintenance.code);
 
 // Dans la vue jour, une étape terminée est grisée.
-const iconColor = computed(() =>
-  !isDialog.value && props.maintenance.isStepComplete
-    ? "#94a3b8"
-    : props.maintenance.color
-);
+const iconColor = computed(() => {
+  if (!props.maintenance.isStepComplete) return props.maintenance.color;
+  return isDialog.value ? "#16a34a" : "#94a3b8";
+});
 
 const unselectedTitle = computed(() =>
   isDialog.value

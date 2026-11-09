@@ -221,29 +221,76 @@ const getClassificationIcon = (classification = "") => {
 /** Transforme les étapes brutes d'une source en étapes normalisées, triées. */
 const buildStepPlan = (rawSteps, source) =>
   (rawSteps || [])
-    .map((raw) => ({
-      date: dateOnly(pickFirst(raw, source.dateFields)),
-      label:
-        source.labelFields.map((field) => raw[field]).find(Boolean) ||
-        "Étape à préciser",
-      nature: source.nature,
-      isSelected: source.isSelected(raw),
-      isComplete: source.isComplete(raw)
-    }))
-    .filter((step) => step.date)
-    .sort((first, second) => first.date - second.date);
+    .map((raw, index) => {
+      const order = pickFirst(raw, [
+        "maint_ETAPE_ORDRE",
+        "MAINT_ETAPE_ORDRE",
+        "maint_ORDRE_REAL",
+        "MAINT_ORDRE_REAL",
+        "maint_ORDRE",
+        "MAINT_ORDRE",
+        "ORDRE",
+        "ordre"
+      ]);
+      const plannedDate = dateOnly(pickFirst(raw, source.dateFields));
+      return {
+        date: plannedDate,
+        label:
+          source.labelFields.map((field) => raw[field]).find(Boolean) ||
+          "Étape à préciser",
+        nature: source.nature,
+        sourceIndex: index,
+        sourceOrder:
+          order == null || String(order).trim() === "" ? NaN : Number(order),
+        isSelected: source.isSelected(raw),
+        isComplete: source.isComplete(raw)
+      };
+    })
+    .sort((first, second) => {
+      const hasOrder =
+        Number.isFinite(first.sourceOrder) &&
+        Number.isFinite(second.sourceOrder);
+      if (hasOrder && first.sourceOrder !== second.sourceOrder) {
+        return first.sourceOrder - second.sourceOrder;
+      }
+      return first.sourceIndex - second.sourceIndex;
+    });
 
 /** Construit { startDate, endDate, steps } ou null si aucune date exploitable. */
 const buildSchedule = ({ preparation, realization, dateCreationMaint }) => {
-  const prepPlan = buildStepPlan(preparation, STEP_SOURCES.preparation);
-  const realPlan = buildStepPlan(realization, STEP_SOURCES.realization);
+  const allPrepSteps = buildStepPlan(preparation, STEP_SOURCES.preparation);
+  const allRealSteps = buildStepPlan(realization, STEP_SOURCES.realization);
+  allPrepSteps.forEach((step, index) => {
+    step.order = index + 1;
+  });
+  allRealSteps.forEach((step, index) => {
+    step.order = allPrepSteps.length + index + 1;
+  });
+  const prepPlan = allPrepSteps.filter((step) => step.date);
+  const realPlan = allRealSteps.filter((step) => step.date);
+
+  const firstStepDate = (steps) =>
+    steps.reduce(
+      (first, step) => (!first || step.date < first ? step.date : first),
+      null
+    );
+  const lastStepDate = (steps) =>
+    steps.reduce(
+      (last, step) => (!last || step.date > last ? step.date : last),
+      null
+    );
 
   // Les dates prévues des étapes sont des échéances. La maintenance commence
   // à sa création/confirmation ; les anciennes données sans cette date gardent
   // le repli sur leur première étape planifiée.
-  const startDate = dateOnly(dateCreationMaint) ?? prepPlan[0]?.date ?? realPlan[0]?.date;
-  const endDate = realPlan.at(-1)?.date ?? prepPlan.at(-1)?.date;
-  if (!startDate || !endDate) return null;
+  const startDate =
+    dateOnly(dateCreationMaint) ??
+    firstStepDate(prepPlan) ??
+    firstStepDate(realPlan);
+  if (!startDate) return null;
+
+  const endDate = lastStepDate(realPlan) ?? lastStepDate(prepPlan);
+  if (!endDate) return null;
 
   // Une fois la préparation terminée, la prochaine réalisation devient l'étape en cours.
   if (prepPlan.every((step) => step.isComplete)) {
@@ -342,6 +389,9 @@ const projectOnDate = (event, day) => {
     stepLabel: steps.length
       ? steps.map((step) => `${step.nature} : ${step.label}`).join(" · ")
       : "Maintenance planifiée",
+    stepOrder: steps.length
+      ? steps.map((step) => step.order).filter(Number.isFinite).join(" / ")
+      : "",
     isStepComplete,
     isStepInProgress: steps.some((step) => step.isSelected)
   };
@@ -402,7 +452,7 @@ const visibleEvents = computed(() => {
 /** Maintenances actives un jour donné, enrichies pour ce jour. */
 const getEventsForDate = (date) => {
   const day = dateOnly(date);
-  if (!day) return [];
+  if (!day || day.getDay() === 0) return [];
 
   const showUnfinishedStepsOnly = maintenanceFilter.value === "in-progress";
 

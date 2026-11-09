@@ -34,6 +34,13 @@ const unselectedTitle = computed(() =>
     :title="title"
     @click.stop="emit('select')"
   >
+    <span
+      v-if="maintenance.stepOrder"
+      class="step-order-watermark"
+      aria-hidden="true"
+    >
+      {{ maintenance.stepOrder }}
+    </span>
     <v-icon class="classification-badge">
       {{ maintenance.icon }}
     </v-icon>
@@ -51,6 +58,7 @@ const unselectedTitle = computed(() =>
 
 <style scoped lang="scss">
 .maintenance-chip {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -88,6 +96,26 @@ const unselectedTitle = computed(() =>
       background-color: #e2f2e2;
     }
   }
+}
+
+.step-order-watermark {
+  position: absolute;
+  z-index: 0;
+  top: 50%;
+  right: 8px;
+  max-width: 65%;
+  overflow: hidden;
+  color: rgba(255, 255, 255, 0.52);
+  -webkit-text-stroke: 0.5px rgba(147, 162, 146, 0.95);
+  font-size: 3rem;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.08em;
+  text-overflow: clip;
+  white-space: nowrap;
+  pointer-events: none;
+  transform: translateY(-50%);
+  text-shadow: 0 1px 2px rgba(15, 23, 42, 0.12);
 }
 
 /* ---------- Pastille de classification ---------- */
@@ -143,6 +171,8 @@ const unselectedTitle = computed(() =>
   border-radius: calc(12px * var(--bubble-scale, 1));
 
   .classification-badge {
+    position: relative;
+    z-index: 1;
     justify-self: start;
     align-self: start;
     flex-basis: calc(17px * var(--bubble-scale, 1));
@@ -159,6 +189,8 @@ const unselectedTitle = computed(() =>
   }
 
   .chip-copy {
+    position: relative;
+    z-index: 1;
     width: 100%;
     align-items: center;
     justify-content: center;
@@ -172,6 +204,12 @@ const unselectedTitle = computed(() =>
     font-weight: 700;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .step-order-watermark {
+    right: 3px;
+    max-width: 75%;
+    font-size: clamp(1.8rem, calc(3.1rem * var(--bubble-scale, 1)), 3.1rem);
   }
 }
 
@@ -190,6 +228,7 @@ const unselectedTitle = computed(() =>
     position: absolute;
     top: 7px;
     left: 7px;
+    z-index: 1;
   }
 
   .new-request-indicator {
@@ -198,6 +237,8 @@ const unselectedTitle = computed(() =>
   }
 
   strong {
+    position: relative;
+    z-index: 1;
     overflow: hidden;
     font-size: 0.97rem;
     font-weight: 700;
@@ -206,6 +247,8 @@ const unselectedTitle = computed(() =>
   }
 
   small {
+    position: relative;
+    z-index: 1;
     display: block;
     max-width: 100%;
     overflow: hidden;
@@ -213,6 +256,11 @@ const unselectedTitle = computed(() =>
     font-size: 0.86rem;
     line-height: 1.25;
     white-space: normal;
+  }
+
+  .step-order-watermark {
+    right: 10px;
+    font-size: 3.4rem;
   }
 }
 </style>

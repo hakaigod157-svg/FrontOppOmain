@@ -68,7 +68,12 @@ const emit = defineEmits(["open-day", "open-slot"]);
                 @select="emit('open-slot', day.date, null)"
               />
             </div>
-            <span v-else class="empty-badge">Aucune intervention</span>
+            <span
+              v-else-if="day.date.getDay() !== 0"
+              class="empty-badge"
+            >
+              Aucune intervention
+            </span>
           </template>
         </div>
       </div>

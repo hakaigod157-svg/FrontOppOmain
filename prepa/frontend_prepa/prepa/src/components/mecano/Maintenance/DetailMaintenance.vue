@@ -300,7 +300,7 @@ const etapesReal = ref([]);
 const headersEtapes = [
       { title: "N°", key: "ligne_NUMERO", align: "start", width: "70px" },
       { title: "Étape d'intervention", key: "etape_LIBELLE", align: "start" },
-      { title: "Date prévue", key: "etape_DATE_PREV", align: "start", width: "160px" },
+      { title: "Date d'écheance Prévue", key: "etape_DATE_PREV", align: "start", width: "160px" },
       { title: "Date réalisation", key: "etape_DATE", align: "start", width: "220px" },
       { title: "Statut", key: "etape_STATUT", align: "center", width: "135px" },
       { title: "Intervenant", key: "etape_USER", align: "start", width: "180px" },
@@ -309,7 +309,7 @@ const headersEtapes = [
 const headersEtapesReal = [
       { title: "N°", key: "ligne_NUMERO", align: "start", width: "55px" },
       { title: "Intervention", key: "etape_LIBELLE", align: "start", minWidth: "180px" },
-      { title: "Date prévue", key: "etape_DATE_PREV", align: "start", width: "115px" },
+      { title: "Date d'écheance Prévue", key: "etape_DATE_PREV", align: "start", width: "115px" },
       { title: "Action", key: "action", align: "start", width: "140px" },
       { title: "Type d'exécution", key: "exect", align: "start", width: "140px" },
       { title: "Fournisseur", key: "fournisseur", align: "start", width: "140px" },
@@ -817,6 +817,10 @@ const chargerDonneesEtEtapes = async (choisirOnglet = true) => {
         await synchroniserDonnees();
         await listEtape();
         await listEtapeReal();
+        await storeEtape.getTypeExecution();
+        await storeEtape.getTypeActionReal();
+        await storeEtape.getFournisseurs();
+        await storeEtape.getMarques();
         if (choisirOnglet) choisirOngletInitial();
       } finally {
         loadingEtapes.value = false;
@@ -1940,7 +1944,7 @@ const onActionChange = (item) => {
 }
 
 .detail-maintenance-card .table-inline-input :deep(.v-field__input) {
-  font-size: 12px !important;
+  font-size: 14px !important;
   padding-top: 2px !important;
   padding-bottom: 2px !important;
   min-height: 26px !important;

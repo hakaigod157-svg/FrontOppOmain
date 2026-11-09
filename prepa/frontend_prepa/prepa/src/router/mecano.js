@@ -6,7 +6,7 @@ import useCheckSessionID from "@/composables/useCheckSessionID";
 import EditDemande from "@/views/mecano/editDemande.vue";
 // import Calendrier from "@/views/mecano/calendrier.vue";
 import Calendrier from "@/views/mecano/calendrier/Calendrier.vue";
-import NouvelleDMD from "@/views/mecano/nouvelleDMD.vue";
+import FicheVoiture from "@/views/mecano/FicheVoiture/FicheVoiture.vue";
 
 const { checkSessionID } = useCheckSessionID();
 
@@ -39,6 +39,11 @@ export default [
         path: "calendar",
         name: "maintenance-calendar",
         component: Calendrier,
+      },
+      {
+        path: "carsFile",
+        name: "maintenance-cars-file",
+        component: FicheVoiture,
       },
 
       {

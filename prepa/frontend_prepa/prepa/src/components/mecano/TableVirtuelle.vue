@@ -1,83 +1,123 @@
+```vue
 <script setup>
-import {reactive , computed, ref} from "vue";
+import { reactive, computed } from "vue";
 import dayjs from "dayjs";
 
+const props = defineProps({
+  headers: { type: Array, required: true },
+  items: { type: Array, required: true },
+  search: { type: String, default: "" },
+  loading: { type: Boolean, default: false },
+  height: { type: [String, Number], default: 600 },
 
-const props= defineProps ({
-    headers: {type:Array , required:true},
-    items: {type:Array , required:true},
-    search: {type:String , default:''},
-    loading: {type:Boolean , default:false},
-    height: {type:[String,Number] , default:600},
-    highlightedDemandCode: { type: String, default: "" },
-    highlightedMaintenanceCode: { type: String, default: "" },
+  highlightedDemandCode: { type: String, default: "" },
+  highlightedMaintenanceCode: { type: String, default: "" },
 
-    longTextCols: {
+  // Gestion de la ligne sélectionnée
+  selectedItemId: { type: [String, Number], default: null },
+  selectedItemKey: { type: String, default: "id" },
+
+  longTextCols: {
     type: Array,
-    default: () => ['demande_desc', 'demande_auteur', 'demande_marque']
+    default: () => [
+      "demande_desc",
+      "demande_auteur",
+      "demande_marque"
+    ]
   },
+
   dateCols: {
     type: Array,
-    default: () => ['maint_date', 'maint_date_cree', 'maint_date_modif', 'maint_demande_date', 'maint_demande_date_cree', 'demande_date_modif','demande_DATE']
+    default: () => [
+      "maint_date",
+      "maint_date_cree",
+      "maint_date_modif",
+      "maint_demande_date",
+      "maint_demande_date_cree",
+      "demande_date_modif",
+      "demande_DATE"
+    ]
   },
+
   numCols: {
     type: Array,
-    default: () => ['demande_KM','maint_KM']
+    default: () => [
+      "demande_KM",
+      "maint_KM"
+    ]
   },
-  
 
   totalDoublons: { type: Number, default: 0 },
-  showNbDoublons: { type: Boolean, default: false },
-
-  // Fonction personnalisée pour la couleur des lignes
-  // rowPropsFormatter: {
-  //   type: Function,
-  //   default: (item) => (item?.demande_ETAT === 2 ? { class: 'highlight-bg' } : {})
-  // }
-
+  showNbDoublons: { type: Boolean, default: false }
 });
 
-const emit= defineEmits([`click:row`]);
+const emit = defineEmits(["click:row"]);
+
 const longMaxText = 30;
 const mapDeveloppe = reactive({});
-const formatDateTime = (date) => (date ? dayjs(date).format('DD/MM/YYYY') : '');
 
-const voirPlus = (item,index, field) => {
-    const idItem = item?.demande_desc_id ?? item?.id ?? index;
-    return `voirPlus_${idItem}_${field}`;
+const formatDateTime = (date) =>
+  date ? dayjs(date).format("DD/MM/YYYY") : "";
+
+const voirPlus = (item, index, field) => {
+  const idItem = item?.demande_desc_id ?? item?.id ?? index;
+  return `voirPlus_${idItem}_${field}`;
 };
 
-const ouvertVe = (item,index,field) => !!mapDeveloppe[voirPlus(item,index,field)];
+const ouvertVe = (item, index, field) =>
+  !!mapDeveloppe[voirPlus(item, index, field)];
 
 const toogleOpened = (item, index, field) => {
   const k = voirPlus(item, index, field);
   mapDeveloppe[k] = !mapDeveloppe[k];
 };
 
-const formatKm = (valeur) =>
-  String(valeur).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+const formatKm = (valeur) => {
+  if (valeur === null || valeur === undefined || valeur === "") {
+    return "";
+  }
+
+  return String(valeur).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+};
 
 const tokonyApotraToogle = (item, field) => {
-  const text = String(item?.[field] ?? '').trim();
+  const text = String(item?.[field] ?? "").trim();
   return text.length > longMaxText;
 };
 
 const truncatedText = (text) => {
-  if (!text) return '';
+  if (!text) return "";
+
   const s = String(text).trim();
-  return s.length > longMaxText ? s.slice(0, longMaxText) + '…' : s;
+
+  return s.length > longMaxText
+    ? s.slice(0, longMaxText) + "…"
+    : s;
 };
 
 const skeletonRows = computed(() => {
-  const h = typeof props.height === 'number' ? props.height : 600;
-  return Math.max(3, Math.floor(h / 50)); 
+  const h = typeof props.height === "number" ? props.height : 600;
+  return Math.max(3, Math.floor(h / 50));
 });
 
 const rowProps = ({ item }) => {
   const row = item?.raw ?? item;
+
   const demandeCode = row?.demande_CODE ?? row?.DEMANDE_CODE;
   const maintenanceCode = row?.maint_CODE ?? row?.MAINT_CODE;
 
+  // Identification de la ligne sélectionnée
+  const selectedId = row?.[props.selectedItemKey];
+
+  if (
+    props.selectedItemId !== null &&
+    props.selectedItemId !== undefined &&
+    String(selectedId) === String(props.selectedItemId)
+  ) {
+    return { class: "vehicule-selectionne" };
+  }
+
+  // Nouvelle demande
   if (
     demandeCode &&
     String(demandeCode) === String(props.highlightedDemandCode)
@@ -85,6 +125,7 @@ const rowProps = ({ item }) => {
     return { class: "nouvelle-demande-clignote" };
   }
 
+  // Maintenance mise en évidence
   if (
     maintenanceCode &&
     String(maintenanceCode) === String(props.highlightedMaintenanceCode)
@@ -95,25 +136,31 @@ const rowProps = ({ item }) => {
   return {};
 };
 
-
 const filteredItems = computed(() => {
   const query = props.search.trim().toLowerCase();
+
   if (!query) return props.items;
 
   return props.items.filter((item) =>
     Object.values(item).some((val) =>
-      String(val ?? '').toLowerCase().includes(query)
+      String(val ?? "").toLowerCase().includes(query)
     )
   );
 });
-
-
 </script>
 
 <template>
-  <v-card class="bordered-new d-flex flex-column" :style="{ height: typeof height === 'number' ? height + 'px' : height }" density="compact">
-    
-    <div v-if="loading" class="pa-3 flex-grow-1 overflow-hidden">
+  <v-card
+    class="bordered-new d-flex flex-column"
+    :style="{
+      height: typeof height === 'number' ? height + 'px' : height
+    }"
+    density="compact"
+  >
+    <div
+      v-if="loading"
+      class="pa-3 flex-grow-1 overflow-hidden"
+    >
       <!-- Faux headers -->
       <div class="d-flex ga-2 mb-3">
         <v-skeleton-loader
@@ -123,6 +170,7 @@ const filteredItems = computed(() => {
           class="flex-grow-1"
         />
       </div>
+
       <!-- Fausses lignes -->
       <v-skeleton-loader
         v-for="n in skeletonRows"
@@ -132,7 +180,6 @@ const filteredItems = computed(() => {
       />
     </div>
 
-  
     <v-data-table-virtual
       v-else
       class="maint_header flex-grow-1"
@@ -144,27 +191,52 @@ const filteredItems = computed(() => {
       :height="height"
       :row-props="rowProps"
       no-data-text="Aucune données disponible pour l'instant"
-      
       @click:row="(_, row) => emit('click:row', row.item)"
     >
-      <template v-for="col in dateCols" :key="'date-' + col" v-slot:[`item.${col}`]="{ item }">
+      <!-- Colonnes de dates -->
+      <template
+        v-for="col in dateCols"
+        :key="'date-' + col"
+        v-slot:[`item.${col}`]="{ item }"
+      >
         {{ formatDateTime(item[col]) }}
       </template>
 
-
-      <template v-for="col in numCols" :key="'-KM' + col" v-slot:[`item.${col}`]="{ item }">
-        {{ formatKm(item[col]) + ' km' }}
+      <!-- Colonnes kilométriques -->
+      <template
+        v-for="col in numCols"
+        :key="'-KM' + col"
+        v-slot:[`item.${col}`]="{ item }"
+      >
+        {{ formatKm(item[col]) }}{{ item[col] !== null && item[col] !== undefined && item[col] !== "" ? " km" : "" }}
       </template>
 
-      <!-- Gestion dynamique des TEXTES LONGS -->
-      <template v-for="col in longTextCols" :key="'long-' + col" v-slot:[`item.${col}`]="{ item, index }">
-        <v-tooltip location="bottom" :disabled="!tokonyApotraToogle(item, col)">
+      <!-- Gestion dynamique des textes longs -->
+      <template
+        v-for="col in longTextCols"
+        :key="'long-' + col"
+        v-slot:[`item.${col}`]="{ item, index }"
+      >
+        <v-tooltip
+          location="bottom"
+          :disabled="!tokonyApotraToogle(item, col)"
+        >
           <template #activator="{ props: tooltipProps }">
-            <div v-bind="tooltipProps" class="maintenance_cells">
-              <span v-if="!ouvertVe(item, index, col)" class="text-truncate">
+            <div
+              v-bind="tooltipProps"
+              class="maintenance_cells"
+            >
+              <span
+                v-if="!ouvertVe(item, index, col)"
+                class="text-truncate"
+              >
                 {{ truncatedText(item[col]) }}
               </span>
-              <span v-else class="text-wrap">
+
+              <span
+                v-else
+                class="text-wrap"
+              >
                 {{ item[col] }}
               </span>
 
@@ -176,33 +248,55 @@ const filteredItems = computed(() => {
                 color="primary"
                 @click.stop="toogleOpened(item, index, col)"
               >
-                {{ ouvertVe(item, index, col) ? 'Voir moins' : 'Voir plus' }}
+                {{ ouvertVe(item, index, col) ? "Voir moins" : "Voir plus" }}
               </v-btn>
             </div>
           </template>
+
           <span>{{ item[col] }}</span>
         </v-tooltip>
       </template>
 
-      <template v-for="(_, slotName) in $slots" v-slot:[slotName]="slotData">
-        <slot :name="slotName" v-bind="slotData" />
+      <!-- Conservation des slots personnalisés -->
+      <template
+        v-for="(_, slotName) in $slots"
+        v-slot:[slotName]="slotData"
+      >
+        <slot
+          :name="slotName"
+          v-bind="slotData"
+        />
       </template>
     </v-data-table-virtual>
 
-    <v-card density="compact" class="pa-2 mt-1 border-t">
-      <v-row no-gutters align="center" justify="space-between">
-        <v-col cols="6" class="text-left font-weight-medium">
-        <b>{{ filteredItems.length }}</b> Lignes affichées
+    <!-- Pied de tableau -->
+    <v-card
+      density="compact"
+      class="pa-2 mt-1 border-t"
+    >
+      <v-row
+        no-gutters
+        align="center"
+        justify="space-between"
+      >
+        <v-col
+          cols="6"
+          class="text-left font-weight-medium"
+        >
+          <b>{{ filteredItems.length }}</b> Lignes affichées
         </v-col>
 
-        <v-col cols="6" class="text-right font-weight-bold text-error" v-if="showNbDoublons">
-           {{ totalDoublons }} Doublons détectés
+        <v-col
+          cols="6"
+          class="text-right font-weight-bold text-error"
+          v-if="showNbDoublons"
+        >
+          {{ totalDoublons }} Doublons détectés
         </v-col>
       </v-row>
     </v-card>
   </v-card>
 </template>
-
 
 <style scoped>
 .bordered-new {
@@ -219,7 +313,7 @@ const filteredItems = computed(() => {
 :deep(.maint_header .v-table__wrapper > table) {
   table-layout: fixed !important;
   width: 100% !important;
-} 
+}
 
 :deep(.maint_header .v-table__wrapper > table > thead > tr > th) {
   background-color: #0b3b17 !important;
@@ -232,10 +326,7 @@ const filteredItems = computed(() => {
   text-overflow: ellipsis;
 }
 
-
-/* ETO TAILLE TEXTE SANATRIA */
-
-
+/* Taille des textes */
 :deep(.maint_header .v-table__wrapper > table > tbody > tr > td) {
   font-size: 12px !important;
   padding: 0 4px !important;
@@ -244,6 +335,16 @@ const filteredItems = computed(() => {
   white-space: nowrap;
 }
 
+/* Ligne sélectionnée */
+:deep(.vehicule-selectionne) {
+  background-color: #e8edf5 !important;
+}
+
+:deep(.vehicule-selectionne:hover) {
+  background-color: #dce5f1 !important;
+}
+
+/* Cellules contenant des textes longs */
 .maintenance_cells {
   display: flex;
   flex-direction: column;
@@ -275,3 +376,4 @@ const filteredItems = computed(() => {
   background-color: #ffe5a1 !important;
 }
 </style>
+```

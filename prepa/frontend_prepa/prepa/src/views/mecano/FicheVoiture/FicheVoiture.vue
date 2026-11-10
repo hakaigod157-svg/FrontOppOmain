@@ -323,6 +323,7 @@ const handleRowClick = async (item) => {
   position: relative;
   min-height: 400px;
   overflow: hidden;
+  
 }
 
 .details-content {

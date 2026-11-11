@@ -83,9 +83,9 @@ const demandeDate = computed(() => {
   return props.code || props.demande?.demande_DATE  || "";
 });
 
-// En mode refus, pas de classification à choisir
+// En mode refus ou consultation, pas de classification à choisir
 const isPonctuelle = computed(() => {
-  if (isRefus.value) return false;
+  if (isRefus.value || isConsultation.value) return false;
   const d = props.demande || {};
   const type = String(d.demande_TYPE || "").trim().toUpperCase();
   return type === "PONCTUELLE";

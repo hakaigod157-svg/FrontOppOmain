@@ -20,6 +20,10 @@ const tab = ref("prepa");
 
 const loadingEtapes = ref(false);
 const loadingActionPrepa = ref(false);
+const selectedEtapeFiles = ref({});
+const erreurFichierEtape = ref("");
+const MAX_ETAPE_FILE_SIZE = 10_000_000;
+const ALLOWED_ETAPE_FILE_EXTENSIONS = ["pdf", "jpg", "jpeg", "png", "webp", "avif"];
 
 const storeDemande = useDemandeMaintenance();
 const storeMaint = maintStore();
@@ -304,6 +308,7 @@ const headersEtapes = [
       { title: "Date réalisation", key: "etape_DATE", align: "start", width: "220px" },
       { title: "Statut", key: "etape_STATUT", align: "center", width: "135px" },
       { title: "Intervenant", key: "etape_USER", align: "start", width: "180px" },
+      { title: "Pièce Jointe", key: "etape_PJ", align: "center", width: "180px" },
     ];
 
 const headersEtapesReal = [
@@ -317,6 +322,7 @@ const headersEtapesReal = [
       { title: "Prix (Ar)", key: "prix", align: "end", width: "115px" },
       { title: "Date réalisation", key: "etape_DATE", align: "center", width: "135px" },
       { title: "Statut", key: "etape_STATUT", align: "center", width: "105px" },
+      { title: "Pièce Jointe", key: "etape_PJ", align: "center", width: "105px" },
       { title: "Validation", key: "actions", align: "center", width: "100px" },
     ];
 
@@ -362,10 +368,10 @@ const validerEtapePrepaAction = async (item) => {
       }
       loadingActionPrepa.value = true;
       try {
-        //const user = localStorage.getItem("username") || "Admin";
-        // await storeEtape.validerEtapePrepa(code, item.code || item.etape_LIBELLE, user);
-
-        await storeEtape.validerEtapePrepa(code, item.code || item.etape_LIBELLE);
+        await storeEtape.validerEtapePrepa(
+          code,
+          item.code || item.etape_LIBELLE
+        );
         await chargerDonneesEtEtapes(false);
       } catch (err) {
         console.error("Erreur lors de la validation PREPA :", err);
@@ -390,7 +396,7 @@ const validerEtapeRealDirect = async (item) => {
           fournisseur: verif ? null : (item.fournisseur || null),
           marque: verif ? null : (item.marque || null),
           prix: verif ? null : (item.prix !== null && item.prix !== undefined && item.prix !== "" ? Number(item.prix) : null),
-          dateReal: null, 
+          dateReal: null,
         });
         await chargerDonneesEtEtapes(false);
       } catch (err) {
@@ -399,6 +405,25 @@ const validerEtapeRealDirect = async (item) => {
         loadingActionReal.value = false;
       }
     };
+
+const etapeFileKey = (item) => `${item?.nature || "ETAPE"}:${item?.code || item?.etape_LIBELLE || item?.ligne_NUMERO}`;
+const uploadAutorise = (item) => Number(item?.etape_UPLOAD) === 1 && !!item?.enCours;
+const chooseEtapeFile = (item, event) => {
+  const file = event.target.files?.[0];
+  event.target.value = "";
+  if (!file) return;
+  const extension = file.name.split(".").pop()?.toLowerCase();
+  if (!ALLOWED_ETAPE_FILE_EXTENSIONS.includes(extension)) {
+    erreurFichierEtape.value = "Format non accepté. Choisissez un PDF, JPG, PNG, WEBP ou AVIF.";
+    return;
+  }
+  if (file.size > MAX_ETAPE_FILE_SIZE) {
+    erreurFichierEtape.value = "Le fichier dépasse la limite de 10 Mo.";
+    return;
+  }
+  erreurFichierEtape.value = "";
+  selectedEtapeFiles.value = { ...selectedEtapeFiles.value, [etapeFileKey(item)]: file };
+};
 
 const dialogAjoutReal = ref(false);
 const loadingAjoutReal = ref(false);
@@ -717,6 +742,8 @@ const repApi = await storeEtape.getListePrepaMaint(code);
         etape_DATE_PREV: toIso(item.maint_ETAPE_PREVU),
         etape_DATE: item.maint_ETAPE_REEL ?? null,
         etape_USER: item.maint_ETAPE_USER ?? item.intervenant ??item.maint_USER ?? "", 
+        etape_UPLOAD: item.maint_ETAPE_UPLOAD,
+        etape_PJ:item.maint_ETAPE_PJ,
         enCours: Number(item.maint_ETAPE_ETAT) === 1,
         valide: Number(item.maint_ETAPE_ETAT) === 2,
         menuOpen: false,
@@ -746,24 +773,25 @@ const listEtapeReal = async (maintCode = null) => {
   loadingEtapes.value = true;
   try {
 const code = getMaintCode(maintCode);
-const repApi = await storeEtape.getListeRealMaint(code);
-    if (Array.isArray(repApi) && repApi.length > 0) {
+const repApiREAL = await storeEtape.getListeRealMaint(code);
+    if (Array.isArray(repApiREAL) && repApiREAL.length > 0) {
 
 
       const prepaTerminee = etapesPrepa.value.length === 0 ||
         etapesPrepa.value.every((e) => Number(e.etat_ID) === 2);
 
-      const liste = repApi.map((item, index) => {
-        // const action = item.maint_ACTION_REAL ?? item.MAINT_ACTION_REAL ?? item.maintActionReal ?? item.action ?? "";
+      const liste = repApiREAL.map((item, index) => {
         const action = item.maint_ACTION_REAL ;
         const exect = item.maint_EXECUTION ?? null;
-        // const fnr = item.maint_FNR_REAL ?? item.MAINT_FNR_REAL ?? item.maintFnrReal ?? item.fournisseur ?? "";
+       
         const fnr = item.maint_FNR_REAL;
         const prix = item.maint_PRIX_REAL ?? 100;
         const marque = item.maint_MRAQUE_MARQUE  ?? null;
         const dateReal = item.maint_DATE_REAL ?? null;
         const datePrev = item.maint_DATE_PREVU ??  null;
         const interv = item.maint_INTERV_REAL;
+        const upload = item.maint_UPLOAD_REAL;
+        const pj = item.maint_PJ_REAL;
 
         return {
           ligne_NUMERO: index + 1,
@@ -771,6 +799,8 @@ const repApi = await storeEtape.getListeRealMaint(code);
           etape_DATE_PREV: toIso(datePrev),
           etape_DATE: dateReal ? toIso(dateReal) : null,
           etape_USER: item.maint_USER ?? item.MAINT_USER ?? "",
+          etape_UPLOAD : upload,
+          etape_PJ :pj,
           action: action,
           exect: exect,
           fournisseur: fnr,
@@ -1224,7 +1254,25 @@ const onActionChange = (item) => {
                   {{ item.etape_USER || "" }}
                 </span>
               </template>
+
+              <template v-slot:[`item.etape_PJ`]="{ item }">
+                <div class="d-flex align-center justify-center ga-1">
+                  <template v-if="uploadAutorise(item)">
+                    <v-btn size="x-small" variant="tonal" color="primary" prepend-icon="mdi-paperclip"
+                      @click="$event.currentTarget.nextElementSibling.click()">
+                      {{ selectedEtapeFiles[etapeFileKey(item)] ? "Changer" : "Joindre" }}
+                    </v-btn>
+                    <input class="d-none" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.avif,application/pdf,image/jpeg,image/png,image/webp,image/avif"
+                      @change="chooseEtapeFile(item, $event)" />
+                    <span v-if="selectedEtapeFiles[etapeFileKey(item)]" class="text-caption text-truncate" style="max-width: 110px">
+                      {{ selectedEtapeFiles[etapeFileKey(item)].name }}
+                    </span>
+                  </template>
+                  <span v-if="!uploadAutorise(item)" class="text-grey text-caption">—</span>
+                </div>
+              </template>
             </v-data-table>
+            <v-alert v-if="erreurFichierEtape" type="error" density="compact" class="mt-2">{{ erreurFichierEtape }}</v-alert>
 
             <div v-if="!loadingEtapes" class="summary-line mt-2">
               <b>{{ etapesPrepa.length }}</b> étape<span v-if="etapesPrepa.length > 1">s</span> de préparation &bull;
@@ -1454,6 +1502,22 @@ const onActionChange = (item) => {
                 </v-chip>
               </template>
 
+              <template v-slot:[`item.etape_PJ`]="{ item }">
+                <div class="d-flex align-center justify-center ga-1">
+                  <template v-if="uploadAutorise(item)">
+                    <v-btn size="x-small" variant="tonal" color="primary" icon="mdi-paperclip"
+                      :aria-label="selectedEtapeFiles[etapeFileKey(item)] ? 'Changer le fichier' : 'Joindre un fichier'"
+                      @click="$event.currentTarget.nextElementSibling.click()" />
+                    <input class="d-none" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.avif,application/pdf,image/jpeg,image/png,image/webp,image/avif"
+                      @change="chooseEtapeFile(item, $event)" />
+                    <span v-if="selectedEtapeFiles[etapeFileKey(item)]" class="text-caption text-truncate" style="max-width: 90px">
+                      {{ selectedEtapeFiles[etapeFileKey(item)].name }}
+                    </span>
+                  </template>
+                  <span v-if="!uploadAutorise(item)" class="text-grey text-caption">—</span>
+                </div>
+              </template>
+
               <!-- Colonne Validation -->
               <template v-slot:[`item.actions`]="{ item }">
                 <div class="d-flex align-center justify-center">
@@ -1480,6 +1544,7 @@ const onActionChange = (item) => {
                 </div>
               </template>
             </v-data-table>
+            <v-alert v-if="erreurFichierEtape" type="error" density="compact" class="mt-2">{{ erreurFichierEtape }}</v-alert>
 
             <div
               v-if="(toutesEtapesRealValidees && !demandeCloturee) || demandeCloturee"

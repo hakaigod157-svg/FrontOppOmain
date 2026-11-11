@@ -776,17 +776,33 @@ const jumpToDayView = (date) => {
             />
           </div>
 
-          <v-select
+         <!-- <div class="maintenance-filter">
+          <v-checkbox
+            v-for="filter in MAINTENANCE_FILTERS"
+            :key="filter.value"
             v-model="maintenanceFilter"
-            :items="MAINTENANCE_FILTERS"
-            item-title="title"
-            item-value="value"
-            label="Filtrer les maintenances"
+            :value="filter.value"
+            :label="filter.title"
             density="compact"
-            variant="outlined"
             hide-details
-            class="maintenance-filter"
           />
+        </div> -->
+
+        <v-radio-group
+          v-model="maintenanceFilter"
+          density="compact"
+          hide-details
+          class="maintenance-filter"
+        >
+          <v-radio
+            v-for="filter in MAINTENANCE_FILTERS"
+            :key="filter.value"
+            :label="filter.title"
+            :value="filter.value"
+          />
+        </v-radio-group>
+
+
 
           <!-- Sélecteur de vues : Mensuel / Hebdomadaire / Par jour -->
           <v-btn-toggle
@@ -949,8 +965,10 @@ const jumpToDayView = (date) => {
 }
 
 .maintenance-filter {
-  width: 245px;
-  min-width: 215px;
+  // width: 245px;
+  // min-width: 215px;
+  padding-left : 50px;
+  padding-right : 50px;
 }
 
 .calendar-main-card {

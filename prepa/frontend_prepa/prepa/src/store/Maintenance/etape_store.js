@@ -227,7 +227,20 @@ export const useEtapeStore = defineStore("etapeStore", {
                 this.loading = false;
             }
         },
+//////////////////////////////////////////////////////
 
+
+
+
+
+
+/**
+ * VALIDATION ANA ETAPE PREPARATION (Mecanicien)
+ * MANAO POST
+ * @param {*} maintCode 
+ * @param {*} etapeLigne 
+ * @returns 
+ */
         async validerEtapePrepa(maintCode, etapeLigne) {
             const sessionId = localStorage.getItem("sessionId");
             const { handleLogout } = useLogout();
@@ -238,13 +251,10 @@ export const useEtapeStore = defineStore("etapeStore", {
                     Config.SERVER_URL + "api/validerEtapePrepa",
                     null,
                     {
-                        headers: {
-                            Authorization: sessionId
-                        },
+                        headers: { Authorization: sessionId },
                         params: {
                             MAINT_CODE_LIGNE: maintCode,
                             MAINT_ETAPE_LIGNE: etapeLigne,
-                            // MAINT_INTERVENANT: intervenant || localStorage.getItem("username") 
                         }
                     }
                 );
@@ -260,7 +270,13 @@ export const useEtapeStore = defineStore("etapeStore", {
                 this.loading = false;
             }
         },
-
+/**
+ * Ito ndray Etape Realisation avec Action sns 
+ * $_POST 
+ * @param {*} maintCode 
+ * @param {*} data 
+ * @returns 
+ */
         async validerEtapeReal(maintCode, data = {}) {
             const sessionId = localStorage.getItem("sessionId");
             const { handleLogout } = useLogout();
@@ -271,17 +287,15 @@ export const useEtapeStore = defineStore("etapeStore", {
                     Config.SERVER_URL + "api/validerEtapeReal",
                     null,
                     {
-                        headers: {
-                            Authorization: sessionId
-                        },
+                        headers: { Authorization: sessionId },
                         params: {
                             MAINT_CODE_REAL: maintCode,
                             MAINT_INTERV_REAL: data.intervReal,
-                            MAINT_ACTION_REAL:  data.action ,
+                            MAINT_ACTION_REAL: data.action,
                             MAINT_EXECUTION: data.exect,
-                            MAINT_FNR_REAL:  data.fournisseur ,
+                            MAINT_FNR_REAL: data.fournisseur,
                             MAINT_PRIX_REAL: data.prix ?? 0,
-                            MAINT_MRAQUE_MARQUE: data.marque ,
+                            MAINT_MRAQUE_MARQUE: data.marque,
                             MAINT_DATE_REAL: data.dateReal,
                         }
                     }

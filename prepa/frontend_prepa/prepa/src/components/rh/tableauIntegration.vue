@@ -11,10 +11,16 @@
 
     <template v-slot:[`item.empl_date_fin_essai1`]="{ item }">
       {{ formatDate(item.empl_date_fin_essai1) }}
+      <br>
+      <b>({{ item.type }})</b>
     </template>
 
     <template v-slot:[`item.empl_date_fin_essai2`]="{ item }">
       {{ formatDate(item.empl_date_fin_essai2) }}
+    </template>
+
+    <template v-slot:[`item.empl_date_naiss`]="{ item }">
+      {{ formatDate(item.empl_date_naiss) }}
     </template>
 
 

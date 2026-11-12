@@ -2,7 +2,7 @@
     <v-card>
 
         <!-- TITRE -->
-        <v-card-title class="d-flex align-center px-5 py-3">
+        <v-card-title class="d-flex align-center px-5 py-3 header-employe">
             <v-icon color="primary" class="mr-2">
                 {{ employe ? "mdi-account-edit" : "mdi-account-plus" }}
             </v-icon>
@@ -11,6 +11,9 @@
                 {{ employe ? "Modifier l'employé" : "Ajouter un employé" }}
             </span>
 
+            <v-spacer />
+
+            <v-btn icon="mdi-close" variant="text" size="small" @click="annuler" />
         </v-card-title>
 
         <v-divider />
@@ -19,7 +22,7 @@
 
             <v-form ref="formRef">
 
-                <v-row dense>
+                <!-- <v-row dense>
 
                     <v-col cols="12" md="6">
                         <v-text-field v-model="form.empl_matricule" label="Matricule" variant="outlined"
@@ -27,28 +30,151 @@
                             :rules="[rules.required, rules.numeric]" clearable @keydown="onlyNumbers" />
                     </v-col>
 
-                    <!-- NOM -->
+                    
                     <v-col cols="12" md="6">
                         <v-text-field v-model="form.empl_nom" label="Nom" variant="outlined" density="compact"
                             :rules="[rules.required]" clearable />
                     </v-col>
 
-                    <!-- PRENOM -->
+                    
                     <v-col cols="12" md="6">
                         <v-text-field v-model="form.empl_prenom" label="Prénom" variant="outlined" density="compact"
                             :rules="[rules.required]" clearable />
                     </v-col>
 
-                    <!-- DATE DE NAISSANCE -->
+                    
                     <v-col cols="12" md="6">
                         <v-text-field v-model="form.empl_date_naiss" label="Date de naissance" type="date"
                             variant="outlined" density="compact" :rules="[rules.required]" />
                     </v-col>
 
+                    
+                    <v-col cols="12" md="6">
+                        <v-select v-model="form.empl_departement" :items="departements" item-title="departement"
+                            item-value="departement" label="Département" variant="outlined" density="compact"
+                            prepend-inner-icon="mdi-domain" :rules="[rules.required]" clearable
+                            @update:model-value="onDepartementChange" />
+                    </v-col>
+
+                   
+                    <v-col cols="12" md="6">
+                        <v-select v-model="form.empl_poste" :items="postesFiltrees" :item-title="getPosteLabel"
+                            item-value="code_poste" label="Poste" variant="outlined" density="compact"
+                            prepend-inner-icon="mdi-briefcase"
+                            :disabled="!form.empl_departement || postesFiltrees.length === 0" :rules="[rules.required]"
+                            clearable />
+                    </v-col>
+
+                    
+                    <v-col cols="12" md="6">
+                        <v-select v-model="form.empl_contrat" :items="contrats" label="Contrat" variant="outlined"
+                            density="compact" prepend-inner-icon="mdi-file-document" :rules="[rules.required]"
+                            clearable />
+                    </v-col>
+
+                    
+                    <v-col cols="12" md="6">
+                        <v-text-field v-model="form.empl_prise_fonction" label="Prise de fonction" type="date"
+                            variant="outlined" density="compact" prepend-inner-icon="mdi-calendar-check"
+                            :rules="[rules.required]" />
+                    </v-col>
+
+                    
+                    <v-col cols="12" md="6">
+                        <v-select v-model="form.empl_categorie" :items="listCategories" item-title="code_cat"
+                            item-value="code_cat" label="Catégorie" variant="outlined" density="compact"
+                            prepend-inner-icon="mdi-file-document" :rules="[rules.required]" clearable />
+                    </v-col>
+
+                    
+                    <v-col cols="12" md="6">
+                        <v-text-field v-model="form.empl_date_embauche" label="Date Embauche" type="date"
+                            variant="outlined" density="compact" prepend-inner-icon="mdi-calendar-check"
+                            :rules="[rules.required]" />
+                    </v-col>
+
+                </v-row> -->
+
+
+                <!-- ========== RUBRIQUE 1 : IDENTITÉ ========== -->
+                <!-- <div class="text-subtitle-2 text-medium-emphasis mb-2">Identité</div> -->
+                <!-- <v-row dense>
+
+
+                    <v-col cols="12" sm="4" md="2">
+                        <v-text-field v-model="form.empl_matricule" label="Matricule" variant="outlined"
+                            density="compact" prepend-inner-icon="mdi-card-account-details"
+                            :rules="[rules.required, rules.numeric]" maxlength="4" counter="4" clearable
+                            @keydown="onlyNumbers" />
+                    </v-col>
+
+
+                    <v-col cols="12" sm="8" md="4">
+                        <v-text-field v-model="form.empl_nom" label="Nom" variant="outlined" density="compact"
+                            :rules="[rules.required]" clearable />
+                    </v-col>
+
+                    <v-col cols="12" sm="8" md="4">
+                        <v-text-field v-model="form.empl_prenom" label="Prénom" variant="outlined" density="compact"
+                            :rules="[rules.required]" clearable />
+                    </v-col>
+
+                    <v-col cols="12" sm="4" md="2">
+                        <v-text-field v-model="form.empl_date_naiss" label="Date de naissance" type="date"
+                            variant="outlined" density="compact" :rules="[rules.required]" />
+                    </v-col>
+
+                </v-row> -->
+
+
+
+                <v-row dense>
+
+                    <!-- MATRICULE (4 chiffres) -->
+                    <v-col cols="12" sm="4" md="2">
+                        <v-text-field v-model="form.empl_matricule" label="Matricule" variant="outlined"
+                            density="compact" prepend-inner-icon="mdi-card-account-details"
+                            :rules="[rules.required, rules.numeric]" maxlength="4" clearable
+                            @keydown="onlyNumbers" />
+                    </v-col>
+
+                    <!-- NOM -->
+                    <v-col cols="12" sm="8" md="3">
+                        <v-text-field v-model="form.empl_nom" label="Nom" variant="outlined" density="compact"
+                            :rules="[rules.required]" clearable />
+                    </v-col>
+
+                    <!-- PRENOM -->
+                    <v-col cols="12" sm="6" md="3">
+                        <v-text-field v-model="form.empl_prenom" label="Prénom" variant="outlined" density="compact"
+                            :rules="[rules.required]" clearable />
+                    </v-col>
+
+                    <!-- DATE DE NAISSANCE -->
+                    <v-col cols="12" sm="3" md="2">
+                        <v-text-field v-model="form.empl_date_naiss" label="Date de naissance" type="date"
+                            variant="outlined" density="compact" :rules="[rules.required]" />
+                    </v-col>
+
+                    <!-- DATE EMBAUCHE -->
+                    <v-col cols="12" sm="3" md="2">
+                        <v-text-field v-model="form.empl_date_embauche" label="Date d'embauche" type="date"
+                            variant="outlined" density="compact"
+                            :rules="[rules.required]" />
+                    </v-col>
+
+                </v-row>
+
+                <v-divider class="my-3" />
+
+                <!-- ========== RUBRIQUE 2 : DÉPARTEMENT / POSTE ========== -->
+                <!-- <div class="text-subtitle-2 text-medium-emphasis mb-2">Département et poste</div> -->
+                <v-row dense>
+
                     <!-- DEPARTEMENT -->
                     <v-col cols="12" md="6">
-                        <v-select v-model="form.empl_departement" :items="departements" item-title="lib_departement"
-                            item-value="code_departement" label="Département" variant="outlined" density="compact"
+                        <v-select v-model="form.empl_departement" :items="departements" item-title="departement"
+                            item-value="departement" label="Département" variant="outlined" density="compact"
                             prepend-inner-icon="mdi-domain" :rules="[rules.required]" clearable
                             @update:model-value="onDepartementChange" />
                     </v-col>
@@ -57,37 +183,49 @@
                     <v-col cols="12" md="6">
                         <v-select v-model="form.empl_poste" :items="postesFiltrees" :item-title="getPosteLabel"
                             item-value="code_poste" label="Poste" variant="outlined" density="compact"
-                            prepend-inner-icon="mdi-briefcase" :disabled="!form.empl_departement"
-                            :rules="[rules.required]" clearable />
+                            prepend-inner-icon="mdi-briefcase"
+                            :disabled="!form.empl_departement || postesFiltrees.length === 0" :rules="[rules.required]"
+                            clearable />
                     </v-col>
 
+                </v-row>
+
+                <v-divider class="my-3" />
+
+                <!-- ========== RUBRIQUE 3 : CONTRAT / CATÉGORIE ========== -->
+                <!-- <div class="text-subtitle-2 text-medium-emphasis mb-2">Contrat et catégorie</div> -->
+                <v-row dense>
+
                     <!-- CONTRAT -->
-                    <v-col cols="12" md="6">
+                    <v-col cols="12" md="3">
                         <v-select v-model="form.empl_contrat" :items="contrats" label="Contrat" variant="outlined"
                             density="compact" prepend-inner-icon="mdi-file-document" :rules="[rules.required]"
                             clearable />
                     </v-col>
 
+                    <!-- CATEGORIE -->
+                    <v-col cols="12" md="3">
+                        <v-select v-model="form.empl_categorie" :items="listCategories" item-title="code_cat"
+                            item-value="code_cat" label="Catégorie" variant="outlined" density="compact"
+                            prepend-inner-icon="mdi-tag" :rules="[rules.required]" clearable />
+                    </v-col>
+
+                    <!-- DATE EMBAUCHE -->
+                    <!-- <v-col cols="12" md="3">
+                        <v-text-field v-model="form.empl_date_embauche" label="Date d'embauche" type="date"
+                            variant="outlined" density="compact" prepend-inner-icon="mdi-calendar-check"
+                            :rules="[rules.required]" />
+                    </v-col> -->
+
                     <!-- PRISE DE FONCTION -->
-                    <v-col cols="12" md="6">
+                    <v-col cols="12" md="3">
                         <v-text-field v-model="form.empl_prise_fonction" label="Prise de fonction" type="date"
                             variant="outlined" density="compact" prepend-inner-icon="mdi-calendar-check"
                             :rules="[rules.required]" />
                     </v-col>
 
-                    <!-- DATE FIN ESSAI 1 -->
-                    <v-col cols="12" md="6">
-                        <v-text-field v-model="form.empl_date_fin_essai1" label="Date fin d'essai" type="date"
-                            variant="outlined" density="compact" prepend-inner-icon="mdi-calendar-clock" />
-                    </v-col>
-
-                    <!-- DATE FIN ESSAI 2 -->
-                    <!-- <v-col cols="12" md="6">
-                        <v-text-field v-model="form.empl_date_fin_essai2" label="Date fin d'essai 2" type="date"
-                            variant="outlined" density="compact" prepend-inner-icon="mdi-calendar-clock" />
-                    </v-col> -->
-
                 </v-row>
+
 
             </v-form>
 
@@ -120,6 +258,8 @@ import { defineComponent, ref, reactive, onMounted, watch } from "vue";
 import { useDemande } from "@/store/Rh/rh_demande";
 import dayjs from "dayjs";
 import swal from "sweetalert2";
+import { useCV } from "@/store/Rh/rh_cv";
+
 
 
 export default defineComponent({
@@ -153,6 +293,19 @@ export default defineComponent({
 
         const postesFiltrees = ref([]);
 
+        const store = useDemande();
+
+        const listCategories = ref([])
+
+        const storec = useCV();
+
+        const listCategorie = async () => {
+            await storec.fetchListCategorie();
+            listCategories.value = storec.listcategories;
+
+            console.log(listCategories.value)
+        };
+
 
         // ─────────────────────────────────────
         // FORMULAIRE
@@ -179,6 +332,9 @@ export default defineComponent({
             empl_date_fin_essai1: "",
 
             empl_date_fin_essai2: "",
+
+            empl_date_embauche: "",
+
 
         });
 
@@ -268,31 +424,41 @@ export default defineComponent({
         // CHANGEMENT DEPARTEMENT
         // ─────────────────────────────────────
 
-        const onDepartementChange = (codeDep) => {
-
-            const dep = departements.value.find(
-                (d) => d.code_departement === codeDep
-            );
-
-            postesFiltrees.value = dep
-                ? dep.postes || []
-                : [];
-
+        const onDepartementChange = async (departement) => {
+            // Réinitialiser les postes et la sélection actuelle
+            postesFiltrees.value = [];
             form.empl_poste = null;
+
+            if (!departement) {
+                return;
+            }
+
+            try {
+                // Récupérer les postes du département sélectionné
+                const postes = await store.fetchDepartementPostes(departement);
+
+                postesFiltrees.value = Array.isArray(postes)
+                    ? postes
+                    : [];
+
+                console.log(
+                    "Département sélectionné :",
+                    departement
+                );
+
+                console.log(
+                    "Postes disponibles :",
+                    postesFiltrees.value
+                );
+            } catch (error) {
+                console.error(
+                    "Erreur lors du chargement des postes :",
+                    error
+                );
+
+                postesFiltrees.value = [];
+            }
         };
-
-        //         const onDepartementChange = (libelleDep) => {
-
-        //     const dep = departements.value.find(
-        //         (d) => d.lib_departement === libelleDep
-        //     );
-
-        //     postesFiltrees.value = dep
-        //         ? dep.postes || []
-        //         : [];
-
-        //     form.empl_poste = null;
-        // };
 
 
         // ─────────────────────────────────────
@@ -304,7 +470,6 @@ export default defineComponent({
             emit("cancel");
 
         };
-
 
         // ─────────────────────────────────────
         // ENREGISTRER
@@ -398,6 +563,9 @@ export default defineComponent({
 
                     empl_date_fin_essai2:
                         form.empl_date_fin_essai2 || null,
+
+                    empl_categorie:
+                        form.empl_categorie || null,
                 };
 
                 console.log(
@@ -426,44 +594,18 @@ export default defineComponent({
         // CHARGEMENT DEPARTEMENTS
         // ─────────────────────────────────────
 
-        // onMounted(async () => {
-
-        //     const {
-        //         fetchDepartementPostes
-        //     } = useDemande();
-
-        //     await fetchDepartementPostes();
-
-        //     departements.value =
-        //         useDemande().donnesdemande;
-
-        // });
+        const listDepartements = async () => {
+            await store.fetchDepartement();
+            departements.value = store.listDepartements;
+        };
 
         onMounted(async () => {
-
-
+            await listDepartements();
+            await listCategorie()
 
             if (props.employe) {
-                // console.log("[onMounted] appel chargerEmploye() AVANT fetch départements");
-                chargerEmploye(props.employe);
-                // console.log("[onMounted] form APRES 1er chargerEmploye =", JSON.stringify(form));
-            } else {
-                // console.log("[onMounted] props.employe est null/undefined, rien à charger");
+                await chargerEmploye(props.employe);
             }
-
-            try {
-
-                const { fetchDepartementPostes } = useDemande();
-                await fetchDepartementPostes();
-
-                departements.value = useDemande().donnesdemande;
-                if (props.employe) {
-                    chargerEmploye(props.employe);
-                }
-            } catch (error) {
-                // console.error("[onMounted] Erreur lors du chargement des départements :", error);
-            }
-
         });
 
         const onlyNumbers = (event) => {
@@ -496,69 +638,8 @@ export default defineComponent({
         };
 
 
-        // const chargerEmploye = (employe) => {
-
-        //     if (!employe) {
-        //         form.empl_matricule = "";
-        //         form.empl_nom = "";
-        //         form.empl_prenom = "";
-        //         form.empl_date_naiss = "";
-        //         form.empl_departement = null;
-        //         form.empl_poste = null;
-        //         form.empl_prise_fonction = "";
-        //         form.empl_contrat = null;
-        //         form.empl_date_fin_essai1 = "";
-        //         form.empl_date_fin_essai2 = "";
-        //         postesFiltrees.value = [];
-        //         return;
-        //     }
-
-        //     console.log("Employé à charger dans le formulaire :", employe);
-
-        //     form.empl_matricule = employe.empl_matricule || "";
-        //     form.empl_nom = employe.empl_nom || "";
-        //     form.empl_prenom = employe.empl_prenom || "";
-
-        //     form.empl_date_naiss = employe.empl_date_naiss
-        //         ? dayjs(employe.empl_date_naiss).format("YYYY-MM-DD")
-        //         : "";
-
-        //     // IMPORTANT :
-        //     // ton backend renvoie empl_dep
-        //     form.empl_departement = employe.empl_dep || null;
-
-        //     form.empl_poste = employe.empl_poste || null;
-
-        //     form.empl_prise_fonction = employe.empl_prise_fonction
-        //         ? dayjs(employe.empl_prise_fonction).format("YYYY-MM-DD")
-        //         : "";
-
-        //     form.empl_contrat = employe.empl_contrat || null;
-
-        //     form.empl_date_fin_essai1 = employe.empl_date_fin_essai1
-        //         ? dayjs(employe.empl_date_fin_essai1).format("YYYY-MM-DD")
-        //         : "";
-
-        //     form.empl_date_fin_essai2 = employe.empl_date_fin_essai2
-        //         ? dayjs(employe.empl_date_fin_essai2).format("YYYY-MM-DD")
-        //         : "";
-
-        //     // Charger les postes du département
-        //     const dep = departements.value.find(
-        //         d => d.code_departement === form.empl_departement
-        //     );
-
-        //     postesFiltrees.value = dep
-        //         ? dep.postes || []
-        //         : [];
-
-        //     console.log("Formulaire après chargement :", form);
-        // };
-
-        const chargerEmploye = (employe) => {
-
+        const chargerEmploye = async (employe) => {
             if (!employe) {
-
                 form.empl_matricule = "";
                 form.empl_nom = "";
                 form.empl_prenom = "";
@@ -567,12 +648,14 @@ export default defineComponent({
                 form.empl_poste = null;
                 form.empl_prise_fonction = "";
                 form.empl_contrat = null;
+                form.empl_categorie = null;
                 form.empl_date_fin_essai1 = "";
                 form.empl_date_fin_essai2 = "";
+                form.empl_date_embauche = "";
+
                 postesFiltrees.value = [];
                 return;
             }
-
 
             form.empl_matricule = employe.empl_matricule || "";
             form.empl_nom = employe.empl_nom || "";
@@ -583,13 +666,21 @@ export default defineComponent({
                 : "";
 
             form.empl_departement = employe.empl_dep || null;
-            form.empl_poste = employe.empl_poste || null;
+
+            form.empl_poste = null;
+            postesFiltrees.value = [];
 
             form.empl_prise_fonction = employe.empl_prise_fonction
                 ? dayjs(employe.empl_prise_fonction).format("YYYY-MM-DD")
                 : "";
 
+            form.empl_date_embauche = employe.empl_date_embauche
+                ? dayjs(employe.empl_date_embauche).format("YYYY-MM-DD")
+                : "";
+
             form.empl_contrat = employe.empl_contrat || null;
+
+            form.empl_categorie = employe.empl_categorie || null;
 
             form.empl_date_fin_essai1 = employe.empl_date_fin_essai1
                 ? dayjs(employe.empl_date_fin_essai1).format("YYYY-MM-DD")
@@ -599,14 +690,35 @@ export default defineComponent({
                 ? dayjs(employe.empl_date_fin_essai2).format("YYYY-MM-DD")
                 : "";
 
-            const dep = departements.value.find(
-                d => d.code_departement === form.empl_departement
-            );
+            // Charger les postes du département de l'employé
+            if (form.empl_departement) {
+                try {
+                    const postes = await store.fetchDepartementPostes(
+                        form.empl_departement
+                    );
 
+                    postesFiltrees.value = Array.isArray(postes)
+                        ? postes
+                        : [];
 
-            postesFiltrees.value = dep
-                ? dep.postes || []
-                : [];
+                    // Restaurer le poste de l'employé après le chargement
+                    const poste = postesFiltrees.value.find(
+                        (p) =>
+                            String(p.code_poste) ===
+                            String(employe.empl_poste)
+                    );
+
+                    form.empl_poste = poste
+                        ? poste.code_poste
+                        : employe.empl_poste || null;
+
+                } catch (error) {
+                    console.error(
+                        "Erreur lors du chargement des postes de l'employé :",
+                        error
+                    );
+                }
+            }
         };
 
         watch(
@@ -625,6 +737,7 @@ export default defineComponent({
             form, formRef, loading, departements, postesFiltrees, contrats, rules,
             getDepartementLabel, getPosteLabel, onDepartementChange, annuler, enregistrer,
             onlyNumbers, chargerEmploye,
+            listCategories,
 
         };
 
@@ -637,5 +750,10 @@ export default defineComponent({
 <style scoped>
 .v-card-title {
     font-weight: 600;
+}
+
+.header-employe {
+    background-color: #e8f5e9;
+    /* vert très clair */
 }
 </style>

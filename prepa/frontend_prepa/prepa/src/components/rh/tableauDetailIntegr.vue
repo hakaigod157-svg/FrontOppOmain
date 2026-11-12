@@ -31,10 +31,9 @@
                 </div>
             </template> -->
 
-            <template v-slot:[`item.ligne_etape_date`]="{ item, index }">
+            <!-- <template v-slot:[`item.ligne_etape_date`]="{ item, index }">
                 <div class="cell-with-button1 d-flex justify-center align-center">
 
-                    <!-- Date renseignée -->
                     <template v-if="item.ligne_etape_date">
 
                         <span>
@@ -47,7 +46,7 @@
 
                     </template>
 
-                    <!-- Première ligne sans date -->
+
                     <template v-else-if="index === firstUndatedIndex">
 
                         <v-btn size="small" variant="text" color="primary" prepend-icon="mdi-calendar-plus"
@@ -57,7 +56,63 @@
                     </template>
 
                 </div>
+            </template> -->
+
+
+
+            <template v-slot:[`item.ligne_etape_date`]="{ item, index }">
+                <div class="cell-with-button1 d-flex justify-center align-center">
+
+                    <!-- ETAT 2 : bouton décision uniquement si les étapes précédentes sont complètes -->
+
+                    <template v-if="Number(item.etat) === 2">
+
+                        <!-- Date et décision déjà enregistrées -->
+                        <span v-if="item.ligne_etape_date && item.ligne_etape_decision">
+                            {{ formatDate(item.ligne_etape_date) }}
+                            ({{ item.ligne_etape_decision }})
+                        </span>
+
+                        <!-- Sinon, afficher le bouton -->
+                        <v-btn v-else-if="canShowDecision(index)" size="small" variant="tonal" color="primary"
+                            density="compact" title="Évaluation fin d'essai" @click="openDatePicker(item)">
+                            DECISION
+                        </v-btn>
+
+                    </template>
+
+                    <!-- ETAT 1 : étape ignorée -->
+                    <template v-else-if="Number(item.etat) === 1">
+                        <span v-if="item.ligne_etape_date">
+                            {{ formatDate(item.ligne_etape_date) }}
+                        </span>
+                    </template>
+
+                    <!-- ETAT 0 : comportement actuel -->
+                    <template v-else>
+                        <template v-if="item.ligne_etape_date">
+                            <span>
+                                {{ formatDate(item.ligne_etape_date) }}
+
+                                <v-btn v-if="index === lastDatedIndex" icon="mdi-close" size="x-small" variant="text"
+                                    color="error" density="compact" title="Supprimer la date" class="ml-1"
+                                    @click="clearDate(item)" />
+                            </span>
+                        </template>
+
+                        <template v-else-if="index === firstUndatedIndex">
+                            <v-btn size="small" variant="text" color="primary" prepend-icon="mdi-calendar-plus"
+                                density="compact" title="Ajouter une date" @click="openDatePicker(item)" />
+                        </template>
+                    </template>
+
+                </div>
             </template>
+
+
+
+
+
 
 
             <template v-slot:[`item.ligne_etape_date_prevision`]="{ item }">
@@ -71,7 +126,7 @@
         </v-data-table>
 
 
-        <v-dialog v-model="dialogDatePicker" max-width="400">
+        <!-- <v-dialog v-model="dialogDatePicker" max-width="400">
             <v-card>
                 <v-card-title class="d-flex align-center">
                     <v-icon class="mr-2">mdi-calendar</v-icon>
@@ -94,7 +149,56 @@
                     </v-btn>
                 </v-card-actions>
             </v-card>
+        </v-dialog> -->
+
+
+        <v-dialog v-model="dialogDatePicker" max-width="430" persistent>
+            <v-card>
+                <v-card-title class="d-flex align-center">
+                    <v-icon class="mr-2">mdi-calendar</v-icon>
+                    {{ Number(selectedItem?.etat) === 2
+                        ? "Date et décision"
+                        : "Sélectionner une date" }}
+                </v-card-title>
+
+                <v-card-text>
+                    <!-- Sélection de date -->
+                    <div class="d-flex justify-center">
+                        <v-date-picker v-model="selectedDate" color="primary" show-adjacent-months
+                            @dblclick="saveDate" />
+                    </div>
+
+                    <!-- Décision uniquement pour ETAT 2 -->
+                    <div v-if="Number(selectedItem?.etat) === 2" class="mt-4">
+                        <!-- <v-select v-model="selectedDecision" :items="listDecision" item-title="decision"
+                            item-value="decision" label="Décision" density="compact" variant="outlined" hide-details /> -->
+
+                        <v-select v-model="selectedDecision" :items="listDecision" :item-title="decisionKey"
+                            :item-value="decisionKey" label="Décision" density="compact" variant="outlined"
+                            hide-details />
+                    </div>
+                </v-card-text>
+
+                <v-card-actions>
+                    <v-spacer />
+
+                    <v-btn variant="text" @click="dialogDatePicker = false">
+                        Annuler
+                    </v-btn>
+
+                    <v-btn color="primary" variant="elevated" :disabled="!selectedDate ||
+                        (Number(selectedItem?.etat) === 2 && !selectedDecision)" @click="saveDate">
+                        Valider
+                    </v-btn>
+                </v-card-actions>
+            </v-card>
         </v-dialog>
+
+
+
+
+
+
 
         <!-- Résumé ultra compact -->
         <div class="summary-line">
@@ -105,13 +209,16 @@
 </template>
 
 <script>
-import { ref, onMounted, computed, defineComponent } from "vue";
+import { ref, onMounted, computed, defineComponent, watch } from "vue";
 import { useformatDate2 } from "@/composables/useformatDate2";
 import { useListIntegration } from "@/store/Rh/rh_integration.js";
 import Swal from "sweetalert2";
 
 export default {
     name: "TableauDetail",
+
+    emits: ["refresh"],
+
     props: {
         items: {
             type: Array,
@@ -121,33 +228,119 @@ export default {
             type: Array,
             required: true,
         },
-        loading: { type: Boolean, default: false },
+        loading: {
+            type: Boolean,
+            default: false,
+        },
+        type: { type: String, default: "" },
     },
-    setup(props) {
+
+    setup(props, { emit }) {
+
         const storeIntegr = useListIntegration();
         const { formatDate } = useformatDate2();
         const dateColumns = ["etape_libelle"];
         const dialogVisible = ref(false);
         const selectedItem = ref(null);
         const selectedDate = ref(null);
+        const selectedDecision = ref(null);
 
         const dialogDatePicker = ref(false);
 
+        // const openDatePicker = (item) => {
+        //     selectedItem.value = item;
+        //     selectedDate.value = null;
+        //     dialogDatePicker.value = true;
+        // };
+
+
+        const parseLocalDate = (value) => {
+            if (!value) return null;
+            if (value instanceof Date) return isNaN(value) ? null : value;
+
+            // Prend les 10 premiers caractères : "YYYY-MM-DD" (gère aussi "YYYY-MM-DDTHH:mm:ss")
+            const [y, m, d] = String(value).substring(0, 10).split("-").map(Number);
+            if (!y || !m || !d) return null;
+            return new Date(y, m - 1, d);
+        };
+
         const openDatePicker = (item) => {
             selectedItem.value = item;
-            selectedDate.value = null;
+            selectedDate.value = parseLocalDate(item.ligne_etape_date);
+            selectedDecision.value = item.decision || null;
             dialogDatePicker.value = true;
         };
 
         const menu = ref(false);
-        onMounted(() => {
+
+        const listDecision = ref([]);
+
+        // const listDecisions = async () => {
+        //     await storeIntegr.fetchDecision();
+        //     listDecision.value = storeIntegr.listdecisions;
+        // };
+
+
+
+        const typeNormalise = computed(() =>
+            String(props.type || "")
+                .trim()
+                .toUpperCase()
+                .replace(/[\s_]+/g, "_")
+        );
+
+        // Nom du champ renvoyé par la base selon le type
+        const decisionKey = computed(() =>
+            typeNormalise.value === "MOBILITE_INTERNE"
+                ? "decision_mobilite"
+                : "decision"
+        );
+
+
+
+        // const listDecisions = async () => {
+        //     listDecision.value = [];
+
+        //     const typeNormalise = String(props.type || "").trim().toUpperCase();
+
+        //     if (typeNormalise === "EMBAUCHE") {
+        //         await storeIntegr.fetchDecision();            // requête EMBAUCHE
+        //         listDecision.value = storeIntegr.listdecisions;
+
+        //     } else if (typeNormalise === "MOBILITE_INTERNE") {
+        //         await storeIntegr.fetchDecisionMobilite();    // requête MOBILITE INTERNE
+        //         listDecision.value = storeIntegr.listdecisionsMobilite;
+        //     }
+        //     console.log("décisions :", JSON.parse(JSON.stringify(listDecision.value)));
+        // };
+
+
+        const listDecisions = async () => {
+            listDecision.value = [];
+
+            if (typeNormalise.value === "EMBAUCHE") {
+                await storeIntegr.fetchDecision();
+                listDecision.value = storeIntegr.listdecisions;
+            } else if (typeNormalise.value === "MOBILITE_INTERNE") {
+                await storeIntegr.fetchDecisionMobilite();
+                listDecision.value = storeIntegr.listdecisionsMobilite;
+            }
+        };
+
+        onMounted(async () => {
+            // console.log("TYPE reçu (onMounted) :", props.type);
+
             // chaque ligne a ses propres variables locales
             props.items.forEach((item) => {
                 if (item.menuOpen === undefined) item.menuOpen = false;
                 if (item.tempDate === undefined)
                     item.tempDate = item.ligne_etape_date || null;
             });
+            await listDecisions();
         });
+
+        watch(() => props.type, listDecisions);
+
         const openDialog = (item) => {
             selectedItem.value = item;
             selectedDate.value = item.date || null; // si item.date existe
@@ -181,47 +374,44 @@ export default {
         //     item.tempDate = null;
         // };
 
+
         const saveDate = async () => {
-            if (!selectedItem.value || !selectedDate.value) {
-                return;
-            }
+            if (!selectedItem.value || !selectedDate.value) return;
+
+            const item = selectedItem.value;
+            const isEtat2 = Number(item.etat) === 2;
+
+            if (isEtat2 && !selectedDecision.value) return;
 
             try {
-                // Conversion de la date au format yyyy-MM-dd
                 const date = new Date(selectedDate.value);
 
                 const dateFormatee =
-                    date.getFullYear() +
-                    "-" +
-                    String(date.getMonth() + 1).padStart(2, "0") +
-                    "-" +
+                    date.getFullYear() + "-" +
+                    String(date.getMonth() + 1).padStart(2, "0") + "-" +
                     String(date.getDate()).padStart(2, "0");
 
-                console.log("Date sélectionnée :", selectedDate.value);
-                console.log("Date envoyée :", dateFormatee);
-
-                console.log(
-                    "Code étape :",
-                    selectedItem.value.ligne_etape_code
-                );
-
-                console.log(
-                    "Étape :",
-                    selectedItem.value.ligne_etape_etape
-                );
-
-                // Mise à jour locale
-                selectedItem.value.ligne_etape_date = dateFormatee;
-
-                // Appel du store
+                // Enregistrement de la date
                 await storeIntegr.updateDateEtape(
-                    selectedItem.value.ligne_etape_code,
-                    selectedItem.value.ligne_etape_etape,
+                    item.ligne_etape_code,
+                    item.ligne_etape_etape,
                     dateFormatee
                 );
 
-                // Fermer le date picker
+                // Enregistrement de la décision pour ETAT 2
+                if (isEtat2) {
+                    await storeIntegr.updateDecisionEtape(
+                        item.ligne_etape_code,
+                        item.ligne_etape_etape,
+                        selectedDecision.value
+                    );
+                }
+
+                // Fermer le calendrier
                 dialogDatePicker.value = false;
+
+                // Actualiser le tableau depuis le parent
+                emit("refresh");
 
                 await Swal.fire({
                     toast: true,
@@ -229,16 +419,13 @@ export default {
                     showConfirmButton: false,
                     timer: 2000,
                     icon: "success",
-                    title: "Date mise à jour avec succès"
+                    title: isEtat2
+                        ? "Date et décision enregistrées"
+                        : "Date mise à jour avec succès"
                 });
 
-                console.log("Date mise à jour avec succès");
-
             } catch (error) {
-                console.error(
-                    "Erreur lors de la mise à jour de la date :",
-                    error
-                );
+                console.error("Erreur lors de l'enregistrement :", error);
             }
         };
 
@@ -297,16 +484,90 @@ export default {
             }
         };
 
-        const firstUndatedIndex = computed(() => { return props.items.findIndex(item => !item.ligne_etape_date); });
+        // const firstUndatedIndex = computed(() => { return props.items.findIndex(item => !item.ligne_etape_date); });
+
+        // const lastDatedIndex = computed(() => {
+        //     const firstUndated = firstUndatedIndex.value;
+
+        //     if (firstUndated === -1) {
+        //         return props.items.length - 1;
+        //     }
+        //     return firstUndated - 1;
+        // });
+
+        // const firstUndatedIndex = computed(() => {
+        //     return props.items.findIndex(item =>
+        //         Number(item.etat) !== 1 &&
+        //         Number(item.etat) !== 2 &&
+        //         !item.ligne_etape_date
+        //     );
+        // });
+
+        const firstUndatedIndex = computed(() => {
+            return props.items.findIndex(item =>
+                Number(item.etat) !== 1 &&
+                !item.ligne_etape_date
+            );
+        });
 
         const lastDatedIndex = computed(() => {
             const firstUndated = firstUndatedIndex.value;
 
-            if (firstUndated === -1) {
-                return props.items.length - 1;
-            }
-            return firstUndated - 1;
+            const eligibleDated = props.items
+                .map((item, index) => ({ item, index }))
+                .filter(({ item, index }) =>
+                    Number(item.etat) === 0 &&
+                    item.ligne_etape_date &&
+                    (firstUndated === -1 || index < firstUndated)
+                );
+
+            return eligibleDated.length
+                ? eligibleDated[eligibleDated.length - 1].index
+                : -1;
         });
+
+
+        const decisions = [
+            { title: "CONFIRMER", value: "CONFIRMER" },
+            { title: "ANNULER", value: "ANNULER" },
+            { title: "NON CONCLUANT", value: "NON_CONCLUANT" },
+        ];
+
+        const saveDecision = async (item, decision) => {
+            try {
+                await storeIntegr.updateDecisionEtape(
+                    item.ligne_etape_code,
+                    item.ligne_etape_etape,
+                    decision
+                );
+
+                await Swal.fire({
+                    toast: true,
+                    position: "top-end",
+                    showConfirmButton: false,
+                    timer: 2000,
+                    icon: "success",
+                    title: "Décision enregistrée",
+                });
+            } catch (error) {
+                console.error("Erreur lors de l'enregistrement de la décision :", error);
+            }
+        };
+
+        const canShowDecision = (index) => {
+            return props.items
+                .slice(0, index)
+                .every(etape =>
+                    Number(etape.etat) === 1 ||
+                    (
+                        Number(etape.etat) === 0 &&
+                        !!etape.ligne_etape_date
+                    )
+                );
+        };
+
+
+
 
         return {
             dateColumns,
@@ -321,7 +582,10 @@ export default {
             validateDate,
             clearDate,
             dialogDatePicker, openDatePicker,
-            firstUndatedIndex,lastDatedIndex,
+            firstUndatedIndex, lastDatedIndex,
+            decisions, saveDecision,
+            selectedDecision, canShowDecision,
+            listDecision, decisionKey,
         };
     },
 };

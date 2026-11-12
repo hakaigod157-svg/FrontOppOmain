@@ -8,8 +8,8 @@
           <span class="title-text">
             <strong>Détail du recrutement - </strong>
             <span class="recru-code">{{ recru.recru_code }}</span>
-            <span class="recru-date">
-              - {{ formatDate(recru.recru_date) }}</span>
+            <!-- <span class="recru-date">
+              - {{ formatDate(recru.recru_date) }}</span> -->
           </span>
         </div>
         <v-btn icon variant="text" color="grey-darken-1" size="small" class="close-btn" @click="$emit('close')">
@@ -69,7 +69,7 @@
                     style="min-width: 50px" />
 
                   <v-text-field label="Poste" variant="outlined" density="compact" :model-value="recru.recru_poste"
-                    readonly hide-details class="readonly-field" @click="expandedPoste = !expandedPoste" />
+                    readonly hide-details class="readonly-field" @click="expandedPoste = !expandedPoste"  style="min-width: 220px; flex: 1"/>
                 </div>
               </v-card-text>
             </v-card>
@@ -400,7 +400,7 @@ export default defineComponent({
     const selectedDateCvEnrg = ref("");
 
     const headersdetail = [
-      { title: "Etape", key: "etape_libelle", align: "start" },
+      { title: "Etape", key: "ligne_etape_etape", align: "start" },
       { title: "Date prévue", key: "ligne_etape_date_prevision", align: "start" },
       { title: "Date", key: "ligne_etape_date", align: "start" },
     ];

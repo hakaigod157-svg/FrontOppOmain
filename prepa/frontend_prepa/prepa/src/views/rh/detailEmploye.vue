@@ -6,7 +6,7 @@
                 <div class="title-left">
                     <v-icon size="26" color="deep-purple-accent-4" class="mr-2">mdi-briefcase-account</v-icon>
                     <span class="title-text">
-                        <strong>Détail de l'employé  </strong>
+                        <strong>Détail de l'employé </strong>
                         <!-- <span class="recru-code">{{ recru.integr_code }}</span> -->
                         &nbsp;
                         <!-- <span> <u>Matricule</u> :
@@ -25,8 +25,8 @@
         <v-card-text>
             <div class="info-principale-cards">
                 <v-row dense style="gap: 0px">
-                    <!-- Carte 1 : Demande -->
-                    <v-col cols="3">
+                    <!-- Carte 1 : Nom Prénom (plus large) -->
+                    <v-col cols="4">
                         <v-card class="info-card" outlined>
                             <v-card-title class="card-title">NOM PRENOM</v-card-title>
                             <v-card-text>
@@ -55,32 +55,31 @@
                         </v-card>
                     </v-col>
 
-                    <!-- Carte 3 : Département -->
-                    <v-col cols="3">
+                    <!-- Carte 3 : Département (plus large) -->
+                    <v-col cols="4">
                         <v-card class="info-card departement-card" outlined>
                             <v-card-title class="card-title" style="justify-content: right">
                                 DEPARTEMENT</v-card-title>
                             <v-card-text>
                                 <div class="info-row">
                                     <v-text-field label="Département" variant="outlined" density="compact"
-                                        v-model="recru.lib_dep" readonly hide-details class="readonly-field"
+                                        v-model="recru.empl_dep" readonly hide-details class="readonly-field"
                                         style="min-width: 50px" />
 
                                     <v-text-field label="Poste" variant="outlined" density="compact"
-                                        :model-value="recru.poste_libelle" readonly hide-details class="readonly-field"
-                                        @click="expandedPoste = !expandedPoste" />
+                                        :model-value="recru.empl_poste" readonly hide-details class="readonly-field"
+                                        style="min-width: 160px" @click="expandedPoste = !expandedPoste" />
                                 </div>
                             </v-card-text>
                         </v-card>
                     </v-col>
 
-                    <!-- Date -->
-                    <v-col cols="3" style="margin-left: 130px;">
+                    <!-- Date (plus petite) -->
+                    <v-col cols="2">
                         <v-card class="info-card" outlined>
                             <v-card-title class="card-title">DATE</v-card-title>
                             <v-card-text>
                                 <div class="info-row">
-
                                     <v-text-field label="Prise de fonction" variant="outlined" density="compact"
                                         :model-value="formatDate(recru.empl_prise_fonction)" readonly hide-details
                                         class="readonly-field" />
@@ -92,6 +91,21 @@
                             </v-card-text>
                         </v-card>
                     </v-col>
+
+                    <!-- Catégorie (plus petite) -->
+                    <v-col cols="1" style="min-width: 110px;">
+                        <v-card class="info-card categorie-card" outlined>
+                            <v-card-title class="card-title text-no-wrap">
+                                &nbsp;
+                            </v-card-title>
+                            <v-card-text>
+                                <div class="info-row">
+                                    <v-text-field label="Catégorie" variant="outlined" density="compact"
+                                        v-model="recru.empl_categorie" readonly hide-details class="readonly-field" />
+                                </div>
+                            </v-card-text>
+                        </v-card>
+                    </v-col>
                 </v-row>
             </div>
 
@@ -99,11 +113,11 @@
 
             <!-- Onglets centrés et taille adaptée -->
             <v-toolbar :elevation="1" density="compact" color="#d7ead5">
-                <v-tabs v-model="tab" color="deep-purple-accent-4" background-color="#d7ead5" class="custom-tabs" grow
-                    density="compact" slider-color="deep-purple-accent-4">
-                    <v-tab value="formatioon">FORMATION</v-tab>
+                <v-tabs v-model="tab" color="deep-purple-accent-4" background-color="#d7ead5" class="custom-tabs"
+                    density="compact" slider-color="deep-purple-accent-4" align-tabs="start">
+                    <v-tab value="formation">FORMATION</v-tab>
                     <v-tab value="sanction">SANCTION</v-tab>
-                    <!-- <v-tab value="mat_disp">MATERIEL MIS A DISPO </v-tab> -->
+                    <v-tab value="mobilite_interne">MOBILITE INTERNE</v-tab>
                 </v-tabs>
             </v-toolbar>
 
@@ -111,15 +125,14 @@
             <v-card class="mt-4">
                 <v-card-text style="min-height: 320px; max-height: 320px,">
                     <div v-if="tab === 'formation'">
-                        <!-- <TableauDetailIntegr @formcv="opencv" @formoff="openoffre" :headers="headersdetail"
-                            :items="list_etape" :loading="store.loading" /> -->
+                        <TableauEmploye :headers="headers_formation" :items="listFormation" :loading="store.loading" />
                     </div>
                     <div v-else-if="tab === 'sanction'">
                         <TableauOffre :headers="headersoffre" :items="list_offre" :loading="storeo.loading"
                             @formoff="openoffre" @modifier="modifierOffre" @supprimer="handleDelete" :etat="etat" />
                     </div>
-                    <div v-else-if="tab === 'mat_disp'">
-                        <TableauMatDispo :headers="headersMat" :items="list_mat_dispo" :loading="storeo.loading" />
+                    <div v-else-if="tab === 'mobilite_interne'">
+                        <TableauEmploye :headers="headers_mobilite" :items="listeDetailMobilite" :loading="store.loading" />
                     </div>
                 </v-card-text>
             </v-card>
@@ -136,418 +149,446 @@
 
 </template>
 
-    <script>
-    import { useRouter } from "vue-router";
-    import useSessionTimeout from "@/utils/useSessionTimeout";
-    import Config from "@/utils/config.js";
-    import { defineComponent, ref, computed, onMounted } from "vue";
-    import { useformatDate2 } from "@/composables/useformatDate2";
-    import { useRecrutement } from "@/store/Rh/rh_recrutement";
-    import { useListIntegration } from "@/store/Rh/rh_integration.js";
-    import TableauDetail from "@/components/rh/tableauDetail.vue";
-    import TableauCV from "@/components/rh/tableauCV.vue";
-    import { useDemande } from "@/store/Rh/rh_demande";
-    import { useCV } from "@/store/Rh/rh_cv";
-    import { useOffre } from "@/store/Rh/rh_offre";
+<script>
+import { useRouter } from "vue-router";
+import useSessionTimeout from "@/utils/useSessionTimeout";
+import Config from "@/utils/config.js";
+import { defineComponent, ref, computed, onMounted } from "vue";
+import { useformatDate2 } from "@/composables/useformatDate2";
+import { useRecrutement } from "@/store/Rh/rh_recrutement";
+import { useListIntegration } from "@/store/Rh/rh_integration.js";
+import TableauEmploye from "@/components/rh/tableauDetail.vue";
+import TableauCV from "@/components/rh/tableauCV.vue";
+import { useDemande } from "@/store/Rh/rh_demande";
+import { useCV } from "@/store/Rh/rh_cv";
+import { useOffre } from "@/store/Rh/rh_offre";
+
+import { useEmployeeStore } from "@/store/Rh/rh_employee";
 
 
-    import TableauOffre from "@/components/rh/tableauOffre.vue";
-    import TableauMatDispo from "@/components/rh/tableauMatDispo.vue";
-    import TableauDetailIntegr from "@/components/rh/tableauDetailIntegr.vue";
+import Swal from "sweetalert2";
 
-    import Swal from "sweetalert2";
+export default defineComponent({
+    name: "DetailRecrutement",
+    components: {
+        TableauEmploye,
+    },
+    props: {
+        recru: { type: Object, required: true },
+        etat: {
+            type: [String, Number],
+            required: false
+        }
+    },
+    setup(props) {
+        const { formatDate } = useformatDate2();
+        const store = useEmployeeStore();
+        const storeIntegr = useListIntegration();
+        const stored = useDemande();
+        const storec = useCV();
+        const storec1 = useCV();
+        const storeo = useOffre();
+        const details = computed(() => store.listdetail);
+        const tab = ref("formation");
+        const expandedPoste = ref(false);
 
-    export default defineComponent({
-        name: "DetailRecrutement",
-        components: {
-            TableauDetail,
-            TableauCV,
-            TableauOffre,
-            TableauMatDispo,
-            TableauDetailIntegr,
+        const defaultCode = ref("");
+        const defaultCode1 = ref("");
+        const table = "RH_CV";
 
-        },
-        props: {
-            recru: { type: Object, required: true },
-            etat: {
-                type: [String, Number],
-                required: false
+        const menu = ref(false); // menu du date picker
+
+        const listFormation = ref([]);
+        const listeDetailMobilite = ref([]);
+
+        const detailEmploye = async () => {
+            await store.fetchListDetailEmploye(matricule);
+            listFormation.value = store.listFormations;
+            listeDetailMobilite.value = store.listDetailMobilites;
+
+            // console.log(listeDetailMobilite.value)
+        };
+
+        const headers_mobilite = [
+            { title: "TYPE", key: "mob_type", align: "start" },
+            { title: "DATE", key: "mob_date", align: "center" },
+            { title: "ANCIEN DEPARTEMENT", key: "mob_ancien_dep", align: "start" },
+            { title: "ANCIEN POSTE", key: "mob_ancien_post", align: "start" },
+            { title: "NOUVEAU DEPARTEMENT", key: "mob_new_dep", align: "start" },
+            { title: "NOUVEAU POSTE", key: "mob_new_poste", align: "start" },
+        ];
+
+        const headers_formation = [
+            { title: "DATE", key: "form_date", align: "start" },
+            { title: "TYPE", key: "form_type", align: "center" },
+            { title: "INTERNE", key: "interne", align: "start" },
+            { title: "ENTITE", key: "form_entite", align: "start" },
+            { title: "DESCRIPTION", key: "form_descr", align: "start" },
+            { title: "EVALUATION A CHAUD", key: "form_eval_ligne", align: "start" },
+            // { title: "EVALUATION A CHAUD", key: "form_eval_chaud", align: "start" },
+            { title: "EVALUATION A FROID", key: "form_eval_froid_ligne", align: "start" },
+            // { title: "EVALUATION A FROID", key: "form_eval_froid", align: "start" },
+        ];
+
+        
+        const headersMat = [
+            // { title: "Matricule", key: "mise_dispo_matr", align: "start" },
+            { title: "Catégorie", key: "mise_dispo_cat", align: "start" },
+            { title: "Matériel", key: "mise_dispo_materiel", align: "start" },
+            // { title: "Date prévue", key: "mise_dispo_date_prevue", align: "start" },
+            { title: "Date effect", key: "mise_dispo_date_effect", align: "start" },
+        ];
+
+
+
+        const router = useRouter();
+        useSessionTimeout(Config.DURRE_SESSION, router);
+
+        const code = props.recru?.integr_code;
+
+        const matricule = props.recru?.empl_matricule ?? "";
+
+        onMounted(async () => {
+
+            // console.log(matricule)
+
+            if (matricule) {
+                await detailEmploye(matricule)
+            } else {
+                console.warn("Pas de recru_code disponible !");
             }
-        },
-        setup(props) {
-            const { formatDate } = useformatDate2();
-            const store = useRecrutement();
-            const storeIntegr = useListIntegration();
-            const stored = useDemande();
-            const storec = useCV();
-            const storec1 = useCV();
-            const storeo = useOffre();
-            const details = computed(() => store.listdetail);
-            const tab = ref("etape");
-            const expandedPoste = ref(false);
+        });
 
-            const defaultCode = ref("");
-            const defaultCode1 = ref("");
-            const table = "RH_CV";
-
-            const menu = ref(false); // menu du date picker
-
-            const headersdetail = [
-                { title: "Etape", key: "etape_libelle", align: "start" },
-                { title: "Date prévue", key: "ligne_etape_date_prevision", align: "center" },
-                { title: "Date", key: "ligne_etape_date", align: "start" },
-            ];
-
-            const headerscv = [
-                { title: "Nom complet", key: "cv_nom", align: "start" },
-                { title: "Téléphone", key: "cv_contact", align: "start" },
-                { title: "Email", key: "cv_email", align: "start" },
-                { title: "Date postule", key: "cv_ligne_date_ajout", align: "start" },
-                { title: "Date CV", key: "cv_date", align: "start" },
-                { title: "Date Test", key: "cv_ligne_date_test", align: "center" },
-                { title: "Date entretien", key: "cv_ligne_date_entretien", align: "center", },
-                { title: "Proposition", key: "cv_ligne_date_proposition", align: "center", },
-                { title: "CV", key: "cv_cv", sortable: false, align: "center" },
-                { title: "LM", key: "cv_motivation", sortable: false, align: "center" },
-                { title: "ACTIONS", key: "action", sortable: false, align: "center" },
-            ];
-
-            const headersoffre = [
-                { title: "Type", key: "offre_type", align: "start" },
-                { title: "Date", key: "offre_date", align: "start" },
-                { title: "Entite", key: "offre_entite", align: "start" },
-                { title: "Piece", key: "offre_piece", align: "start" },
-            ];
-
-            const headersMat = [
-                // { title: "Matricule", key: "mise_dispo_matr", align: "start" },
-                { title: "Catégorie", key: "mise_dispo_cat", align: "start" },
-                { title: "Matériel", key: "mise_dispo_materiel", align: "start" },
-                // { title: "Date prévue", key: "mise_dispo_date_prevue", align: "start" },
-                { title: "Date effect", key: "mise_dispo_date_effect", align: "start" },
-            ];
+        const list_etape = ref([]);
+        const list_offre = ref([]);
+        const list_candidat = ref([]);
+        const list_mat_dispo = ref([]);
 
 
+        const detailRecru = async () => {
+            await storeIntegr.fetchListDetailInteg(code, matricule);
+            list_etape.value = storeIntegr.listEtapesIntegr;
+            list_mat_dispo.value = storeIntegr.listMatDispos;
 
-            const router = useRouter();
-            useSessionTimeout(Config.DURRE_SESSION, router);
+            // console.log(list_etape.value)
+        };
 
-            const code = props.recru?.integr_code;
+        const countNotEmpty = (items, key) => {
+            return items.filter(item =>
+                item[key] !== null &&
+                item[key] !== undefined &&
+                item[key] !== ''
+            ).length;
+        };
 
-            const matricule = props.recru?.empl_matricule ?? "";
+        return {
+            list_etape, list_offre, list_candidat,
+            table, defaultCode, defaultCode1, formatDate, tab, expandedPoste, headers_formation,store, stored, storec, storec1, storeo, details,
+            code,
+            menu,
+            countNotEmpty,
+            etat: props.etat,
+            list_mat_dispo, headersMat, matricule,
+            listFormation,
+            headers_mobilite,listeDetailMobilite,
 
-            onMounted(async () => {
-
-                // console.log(matricule)
-
-                if (code) {
-                    await detailRecru()
-                } else {
-                    console.warn("Pas de recru_code disponible !");
-                }
-            });
-
-            const list_etape = ref([]);
-            const list_offre = ref([]);
-            const list_candidat = ref([]);
-            const list_mat_dispo = ref([]);
-
-
-            const detailRecru = async () => {
-                await storeIntegr.fetchListDetailInteg(code , matricule);
-                list_etape.value = storeIntegr.listEtapesIntegr;
-                list_mat_dispo.value = storeIntegr.listMatDispos;
-
-                // console.log(list_etape.value)
-            };
-
-            const countNotEmpty = (items, key) => {
-                return items.filter(item =>
-                    item[key] !== null &&
-                    item[key] !== undefined &&
-                    item[key] !== ''
-                ).length;
-            };
-
-            return {
-                list_etape, list_offre, list_candidat,
-                table,defaultCode, defaultCode1, formatDate, tab, expandedPoste, headersdetail, headerscv, headersoffre, store, stored, storec, storec1, storeo, details,
-                code,
-                menu,
-                countNotEmpty,
-                etat: props.etat,
-                list_mat_dispo, headersMat,matricule,
-
-            };
-        },
-    });
+        };
+    },
+});
 </script>
 
-    <style>
-    .close-icon {
-        cursor: pointer;
-        color: #555;
-        transition: 0.2s;
-    }
+<style>
+.close-icon {
+    cursor: pointer;
+    color: #555;
+    transition: 0.2s;
+}
 
-    .close-icon:hover {
-        color: red;
-    }
+.close-icon:hover {
+    color: red;
+}
 
-    .custom-tabs {
-        max-width: 450px;
-        display: flex;
-        justify-content: left;
-    }
+.toolbar-tabs {
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
+}
 
-    .info-principale {
-        position: relative;
-        padding: 10px;
-        background-color: #fafafa;
-        /* fond léger */
-        border-radius: 8px;
-        border: 1px solid #e0e0e0;
-        /* bord discret */
-    }
+.custom-tabs {
+    width: 100%;
+    max-width: 100%;
+}
 
-    .info-col {
-        padding: 4px 0;
-        display: flex;
-        align-items: center;
-        flex-wrap: nowrap;
-        /* ✅ évite que les éléments aillent à la ligne */
-        gap: 1px;
-    }
+.custom-tabs .v-slide-group__container {
+    overflow: hidden !important;
+}
 
-    .info-label {
-        font-weight: 600;
-        color: #555;
-        white-space: nowrap;
-        min-width: 125px;
-    }
+.custom-tabs .v-slide-group__content {
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+}
 
-    .info-value {
-        font-weight: 400;
-        color: #222;
-    }
+.custom-tabs .v-slide-group__prev,
+.custom-tabs .v-slide-group__next {
+    display: none !important;
+}
 
-    .truncate {
-        max-width: 160px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        display: inline-block;
-        vertical-align: middle;
-        cursor: pointer;
-        transition: all 0.3s ease;
-    }
+.custom-tabs .v-tab {
+    flex: 0 1 auto;
+    min-width: 0 !important;
+    padding: 0 12px;
+    white-space: nowrap;
+    font-size: 13px;
+}
 
-    .truncate.expanded {
-        white-space: normal;
-        /* Permet d’afficher plusieurs lignes */
-        word-break: break-word;
-        /* Coupe proprement les longues phrases */
-        background-color: #f7f7f7;
-        /* Fond doux quand développé */
-        border-radius: 4px;
-        padding: 2px 4px;
-        max-width: none;
-        /* Retire la limite de largeur */
-    }
+.info-principale {
+    position: relative;
+    padding: 10px;
+    background-color: #fafafa;
+    /* fond léger */
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+    /* bord discret */
+}
 
-    /* Style pour tete du dialog */
+.info-col {
+    padding: 4px 0;
+    display: flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    /* ✅ évite que les éléments aillent à la ligne */
+    gap: 1px;
+}
 
-    /* On force notre propre flex container */
-    .title-container {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        width: 100%;
-        padding: 10px 2px 2px 2px;
-        margin-top: 0px;
-        margin-bottom: -5px;
-        background-color: #f8f9fa;
-        border-bottom: 2px solid #d7ead5;
-        border-top-left-radius: 4px;
-        border-top-right-radius: 4px;
-    }
+.info-label {
+    font-weight: 600;
+    color: #555;
+    white-space: nowrap;
+    min-width: 125px;
+}
 
-    .custom-card-dm {
-        padding: 0;
-        /* on enlève le padding natif du v-card-title */
-        margin-bottom: -5px;
-    }
+.info-value {
+    font-weight: 400;
+    color: #222;
+}
 
-    .title-left {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        max-height: 20px;
-    }
+.truncate {
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: inline-block;
+    vertical-align: middle;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
 
-    .title-text {
-        font-size: 1.15rem;
-        color: #333;
-    }
+.truncate.expanded {
+    white-space: normal;
+    /* Permet d’afficher plusieurs lignes */
+    word-break: break-word;
+    /* Coupe proprement les longues phrases */
+    background-color: #f7f7f7;
+    /* Fond doux quand développé */
+    border-radius: 4px;
+    padding: 2px 4px;
+    max-width: none;
+    /* Retire la limite de largeur */
+}
 
-    .recru-code {
-        font-weight: 600;
-        color: #4caf50;
-    }
+/* Style pour tete du dialog */
 
-    .recru-date {
-        font-weight: 600;
-        color: #191b19;
-    }
+/* On force notre propre flex container */
+.title-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 10px 2px 2px 2px;
+    margin-top: 0px;
+    margin-bottom: -5px;
+    background-color: #f8f9fa;
+    border-bottom: 2px solid #d7ead5;
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+}
 
-    .close-btn {
+.custom-card-dm {
+    padding: 0;
+    /* on enlève le padding natif du v-card-title */
+    margin-bottom: -5px;
+}
 
-        transition: transform 0.2s ease, color 0.2s ease;
-        margin-top: -10px;
-    }
+.title-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    max-height: 20px;
+}
 
-    .close-btn:hover {
-        color: red !important;
-        transform: rotate(90deg);
-    }
+.title-text {
+    font-size: 1.15rem;
+    color: #333;
+}
 
-    /* --- Petit badge du code --- */
-    /* Badge en haut à gauche */
-    .code-label {
-        position: absolute;
-        top: -15px;
-        /* juste au-dessus de la bordure */
-        left: 0px;
-        background-color: #1976d2;
-        color: white;
-        font-weight: 600;
-        font-size: 13px;
-        padding: 3px 10px;
-        border-radius: 6px;
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-    }
+.recru-code {
+    font-weight: 600;
+    color: #4caf50;
+}
 
-    .info-principale-cards {
-        display: flex;
-        /* transforme en flex container */
-        justify-content: space-between;
-        /* centre horizontalement les cartes */
-        gap: 30px;
-        /* espace entre chaque carte */
-        margin-bottom: 0px;
-        margin-top: -20px;
-    }
+.recru-date {
+    font-weight: 600;
+    color: #191b19;
+}
 
-    .info-card {
-        padding: 8px;
-        background-color: #fafafa;
-        border-radius: 6px;
-        max-height: 90px;
-        min-width: 280px;
-    }
+.close-btn {
 
-    .card-title {
-        font-size: 13px;
-        font-weight: 700;
-        color: #1976d2;
-        padding: 0 0 4px 0;
-    }
+    transition: transform 0.2s ease, color 0.2s ease;
+    margin-top: -10px;
+}
 
-    .info-item {
-        display: flex;
-        flex-direction: row;
-        /* label et valeur côte à côte */
-        justify-content: flex-start;
-        /* label à gauche, valeur à droite */
-        margin-bottom: 4px;
-        gap: 2px;
-    }
+.close-btn:hover {
+    color: red !important;
+    transform: rotate(90deg);
+}
 
-    .info-label {
-        font-weight: 600;
-        font-size: 12px;
-        color: #555;
-        min-width: auto;
-    }
+/* --- Petit badge du code --- */
+/* Badge en haut à gauche */
+.code-label {
+    position: absolute;
+    top: -15px;
+    /* juste au-dessus de la bordure */
+    left: 0px;
+    background-color: #1976d2;
+    color: white;
+    font-weight: 600;
+    font-size: 13px;
+    padding: 3px 10px;
+    border-radius: 6px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
 
-    .info-value {
-        font-weight: 400;
-        font-size: 13px;
-        color: #222;
-    }
+.info-principale-cards {
+    display: flex;
+    /* transforme en flex container */
+    justify-content: space-between;
+    /* centre horizontalement les cartes */
+    gap: 30px;
+    /* espace entre chaque carte */
+    margin-bottom: 0px;
+    margin-top: -20px;
+}
 
-    .truncate.expanded {
-        white-space: normal;
-        word-break: break-word;
-        background-color: #f7f7f7;
-        border-radius: 4px;
-        padding: 2px 4px;
-    }
+.info-card {
+    padding: 8px;
+    background-color: #fafafa;
+    border-radius: 6px;
+    max-height: 90px;
+    min-width: 280px;
+}
 
-    .info-row {
-        display: flex;
-        gap: 5px;
-    }
+.card-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #1976d2;
+    padding: 0 0 4px 0;
+}
 
-    .departement-card {
-        min-width: 520px;
-        /* largeur maximum */
-    }
+.info-item {
+    display: flex;
+    flex-direction: row;
+    /* label et valeur côte à côte */
+    justify-content: flex-start;
+    /* label à gauche, valeur à droite */
+    margin-bottom: 4px;
+    gap: 2px;
+}
 
-    .contrat-card {
-        min-width: 50px;
-        /* largeur maximum */
-    }
+.info-label {
+    font-weight: 600;
+    font-size: 12px;
+    color: #555;
+    min-width: auto;
+}
 
-    .readonly-field {
-        cursor: not-allowed;
-        background-color: #f9f9f9;
-        pointer-events: none;
-        user-select: none;
-    }
+.info-value {
+    font-weight: 400;
+    font-size: 13px;
+    color: #222;
+}
 
-    .v-simple-table {
-        border-collapse: collapse;
-        /* fusionne bordures */
-        width: 100%;
-        border: 1px solid #8130e4;
-        /* bordure autour du tableau */
-    }
+.truncate.expanded {
+    white-space: normal;
+    word-break: break-word;
+    background-color: #f7f7f7;
+    border-radius: 4px;
+    padding: 2px 4px;
+}
 
-    .v-simple-table th,
-    .v-simple-table td {
-        border: 1px solid #ccc;
-        /* bordure autour de chaque cellule */
-        padding: 8px 12px;
-    }
+.info-row {
+    display: flex;
+    gap: 5px;
+}
 
-    .v-simple-table thead th {
-        background-color: #f0f0f0;
-        /* couleur fond header */
-        border-color: #8130e4;
-        /* couleur bordure header */
-        font-weight: 600;
-    }
+.departement-card {
+    min-width: 520px;
+    /* largeur maximum */
+}
 
-    .cv-selection-table {
-        border-collapse: collapse;
-        width: 100%;
-        /* bordure extérieure */
-        border-radius: 6px;
-        overflow: hidden;
-    }
+.contrat-card {
+    min-width: 50px;
+    /* largeur maximum */
+}
 
-    .cv-selection-table th {
-        border: 1px solid #ccc;
-        /* bordure des cellules */
+.readonly-field {
+    cursor: not-allowed;
+    background-color: #f9f9f9;
+    pointer-events: none;
+    user-select: none;
+}
 
-        padding: 10px 10px;
-    }
+.v-simple-table {
+    border-collapse: collapse;
+    /* fusionne bordures */
+    width: 100%;
+    border: 1px solid #8130e4;
+    /* bordure autour du tableau */
+}
 
-    .cv-selection-table td {
-        border: 1px solid #ccc;
-        /* bordure des cellules */
+.v-simple-table th,
+.v-simple-table td {
+    border: 1px solid #ccc;
+    /* bordure autour de chaque cellule */
+    padding: 8px 12px;
+}
 
-        padding: 2px 4px 2px 2px;
-    }
+.v-simple-table thead th {
+    background-color: #f0f0f0;
+    /* couleur fond header */
+    border-color: #8130e4;
+    /* couleur bordure header */
+    font-weight: 600;
+}
+
+.cv-selection-table {
+    border-collapse: collapse;
+    width: 100%;
+    /* bordure extérieure */
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.cv-selection-table th {
+    border: 1px solid #ccc;
+    /* bordure des cellules */
+
+    padding: 10px 10px;
+}
+
+.cv-selection-table td {
+    border: 1px solid #ccc;
+    /* bordure des cellules */
+
+    padding: 2px 4px 2px 2px;
+}
 </style>

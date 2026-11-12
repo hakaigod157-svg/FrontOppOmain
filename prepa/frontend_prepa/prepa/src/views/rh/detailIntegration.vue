@@ -6,7 +6,7 @@
                 <div class="title-left">
                     <v-icon size="26" color="deep-purple-accent-4" class="mr-2">mdi-briefcase-account</v-icon>
                     <span class="title-text">
-                        <strong>Détail de l'intégration  </strong>
+                        <strong>Détail de l'intégration </strong>
                         <!-- <span class="recru-code">{{ recru.integr_code }}</span> -->
                         &nbsp;
                         <!-- <span> <u>Matricule</u> :
@@ -24,9 +24,9 @@
         <!-- Informations principales -->
         <v-card-text>
             <div class="info-principale-cards">
-                <v-row dense style="gap: 0px">
-                    <!-- Carte 1 : Demande -->
-                    <v-col cols="3">
+                <v-row dense style="gap: 0px; flex-wrap: nowrap; align-items: stretch;">
+                    <!-- Carte 1 : Nom Prénom (plus large) -->
+                    <v-col cols="4">
                         <v-card class="info-card" outlined>
                             <v-card-title class="card-title">NOM PRENOM</v-card-title>
                             <v-card-text>
@@ -50,43 +50,36 @@
                                     <v-text-field label="Type" variant="outlined" density="compact"
                                         v-model="recru.empl_contrat" readonly hide-details class="readonly-field"
                                         style="max-width: 65px" />
-                                    <!-- <v-text-field label="Motif" variant="outlined" density="compact"
-                                        v-model="recru.recru_motif" readonly hide-details class="readonly-field" />
-                                    <v-text-field label="Effectif" variant="outlined" density="compact"
-                                        v-model="recru.recru_effectif" readonly hide-details class="readonly-field"
-                                        style="max-width: 65px" /> -->
                                 </div>
                             </v-card-text>
                         </v-card>
                     </v-col>
 
                     <!-- Carte 3 : Département -->
-                    <v-col cols="3">
+                    <v-col cols="4">
                         <v-card class="info-card departement-card" outlined>
                             <v-card-title class="card-title" style="justify-content: right">
                                 DEPARTEMENT</v-card-title>
                             <v-card-text>
                                 <div class="info-row">
                                     <v-text-field label="Département" variant="outlined" density="compact"
-                                        v-model="recru.lib_dep" readonly hide-details class="readonly-field"
+                                        v-model="recru.empl_dep" readonly hide-details class="readonly-field"
                                         style="min-width: 50px" />
 
                                     <v-text-field label="Poste" variant="outlined" density="compact"
-                                        :model-value="recru.poste_libelle" readonly hide-details class="readonly-field"
-                                        @click="expandedPoste = !expandedPoste" />
+                                        :model-value="recru.empl_poste" readonly hide-details class="readonly-field"
+                                        style="min-width: 160px" @click="expandedPoste = !expandedPoste" />
                                 </div>
                             </v-card-text>
                         </v-card>
                     </v-col>
 
-
-
-                    <v-col cols="3" style="margin-left: 130px;">
+                    <!-- Carte 4 : Date (plus petite) -->
+                    <v-col cols="2">
                         <v-card class="info-card" outlined>
                             <v-card-title class="card-title">DATE</v-card-title>
                             <v-card-text>
                                 <div class="info-row">
-
                                     <v-text-field label="Prise de fonction" variant="outlined" density="compact"
                                         :model-value="formatDate(recru.empl_prise_fonction)" readonly hide-details
                                         class="readonly-field" />
@@ -94,11 +87,19 @@
                                     <v-text-field label="Date fin essai" variant="outlined" density="compact"
                                         :model-value="formatDate(recru.empl_date_fin_essai1)" readonly hide-details
                                         class="readonly-field" />
+                                </div>
+                            </v-card-text>
+                        </v-card>
+                    </v-col>
 
-                                    <!-- <v-text-field label="Date fin essai 2" variant="outlined" density="compact"
-                                        :model-value="formatDate(recru.empl_date_fin_essai2)" readonly hide-details
-                                        class="readonly-field" /> -->
-
+                    <!-- Carte 5 : Catégorie -->
+                    <v-col cols="1" style="min-width: 110px;">
+                        <v-card class="info-card categorie-card" outlined>
+                            <v-card-title class="card-title">&nbsp;</v-card-title>
+                            <v-card-text>
+                                <div class="info-row">
+                                    <v-text-field label="Catégorie" variant="outlined" density="compact"
+                                        v-model="recru.empl_categorie" readonly hide-details class="readonly-field" />
                                 </div>
                             </v-card-text>
                         </v-card>
@@ -114,7 +115,7 @@
                     density="compact" slider-color="deep-purple-accent-4">
                     <v-tab value="etape">ETAPE</v-tab>
                     <v-tab value="formation">FORMATION A L'EMBAUCHE</v-tab>
-                        <!-- <v-badge :content="list_offre.length" color="#FF8A65" inline /> -->
+                    <!-- <v-badge :content="list_offre.length" color="#FF8A65" inline /> -->
                     <v-tab value="mat_disp">MATERIEL MIS A DISPO </v-tab>
                     <!-- <v-badge :content="list_mat_dispo.length" color="#FF8A65" inline /> -->
                 </v-tabs>
@@ -125,11 +126,12 @@
                 <v-card-text style="min-height: 320px; max-height: 320px,">
                     <div v-if="tab === 'etape'">
                         <TableauDetailIntegr @formcv="opencv" @formoff="openoffre" :headers="headersdetail"
-                            :items="list_etape" :loading="store.loading" />
+                            :items="list_etape" :type="type" :loading="store.loading" @refresh="detailRecru"/>
                     </div>
                     <div v-else-if="tab === 'formation'">
                         <TableauFormation :headers="headersFormation" :items="list_formation" :loading="storeo.loading"
-                            @formoff="openoffre" @modifier="modifierOffre" @supprimer="handleDelete" :etat="etat" :matricule="matricule"/>
+                            @formoff="openoffre" @modifier="modifierOffre" @supprimer="handleDelete" :etat="etat"
+                            :matricule="matricule" />
                     </div>
                     <div v-else-if="tab === 'mat_disp'">
                         <TableauMatDispo :headers="headersMat" :items="list_mat_dispo" :loading="storeo.loading" />
@@ -341,1028 +343,1034 @@
     </v-dialog>
 </template>
 
-    <script>
-    import { useRouter } from "vue-router";
-    import useSessionTimeout from "@/utils/useSessionTimeout";
-    import Config from "@/utils/config.js";
-    import { defineComponent, ref, computed, onMounted } from "vue";
-    import { useformatDate2 } from "@/composables/useformatDate2";
-    import { useRecrutement } from "@/store/Rh/rh_recrutement";
-    import { useListIntegration } from "@/store/Rh/rh_integration.js";
-    import TableauDetail from "@/components/rh/tableauDetail.vue";
-    import TableauCV from "@/components/rh/tableauCV.vue";
-    import FormulaireCV from "@/views/rh/FormulaireCV.vue";
-    import { useDemande } from "@/store/Rh/rh_demande";
-    import { useCV } from "@/store/Rh/rh_cv";
-    import { useOffre } from "@/store/Rh/rh_offre";
-    import FormulaireOffre from "./FormulaireOffre.vue";
-    import FormulaireTest from "./FormulaireTest.vue";
+<script>
+import { useRouter } from "vue-router";
+import useSessionTimeout from "@/utils/useSessionTimeout";
+import Config from "@/utils/config.js";
+import { defineComponent, ref, computed, onMounted } from "vue";
+import { useformatDate2 } from "@/composables/useformatDate2";
+import { useRecrutement } from "@/store/Rh/rh_recrutement";
+import { useListIntegration } from "@/store/Rh/rh_integration.js";
+import TableauDetail from "@/components/rh/tableauDetail.vue";
+import TableauCV from "@/components/rh/tableauCV.vue";
+import FormulaireCV from "@/views/rh/FormulaireCV.vue";
+import { useDemande } from "@/store/Rh/rh_demande";
+import { useCV } from "@/store/Rh/rh_cv";
+import { useOffre } from "@/store/Rh/rh_offre";
+import FormulaireOffre from "./FormulaireOffre.vue";
+import FormulaireTest from "./FormulaireTest.vue";
 
-    import add_dossier from "./add_dossier.vue";
-    import TableauOffre from "@/components/rh/tableauOffre.vue";
-    import TableauMatDispo from "@/components/rh/tableauMatDispo.vue";
-    import TableauFormation from "@/components/rh/tableauFormation.vue";
-    import TableauDetailIntegr from "@/components/rh/tableauDetailIntegr.vue";
+import add_dossier from "./add_dossier.vue";
+import TableauOffre from "@/components/rh/tableauOffre.vue";
+import TableauMatDispo from "@/components/rh/tableauMatDispo.vue";
+import TableauFormation from "@/components/rh/tableauFormation.vue";
+import TableauDetailIntegr from "@/components/rh/tableauDetailIntegr.vue";
 
-    import Swal from "sweetalert2";
+import Swal from "sweetalert2";
 
-    export default defineComponent({
-        name: "DetailRecrutement",
-        components: {
-            TableauDetail,
-            FormulaireCV,
-            TableauCV,
-            FormulaireOffre,
-            FormulaireTest,
-            TableauOffre,
-            TableauMatDispo,
-            TableauDetailIntegr,
-            add_dossier,
-            TableauFormation,
-        },
-        props: {
-            recru: { type: Object, required: true },
-            etat: {
-                type: [String, Number],
-                required: false
+export default defineComponent({
+    name: "DetailRecrutement",
+    components: {
+        TableauDetail,
+        FormulaireCV,
+        TableauCV,
+        FormulaireOffre,
+        FormulaireTest,
+        TableauOffre,
+        TableauMatDispo,
+        TableauDetailIntegr,
+        add_dossier,
+        TableauFormation,
+    },
+    props: {
+        recru: { type: Object, required: true },
+        etat: {
+            type: [String, Number],
+            required: false
+        }
+    },
+    setup(props) {
+        const { formatDate } = useformatDate2();
+        const store = useRecrutement();
+        const storeIntegr = useListIntegration();
+        const stored = useDemande();
+        const storec = useCV();
+        const storec1 = useCV();
+        const storeo = useOffre();
+        const details = computed(() => store.listdetail);
+        const cvs = computed(() => storec.listcv);
+        const ofs = computed(() => storeo.listoffre);
+        const tab = ref("etape"); // onglet actif par défaut
+        const expandedPoste = ref(false); // <— ajouté
+        const dialogVisibleCV = ref(false);
+        const dialogVisibleOffre = ref(false); // ouvre le dialog
+        const dialogVisibleTest = ref(false); // ouvre le dialog
+        const dialogVisibleAddDoc = ref(false); // ouvre le dialog
+        const dialogVisibleCandidat = ref(false);
+
+        const defaultCode = ref("");
+        const defaultCode1 = ref("");
+        const prefixe = "CV";
+        const table = "RH_CV";
+        const prefixe1 = "OF";
+        const table1 = "RH_LIGNE_OFFRE";
+
+        const dialogDate = ref(false); // contrôle affichage dialog
+        const dialogDateProposition = ref(false); // contrôle affichage dialog
+        const dialogDateValidation = ref(false); // contrôle affichage dialog
+        const menu = ref(false); // menu du date picker
+        const selectedDate = ref(null);
+        let cvToUpdate = ref(null); // conserve l’item CV sélectionné
+
+        const listCvGlobal = ref([]); // liste globale des CV
+        const selectedCvCodes = ref([]);
+        const offModif = ref([]);
+        const offSupp = ref([]);
+        const showAlertD = ref(false);
+        const donneesD = ref({});
+
+        const selectedCvCodeTest = ref("");
+        const selectedCvNomTest = ref("");
+        const selectedMode = ref("");
+
+        const selectedDateTest = ref("");
+        const selectedDateEntretien = ref("");
+        const selectedDateCvEnrg = ref("");
+
+        const headersdetail = [
+            { title: "Etape", key: "ligne_etape_etape", align: "start" },
+            { title: "Date prévue", key: "ligne_etape_date_prevision", align: "center" },
+            { title: "Date", key: "ligne_etape_date", align: "start" },
+        ];
+
+        const headerscv = [
+            { title: "Nom complet", key: "cv_nom", align: "start" },
+            { title: "Téléphone", key: "cv_contact", align: "start" },
+            { title: "Email", key: "cv_email", align: "start" },
+            { title: "Date postule", key: "cv_ligne_date_ajout", align: "start" },
+            { title: "Date CV", key: "cv_date", align: "start" },
+            { title: "Date Test", key: "cv_ligne_date_test", align: "center" },
+            { title: "Date entretien", key: "cv_ligne_date_entretien", align: "center", },
+            { title: "Proposition", key: "cv_ligne_date_proposition", align: "center", },
+            { title: "CV", key: "cv_cv", sortable: false, align: "center" },
+            { title: "LM", key: "cv_motivation", sortable: false, align: "center" },
+            { title: "ACTIONS", key: "action", sortable: false, align: "center" },
+        ];
+
+        const headersFormation = [
+            { title: "Formation", key: "form_code", align: "start" },
+            { title: "Date prévu", key: "form_dateprevue", align: "start" },
+            { title: "Date reelle", key: "form_datereel", align: "start" },
+
+        ];
+
+        const headersMat = [
+            // { title: "Matricule", key: "mise_dispo_matr", align: "start" },
+            { title: "Catégorie", key: "mise_dispo_cat", align: "start" },
+            { title: "Matériel", key: "mise_dispo_materiel", align: "start" },
+            // { title: "Date prévue", key: "mise_dispo_date_prevue", align: "start" },
+            { title: "Date effect", key: "mise_dispo_date_effect", align: "start" },
+        ];
+
+
+
+        const router = useRouter();
+        useSessionTimeout(Config.DURRE_SESSION, router);
+
+        const code = props.recru?.integr_code;
+
+        const matricule = props.recru?.empl_matricule ?? "";
+
+        const empl_code = props.recru?.empl_code ?? "";
+
+        const type = props.recru?.type ?? "";
+
+        onMounted(async () => {
+
+            // console.log(empl_code)
+
+            // console.log(type)
+
+            if (code) {
+                await detailRecru()
+            } else {
+                console.warn("Pas de recru_code disponible !");
             }
-        },
-        setup(props) {
-            const { formatDate } = useformatDate2();
-            const store = useRecrutement();
-            const storeIntegr = useListIntegration();
-            const stored = useDemande();
-            const storec = useCV();
-            const storec1 = useCV();
-            const storeo = useOffre();
-            const details = computed(() => store.listdetail);
-            const cvs = computed(() => storec.listcv);
-            const ofs = computed(() => storeo.listoffre);
-            const tab = ref("etape"); // onglet actif par défaut
-            const expandedPoste = ref(false); // <— ajouté
-            const dialogVisibleCV = ref(false);
-            const dialogVisibleOffre = ref(false); // ouvre le dialog
-            const dialogVisibleTest = ref(false); // ouvre le dialog
-            const dialogVisibleAddDoc = ref(false); // ouvre le dialog
-            const dialogVisibleCandidat = ref(false);
+        });
 
-            const defaultCode = ref("");
-            const defaultCode1 = ref("");
-            const prefixe = "CV";
-            const table = "RH_CV";
-            const prefixe1 = "OF";
-            const table1 = "RH_LIGNE_OFFRE";
-
-            const dialogDate = ref(false); // contrôle affichage dialog
-            const dialogDateProposition = ref(false); // contrôle affichage dialog
-            const dialogDateValidation = ref(false); // contrôle affichage dialog
-            const menu = ref(false); // menu du date picker
-            const selectedDate = ref(null);
-            let cvToUpdate = ref(null); // conserve l’item CV sélectionné
-
-            const listCvGlobal = ref([]); // liste globale des CV
-            const selectedCvCodes = ref([]);
-            const offModif = ref([]);
-            const offSupp = ref([]);
-            const showAlertD = ref(false);
-            const donneesD = ref({});
-
-            const selectedCvCodeTest = ref("");
-            const selectedCvNomTest = ref("");
-            const selectedMode = ref("");
-
-            const selectedDateTest = ref("");
-            const selectedDateEntretien = ref("");
-            const selectedDateCvEnrg = ref("");
-
-            const headersdetail = [
-                { title: "Etape", key: "etape_libelle", align: "start" },
-                { title: "Date prévue", key: "ligne_etape_date_prevision", align: "center" },
-                { title: "Date", key: "ligne_etape_date", align: "start" },
-            ];
-
-            const headerscv = [
-                { title: "Nom complet", key: "cv_nom", align: "start" },
-                { title: "Téléphone", key: "cv_contact", align: "start" },
-                { title: "Email", key: "cv_email", align: "start" },
-                { title: "Date postule", key: "cv_ligne_date_ajout", align: "start" },
-                { title: "Date CV", key: "cv_date", align: "start" },
-                { title: "Date Test", key: "cv_ligne_date_test", align: "center" },
-                { title: "Date entretien", key: "cv_ligne_date_entretien", align: "center", },
-                { title: "Proposition", key: "cv_ligne_date_proposition", align: "center", },
-                { title: "CV", key: "cv_cv", sortable: false, align: "center" },
-                { title: "LM", key: "cv_motivation", sortable: false, align: "center" },
-                { title: "ACTIONS", key: "action", sortable: false, align: "center" },
-            ];
-
-            const headersFormation = [
-                { title: "Formation", key: "type_form_libelle", align: "start" },
-                { title: "Date prévu", key: "form_dateprevue", align: "start" },
-                { title: "Date reelle", key: "form_datereel", align: "start" },
-
-            ];
-
-            const headersMat = [
-                // { title: "Matricule", key: "mise_dispo_matr", align: "start" },
-                { title: "Catégorie", key: "mise_dispo_cat", align: "start" },
-                { title: "Matériel", key: "mise_dispo_materiel", align: "start" },
-                // { title: "Date prévue", key: "mise_dispo_date_prevue", align: "start" },
-                { title: "Date effect", key: "mise_dispo_date_effect", align: "start" },
-            ];
+        const list_etape = ref([]);
+        const list_offre = ref([]);
+        const list_candidat = ref([]);
+        const list_mat_dispo = ref([]);
+        const list_formation = ref([]);
 
 
+        const detailRecru = async () => {
+            await storeIntegr.fetchListDetailInteg(code, empl_code);
+            list_etape.value = storeIntegr.listEtapesIntegr;
+            list_mat_dispo.value = storeIntegr.listMatDispos;
+            list_formation.value = storeIntegr.listFormations;
 
-            const router = useRouter();
-            useSessionTimeout(Config.DURRE_SESSION, router);
+            //  console.log(list_mat_dispo.value)
+        };
 
-            const code = props.recru?.integr_code;
+        async function opencv() {
+            await stored.fetchCodeNouveau(prefixe, table);
+            defaultCode.value = stored.nouveaucode || "";
 
-            const matricule = props.recru?.empl_matricule ?? "";
+            dialogVisibleCV.value = true; // ouvre le dialog
 
-            onMounted(async () => {
+            // console.log(defaultCode.value);
+            // console.log(dialogVisibleCV.value);
 
-                // console.log(matricule)
+            // console.log("recruCode:", props.recru?.recru_code);
+            // console.log("Bouton cv clique!");
+        }
 
-                if (code) {
-                    await detailRecru()
-                } else {
-                    console.warn("Pas de recru_code disponible !");
-                }
-            });
+        async function openoffre() {
+            offModif.value = null;
+            await stored.fetchCodeNouveau(prefixe1, table1);
+            defaultCode1.value = stored.nouveaucode || "";
 
-            const list_etape = ref([]);
-            const list_offre = ref([]);
-            const list_candidat = ref([]);
-            const list_mat_dispo = ref([]);
-            const list_formation = ref([]);
+            dialogVisibleOffre.value = true; // ouvre le dialog
 
+            // console.log(defaultCode1.value);
+            // console.log(dialogVisibleOffre.value);
 
-            const detailRecru = async () => {
-                await storeIntegr.fetchListDetailInteg(code , matricule);
-                list_etape.value = storeIntegr.listEtapesIntegr;
-                list_mat_dispo.value = storeIntegr.listMatDispos;
-                list_formation.value = storeIntegr.listFormations;
+            // console.log("recruCode:", props.recru?.recru_code);
+            // console.log("Bouton offre clique!");
+        }
 
-                // console.log(list_formation.value)
-            };
+        async function openCandidat() {
+            dialogVisibleCandidat.value = true;
 
-            async function opencv() {
-                await stored.fetchCodeNouveau(prefixe, table);
-                defaultCode.value = stored.nouveaucode || "";
+            await storec1.fetchListCvGlobal1(); // récupère la liste globale
+            let globalCVs = storec1.listcv1 || [];
 
-                dialogVisibleCV.value = true; // ouvre le dialog
+            // console.log(globalCVs)
 
-                // console.log(defaultCode.value);
-                // console.log(dialogVisibleCV.value);
+            // Filtrer ceux déjà liés au recrutement actuel
+            const recruCVs = list_candidat.value.map((cv) => cv.cv_code); // cvs liés au recru actuel
+            listCvGlobal.value = globalCVs.filter(
+                (cv) => !recruCVs.includes(cv.cv_code)
+            );
 
-                // console.log("recruCode:", props.recru?.recru_code);
-                // console.log("Bouton cv clique!");
-            }
+            selectedCvCodes.value = []; // reset sélection
+            // console.log("Liste globale filtrée des CV:", listCvGlobal.value);
+        }
 
-            async function openoffre() {
-                offModif.value = null;
-                await stored.fetchCodeNouveau(prefixe1, table1);
-                defaultCode1.value = stored.nouveaucode || "";
+        const fermerformcv = () => {
+            dialogVisibleCV.value = false; // ouvre le dialog
+            // console.log(dialogVisibleCV.value);
+            // console.log("Bouton annuler cv  clique!");
+        };
 
-                dialogVisibleOffre.value = true; // ouvre le dialog
+        const fermerformTest = () => {
+            dialogVisibleTest.value = false;
+        };
 
-                // console.log(defaultCode1.value);
-                // console.log(dialogVisibleOffre.value);
+        const fermerformcv1 = () => {
+            dialogVisibleOffre.value = false; // ouvre le dialog
+            offModif.value = null;
+            // console.log(dialogVisibleOffre.value);
+            // console.log("Bouton annuler offre clique!");
+        };
+        const close_add_doc = () => {
+            dialogVisibleAddDoc.value = false; // ouvre le dialog
+            offModif.value = null;
+            // console.log(dialogVisibleOffre.value);
+            // console.log("Bouton annuler offre clique!");
+        };
 
-                // console.log("recruCode:", props.recru?.recru_code);
-                // console.log("Bouton offre clique!");
-            }
-
-            async function openCandidat() {
-                dialogVisibleCandidat.value = true;
-
-                await storec1.fetchListCvGlobal1(); // récupère la liste globale
-                let globalCVs = storec1.listcv1 || [];
-
-                // console.log(globalCVs)
-
-                // Filtrer ceux déjà liés au recrutement actuel
-                const recruCVs = list_candidat.value.map((cv) => cv.cv_code); // cvs liés au recru actuel
-                listCvGlobal.value = globalCVs.filter(
-                    (cv) => !recruCVs.includes(cv.cv_code)
-                );
-
-                selectedCvCodes.value = []; // reset sélection
-                // console.log("Liste globale filtrée des CV:", listCvGlobal.value);
-            }
-
-            const fermerformcv = () => {
-                dialogVisibleCV.value = false; // ouvre le dialog
-                // console.log(dialogVisibleCV.value);
-                // console.log("Bouton annuler cv  clique!");
-            };
-
-            const fermerformTest = () => {
-                dialogVisibleTest.value = false;
-            };
-
-            const fermerformcv1 = () => {
-                dialogVisibleOffre.value = false; // ouvre le dialog
-                offModif.value = null;
-                // console.log(dialogVisibleOffre.value);
-                // console.log("Bouton annuler offre clique!");
-            };
-            const close_add_doc = () => {
-                dialogVisibleAddDoc.value = false; // ouvre le dialog
-                offModif.value = null;
-                // console.log(dialogVisibleOffre.value);
-                // console.log("Bouton annuler offre clique!");
-            };
-
-            async function handleSaved(newDemande) {
-                try {
-                    // Appelle la bonne méthode du store
-                    await storec.insertCV(newDemande);
-                    await detailRecru();
-
-                    // storec.fetchListCvRecrut(code);
-                    // store.fetchListDetailRecru(code);
-                } catch (err) {
-                    console.error("Erreur lors de l'ajout :", err);
-                }
-                dialogVisibleCV.value = false;
-            }
-
-            async function handleSavedTest(data) {
-                try {
-
-                    const payload = {
-                        cvCode: data.cvCodeTest,
-                        recruCode: data.recruCodeTest,
-                    };
-
-                    if (data.test) {
-                        payload.CV_LIGNE_DATE_TEST =
-                            `${data.date} ${data.heure}:00`;
-                    }
-
-                    if (data.entretien) {
-                        payload.CV_LIGNE_DATE_ENTRETIEN =
-                            `${data.date} ${data.heure}:00`;
-                    }
-
-                    console.log("Payload envoyé :", payload);
-
-                    await storec.insertCVTest(payload);
-
-                } catch (err) {
-                    console.error("Erreur lors de l'ajout :", err);
-                }
-                dialogVisibleTest.value = false;
+        async function handleSaved(newDemande) {
+            try {
+                // Appelle la bonne méthode du store
+                await storec.insertCV(newDemande);
                 await detailRecru();
 
+                // storec.fetchListCvRecrut(code);
+                // store.fetchListDetailRecru(code);
+            } catch (err) {
+                console.error("Erreur lors de l'ajout :", err);
             }
+            dialogVisibleCV.value = false;
+        }
 
-            async function handleSavedOffre(newDemande) {
-                try {
-                    // Appelle la bonne méthode du store
-                    if (!offModif.value) {
-                        await storeo.insertOffre(newDemande);
+        async function handleSavedTest(data) {
+            try {
 
-                        // storeo.fetchListOffre(code);
-                        // store.fetchListDetailRecru(code);
-                        await detailRecru()
-                    } else {
-                        await storeo.updateOffre(newDemande);
-                        await detailRecru()
-                        // storeo.fetchListOffre(code);
-                        // store.fetchListDetailRecru(code);
-                        // console.log("Modification en cours!");
-                    }
-                } catch (err) {
-                    console.error("Erreur lors de l'ajout :", err);
+                const payload = {
+                    cvCode: data.cvCodeTest,
+                    recruCode: data.recruCodeTest,
+                };
+
+                if (data.test) {
+                    payload.CV_LIGNE_DATE_TEST =
+                        `${data.date} ${data.heure}:00`;
                 }
-                dialogVisibleOffre.value = false;
-            }
 
-
-
-            async function updatecvSelection(cvItem) {
-                try {
-
-                    await storec.updatecvSelection(code, cvItem.cv_code);
-
-                    // console.log(cvItem.cv_code)
-                    // console.log(cvItem.cv_nom)
-
-
-                    selectedCvCodeTest.value = cvItem.cv_code
-                    selectedCvNomTest.value = cvItem.cv_nom
-
-
-                    dialogVisibleTest.value = true;
-
-                    // Rafraîchit la liste après mise à jour
-                    // await detailRecru();
-
-                } catch (err) {
-                    console.error("Erreur lors de la mise à jour de la sélection :", err);
+                if (data.entretien) {
+                    payload.CV_LIGNE_DATE_ENTRETIEN =
+                        `${data.date} ${data.heure}:00`;
                 }
+
+                // console.log("Payload envoyé :", payload);
+
+                await storec.insertCVTest(payload);
+
+            } catch (err) {
+                console.error("Erreur lors de l'ajout :", err);
             }
+            dialogVisibleTest.value = false;
+            await detailRecru();
 
+        }
 
-            async function openDialogTest(cvItem) {
-                try {
+        async function handleSavedOffre(newDemande) {
+            try {
+                // Appelle la bonne méthode du store
+                if (!offModif.value) {
+                    await storeo.insertOffre(newDemande);
 
-                    //  await storec.updatecvSelection(code, cvItem.cv_code);
-
-                    // console.log(cvItem.cv_code)
-                    // console.log(cvItem.cv_nom)
-
-
-
-                    selectedCvCodeTest.value = cvItem.cv_code
-                    selectedCvNomTest.value = cvItem.cv_nom
-                    selectedMode.value = cvItem.mode;
-
-                    selectedDateTest.value = cvItem.cv_ligne_date_test
-                    selectedDateEntretien.value = cvItem.cv_ligne_date_entretien
-                    selectedDateCvEnrg.value = cvItem.cv_ligne_date_ajout
-
-                    dialogVisibleTest.value = true;
-
-                    // Rafraîchit la liste après mise à jour
-                    // await detailRecru();
-
-                } catch (err) {
-                    console.error("Erreur lors de la mise à jour de la sélection :", err);
+                    // storeo.fetchListOffre(code);
+                    // store.fetchListDetailRecru(code);
+                    await detailRecru()
+                } else {
+                    await storeo.updateOffre(newDemande);
+                    await detailRecru()
+                    // storeo.fetchListOffre(code);
+                    // store.fetchListDetailRecru(code);
+                    // console.log("Modification en cours!");
                 }
+            } catch (err) {
+                console.error("Erreur lors de l'ajout :", err);
+            }
+            dialogVisibleOffre.value = false;
+        }
+
+
+
+        async function updatecvSelection(cvItem) {
+            try {
+
+                await storec.updatecvSelection(code, cvItem.cv_code);
+
+                // console.log(cvItem.cv_code)
+                // console.log(cvItem.cv_nom)
+
+
+                selectedCvCodeTest.value = cvItem.cv_code
+                selectedCvNomTest.value = cvItem.cv_nom
+
+
+                dialogVisibleTest.value = true;
+
+                // Rafraîchit la liste après mise à jour
+                // await detailRecru();
+
+            } catch (err) {
+                console.error("Erreur lors de la mise à jour de la sélection :", err);
+            }
+        }
+
+
+        async function openDialogTest(cvItem) {
+            try {
+
+                //  await storec.updatecvSelection(code, cvItem.cv_code);
+
+                // console.log(cvItem.cv_code)
+                // console.log(cvItem.cv_nom)
+
+
+
+                selectedCvCodeTest.value = cvItem.cv_code
+                selectedCvNomTest.value = cvItem.cv_nom
+                selectedMode.value = cvItem.mode;
+
+                selectedDateTest.value = cvItem.cv_ligne_date_test
+                selectedDateEntretien.value = cvItem.cv_ligne_date_entretien
+                selectedDateCvEnrg.value = cvItem.cv_ligne_date_ajout
+
+                dialogVisibleTest.value = true;
+
+                // Rafraîchit la liste après mise à jour
+                // await detailRecru();
+
+            } catch (err) {
+                console.error("Erreur lors de la mise à jour de la sélection :", err);
+            }
+        }
+
+
+        async function updatecvEntretien(cvItem) {
+            try {
+                // Appel du store avec les bons paramètres
+                await storec.updatecvEntretien(code, cvItem.cv_code);
+
+                cvToUpdate.value = cvItem; // on garde l’item CV
+                selectedDate.value = null; // reset si nécessaire
+                dialogDate.value = false;
+
+                // Rafraîchit la liste après mise à jour
+                await detailRecru();
+
+            } catch (err) {
+                console.error("Erreur lors de la mise à jour de la sélection :", err);
+            }
+        }
+
+        // async function updatecvproposition(cvItem) {
+        //   try {
+        //     await storec.updatecvProposition(code, cvItem.cv_code);
+
+        //     cvToUpdate.value = cvItem; // on garde l’item CV
+        //     selectedDate.value = null; // reset si nécessaire
+        //     dialogDateProposition.value = false;
+
+        //     await detailRecru();
+
+        //   } catch (err) {
+        //     console.error("Erreur lors de la mise à jour de la proposition dossier :", err);
+        //   }
+        // }
+
+        async function updatecvproposition(cvItem) {
+
+            const result = await Swal.fire({
+                title: "Proposer ce candidat ?",
+                icon: "question",
+                showCancelButton: true,
+                confirmButtonColor: "#28a745",
+                cancelButtonColor: "#d33",
+                confirmButtonText: "Proposer",
+                cancelButtonText: "Annuler",
+
+                // Empêche la fermeture accidentelle
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                allowEnterKey: false
+            });
+
+            if (!result.isConfirmed) {
+                return;
             }
 
+            try {
+                // Mise à jour
+                await storec.updatecvProposition(code, cvItem.cv_code);
 
-            async function updatecvEntretien(cvItem) {
-                try {
-                    // Appel du store avec les bons paramètres
-                    await storec.updatecvEntretien(code, cvItem.cv_code);
+                cvToUpdate.value = cvItem;
+                selectedDate.value = null;
+                dialogDateProposition.value = false;
 
-                    cvToUpdate.value = cvItem; // on garde l’item CV
-                    selectedDate.value = null; // reset si nécessaire
-                    dialogDate.value = false;
+                // Rafraîchir la liste
+                await detailRecru();
 
-                    // Rafraîchit la liste après mise à jour
-                    await detailRecru();
+                // Facultatif : message de succès
+                // await Swal.fire({
+                //   icon: "success",
+                //   title: "Succès",
+                //   text: "Le candidat a été proposé avec succès.",
+                //   timer: 2000,
+                //   showConfirmButton: false
+                // });
 
-                } catch (err) {
-                    console.error("Erreur lors de la mise à jour de la sélection :", err);
-                }
-            }
+            } catch (err) {
+                console.error("Erreur lors de la mise à jour de la proposition dossier :", err);
 
-            // async function updatecvproposition(cvItem) {
-            //   try {
-            //     await storec.updatecvProposition(code, cvItem.cv_code);
-
-            //     cvToUpdate.value = cvItem; // on garde l’item CV
-            //     selectedDate.value = null; // reset si nécessaire
-            //     dialogDateProposition.value = false;
-
-            //     await detailRecru();
-
-            //   } catch (err) {
-            //     console.error("Erreur lors de la mise à jour de la proposition dossier :", err);
-            //   }
-            // }
-
-            async function updatecvproposition(cvItem) {
-
-                const result = await Swal.fire({
-                    title: "Proposer ce candidat ?",
-                    icon: "question",
-                    showCancelButton: true,
-                    confirmButtonColor: "#28a745",
-                    cancelButtonColor: "#d33",
-                    confirmButtonText: "Proposer",
-                    cancelButtonText: "Annuler",
-
-                    // Empêche la fermeture accidentelle
-                    allowOutsideClick: false,
-                    allowEscapeKey: false,
-                    allowEnterKey: false
+                Swal.fire({
+                    icon: "error",
+                    title: "Erreur",
+                    text: "Une erreur est survenue lors de la proposition du candidat."
                 });
-
-                if (!result.isConfirmed) {
-                    return;
-                }
-
-                try {
-                    // Mise à jour
-                    await storec.updatecvProposition(code, cvItem.cv_code);
-
-                    cvToUpdate.value = cvItem;
-                    selectedDate.value = null;
-                    dialogDateProposition.value = false;
-
-                    // Rafraîchir la liste
-                    await detailRecru();
-
-                    // Facultatif : message de succès
-                    // await Swal.fire({
-                    //   icon: "success",
-                    //   title: "Succès",
-                    //   text: "Le candidat a été proposé avec succès.",
-                    //   timer: 2000,
-                    //   showConfirmButton: false
-                    // });
-
-                } catch (err) {
-                    console.error("Erreur lors de la mise à jour de la proposition dossier :", err);
-
-                    Swal.fire({
-                        icon: "error",
-                        title: "Erreur",
-                        text: "Une erreur est survenue lors de la proposition du candidat."
-                    });
-                }
             }
+        }
 
 
-            // async function updateValidationCandidat(cvItem) {
+        // async function updateValidationCandidat(cvItem) {
 
-            //   const result = await Swal.fire({
-            //     title: "Valider ce candidat ?",
-            //     icon: "warning",
-            //     showCancelButton: true,
-            //     confirmButtonColor: "#28a745",
-            //     cancelButtonColor: "#d33",
-            //     confirmButtonText: "valider",
-            //     cancelButtonText: "Annuler",
+        //   const result = await Swal.fire({
+        //     title: "Valider ce candidat ?",
+        //     icon: "warning",
+        //     showCancelButton: true,
+        //     confirmButtonColor: "#28a745",
+        //     cancelButtonColor: "#d33",
+        //     confirmButtonText: "valider",
+        //     cancelButtonText: "Annuler",
 
-            //     // 🔒 rendre persistant
-            //     allowOutsideClick: false,
-            //     allowEscapeKey: false,
-            //     allowEnterKey: false
-            //   });
+        //     // 🔒 rendre persistant
+        //     allowOutsideClick: false,
+        //     allowEscapeKey: false,
+        //     allowEnterKey: false
+        //   });
 
-            //   if (!result.isConfirmed) {
-            //     return;
-            //   }
+        //   if (!result.isConfirmed) {
+        //     return;
+        //   }
 
-            //   try {
-            //     await storec.updateValidationCandidat(code, cvItem.cv_code);
+        //   try {
+        //     await storec.updateValidationCandidat(code, cvItem.cv_code);
 
-            //     cvToUpdate.value = cvItem;
-            //     selectedDate.value = null;
-            //     // dialogDateValidation.value = true;
+        //     cvToUpdate.value = cvItem;
+        //     selectedDate.value = null;
+        //     // dialogDateValidation.value = true;
 
-            //     await detailRecru();
+        //     await detailRecru();
 
-            //   } catch (err) {
-            //     console.error(err);
+        //   } catch (err) {
+        //     console.error(err);
 
-            //     Swal.fire({
-            //       icon: "error",
-            //       title: "Erreur",
-            //       text: "Une erreur est survenue lors de la validation"
-            //     });
-            //   }
+        //     Swal.fire({
+        //       icon: "error",
+        //       title: "Erreur",
+        //       text: "Une erreur est survenue lors de la validation"
+        //     });
+        //   }
 
-            // }
+        // }
 
 
-            async function updateValidationCandidat(cvItem) {
+        async function updateValidationCandidat(cvItem) {
 
-                const result = await Swal.fire({
-                    title: "Date Prise de fonction",
-                    html: `
+            const result = await Swal.fire({
+                title: "Date Prise de fonction",
+                html: `
       <input id="dateValidation"
              type="date"
              class="swal2-input"
             >
       `,
-                    // value="${new Date().toISOString().split('T')[0]}"
-                    icon: "question",
-                    showCancelButton: true,
-                    confirmButtonText: "Valider",
-                    cancelButtonText: "Annuler",
-                    confirmButtonColor: "#28a745",
-                    cancelButtonColor: "#d33",
+                // value="${new Date().toISOString().split('T')[0]}"
+                icon: "question",
+                showCancelButton: true,
+                confirmButtonText: "Valider",
+                cancelButtonText: "Annuler",
+                confirmButtonColor: "#28a745",
+                cancelButtonColor: "#d33",
 
-                    allowOutsideClick: false,
-                    allowEscapeKey: false,
+                allowOutsideClick: false,
+                allowEscapeKey: false,
 
-                    preConfirm: () => {
-                        const date = document.getElementById("dateValidation").value;
+                preConfirm: () => {
+                    const date = document.getElementById("dateValidation").value;
 
-                        if (!date) {
-                            Swal.showValidationMessage("Veuillez sélectionner une date.");
-                            return false;
-                        }
-
-                        return date;
+                    if (!date) {
+                        Swal.showValidationMessage("Veuillez sélectionner une date.");
+                        return false;
                     }
+
+                    return date;
+                }
+            });
+
+            if (!result.isConfirmed) {
+                return;
+            }
+
+            const dateValidation = result.value;
+
+            try {
+
+                // console.log(code)
+                // console.log(cvItem.cv_code)
+                // console.log(dateValidation)
+
+                // Validation du candidat
+                await storec.updateValidationCandidat(code, cvItem.cv_code, dateValidation);
+
+                // Enregistrement de la date
+                // await storec.insertDateValidation(code,cvItem.cv_code,dateValidation);
+
+                await detailRecru();
+
+                Swal.fire({
+                    icon: "success",
+                    title: "Succès",
+                    text: "Le candidat a été validé.",
+                    timer: 2000,
+                    showConfirmButton: false
                 });
 
-                if (!result.isConfirmed) {
-                    return;
-                }
+            } catch (err) {
+                console.error(err);
 
-                const dateValidation = result.value;
-
-                try {
-
-                    console.log(code)
-                    console.log(cvItem.cv_code)
-                    console.log(dateValidation)
-
-                    // Validation du candidat
-                    await storec.updateValidationCandidat(code, cvItem.cv_code, dateValidation);
-
-                    // Enregistrement de la date
-                    // await storec.insertDateValidation(code,cvItem.cv_code,dateValidation);
-
-                    await detailRecru();
-
-                    Swal.fire({
-                        icon: "success",
-                        title: "Succès",
-                        text: "Le candidat a été validé.",
-                        timer: 2000,
-                        showConfirmButton: false
-                    });
-
-                } catch (err) {
-                    console.error(err);
-
-                    Swal.fire({
-                        icon: "error",
-                        title: "Erreur",
-                        text: "Une erreur est survenue."
-                    });
-                }
-
+                Swal.fire({
+                    icon: "error",
+                    title: "Erreur",
+                    text: "Une erreur est survenue."
+                });
             }
 
-            async function insert_doc(cvItem) {
+        }
 
-                console.log('cliqued')
-                try {
-                    // Appel du store avec les bons paramètres
-                    // await storec.updateValidationCandidat(code, cvItem.cv_code);
+        async function insert_doc(cvItem) {
 
-                    cvToUpdate.value = cvItem; // on garde l’item CV
-                    selectedDate.value = null; // reset si nécessaire
-                    dialogVisibleAddDoc.value = true; // ouvre le dialog
+            // console.log('cliqued')
+            try {
+                // Appel du store avec les bons paramètres
+                // await storec.updateValidationCandidat(code, cvItem.cv_code);
 
-                    // Rafraîchit la liste après mise à jour
-                    await detailRecru();
+                cvToUpdate.value = cvItem; // on garde l’item CV
+                selectedDate.value = null; // reset si nécessaire
+                dialogVisibleAddDoc.value = true; // ouvre le dialog
 
-                } catch (err) {
-                    console.error("Erreur lors de la mise à jour de la sélection :", err);
-                }
+                // Rafraîchit la liste après mise à jour
+                await detailRecru();
+
+            } catch (err) {
+                console.error("Erreur lors de la mise à jour de la sélection :", err);
+            }
+        }
+
+        function modifierOffre(cvItem) {
+            try {
+                offModif.value = cvItem;
+                dialogVisibleOffre.value = true; // ← ouvre le formulaire
+                // console.log("Ligne offre à modifier : ", offModif.value);
+            } catch (err) {
+                console.error("Erreur lors de la mise à jour de la sélection :", err);
+            }
+        }
+
+        async function confirmDate() {
+            if (!selectedDate.value) {
+                alert("Veuillez sélectionner une date !");
+                return;
             }
 
-            function modifierOffre(cvItem) {
-                try {
-                    offModif.value = cvItem;
-                    dialogVisibleOffre.value = true; // ← ouvre le formulaire
-                    // console.log("Ligne offre à modifier : ", offModif.value);
-                } catch (err) {
-                    console.error("Erreur lors de la mise à jour de la sélection :", err);
-                }
+            try {
+                // Formate la date au format yyyy-MM-dd
+                const dateObj = new Date(selectedDate.value);
+                // const formattedDate = dateObj.toISOString().slice(0, 10);
+                const formattedDate = dateObj.toLocaleDateString('sv-SE');
+
+                await storec.updatedatecvEntretien(
+                    formattedDate,
+                    code,
+                    cvToUpdate.value.cv_code
+                );
+
+                storec.fetchListCvRecrut(code);
+                store.fetchListDetailRecru(code);
+                dialogDate.value = false;
+            } catch (err) {
+                console.error("Erreur confirmDate:", err);
+                alert(`Erreur lors de la mise à jour : ${err.message}`);
+            } finally {
+                dialogDate.value = false;
+                cvToUpdate.value = null;
+                selectedDate.value = null;
+            }
+        }
+
+        async function confirmDateProposition() {
+            if (!selectedDate.value) {
+                alert("Veuillez sélectionner une date !");
+                return;
             }
 
-            async function confirmDate() {
-                if (!selectedDate.value) {
-                    alert("Veuillez sélectionner une date !");
-                    return;
-                }
+            try {
+                // Formate la date au format yyyy-MM-dd
+                const dateObj = new Date(selectedDate.value);
+                // const formattedDate = dateObj.toISOString().slice(0, 10);
+                const formattedDate = dateObj.toLocaleDateString('sv-SE');
 
-                try {
-                    // Formate la date au format yyyy-MM-dd
-                    const dateObj = new Date(selectedDate.value);
-                    // const formattedDate = dateObj.toISOString().slice(0, 10);
-                    const formattedDate = dateObj.toLocaleDateString('sv-SE');
+                await storec.updatedatecvProposition(
+                    formattedDate,
+                    code,
+                    cvToUpdate.value.cv_code
+                );
 
-                    await storec.updatedatecvEntretien(
-                        formattedDate,
-                        code,
-                        cvToUpdate.value.cv_code
-                    );
+                storec.fetchListCvRecrut(code);
+                store.fetchListDetailRecru(code);
+                dialogDateProposition.value = false;
+            } catch (err) {
+                console.error("Erreur confirmDateProposition:", err);
+                alert(`Erreur lors de la mise à jour : ${err.message}`);
+            } finally {
+                dialogDateProposition.value = false;
+                cvToUpdate.value = null;
+                selectedDate.value = null;
+            }
+        }
 
-                    storec.fetchListCvRecrut(code);
-                    store.fetchListDetailRecru(code);
-                    dialogDate.value = false;
-                } catch (err) {
-                    console.error("Erreur confirmDate:", err);
-                    alert(`Erreur lors de la mise à jour : ${err.message}`);
-                } finally {
-                    dialogDate.value = false;
-                    cvToUpdate.value = null;
-                    selectedDate.value = null;
-                }
+        async function confirmDateValidation() {
+            if (!selectedDate.value) {
+                alert("Veuillez sélectionner une date !");
+                return;
             }
 
-            async function confirmDateProposition() {
-                if (!selectedDate.value) {
-                    alert("Veuillez sélectionner une date !");
-                    return;
-                }
+            try {
+                // Formate la date au format yyyy-MM-dd
+                const dateObj = new Date(selectedDate.value);
+                // const formattedDate = dateObj.toISOString().slice(0, 10);
+                const formattedDate = dateObj.toLocaleDateString('sv-SE');
 
-                try {
-                    // Formate la date au format yyyy-MM-dd
-                    const dateObj = new Date(selectedDate.value);
-                    // const formattedDate = dateObj.toISOString().slice(0, 10);
-                    const formattedDate = dateObj.toLocaleDateString('sv-SE');
 
-                    await storec.updatedatecvProposition(
-                        formattedDate,
-                        code,
-                        cvToUpdate.value.cv_code
-                    );
+                await storec.updatedateValidation(
+                    formattedDate,
+                    code,
+                    cvToUpdate.value.cv_code
+                );
 
-                    storec.fetchListCvRecrut(code);
-                    store.fetchListDetailRecru(code);
-                    dialogDateProposition.value = false;
-                } catch (err) {
-                    console.error("Erreur confirmDateProposition:", err);
-                    alert(`Erreur lors de la mise à jour : ${err.message}`);
-                } finally {
-                    dialogDateProposition.value = false;
-                    cvToUpdate.value = null;
-                    selectedDate.value = null;
-                }
+                storec.fetchListCvRecrut(code);
+                store.fetchListDetailRecru(code);
+                dialogDateValidation.value = false;
+            } catch (err) {
+                console.error("Erreur confirmDate:", err);
+                alert(`Erreur lors de la mise à jour : ${err.message}`);
+            } finally {
+                dialogDateValidation.value = false;
+                cvToUpdate.value = null;
+                selectedDate.value = null;
+            }
+        }
+
+        async function validerCandidats() {
+            if (!selectedCvCodes.value.length) {
+                //   alert("Veuillez sélectionner au moins un candidat !");
+                return;
             }
 
-            async function confirmDateValidation() {
-                if (!selectedDate.value) {
-                    alert("Veuillez sélectionner une date !");
-                    return;
+            try {
+                // Boucle sur chaque CV sélectionné et insertion
+                for (const cvCode of selectedCvCodes.value) {
+                    const formData = new FormData();
+                    formData.append("cv_code", cvCode);
+                    formData.append("cv_recru_code", props.recru.recru_code);
+
+                    await storec.insertLigneCV(formData);
                 }
 
-                try {
-                    // Formate la date au format yyyy-MM-dd
-                    const dateObj = new Date(selectedDate.value);
-                    // const formattedDate = dateObj.toISOString().slice(0, 10);
-                    const formattedDate = dateObj.toLocaleDateString('sv-SE');
+                // Rafraîchit les listes
+                // await storec.fetchListCvRecrut(code);
+                // await store.fetchListDetailRecru(code);
+                await detailRecru();
 
-
-                    await storec.updatedateValidation(
-                        formattedDate,
-                        code,
-                        cvToUpdate.value.cv_code
-                    );
-
-                    storec.fetchListCvRecrut(code);
-                    store.fetchListDetailRecru(code);
-                    dialogDateValidation.value = false;
-                } catch (err) {
-                    console.error("Erreur confirmDate:", err);
-                    alert(`Erreur lors de la mise à jour : ${err.message}`);
-                } finally {
-                    dialogDateValidation.value = false;
-                    cvToUpdate.value = null;
-                    selectedDate.value = null;
-                }
+                //alert("CV(s) inséré(s) avec succès !");
+            } catch (err) {
+                console.error("Erreur insertion CV(s) :", err);
+                // alert("Erreur lors de l'insertion des CV(s).");
+            } finally {
+                dialogVisibleCandidat.value = false; // ferme le dialog
+                selectedCvCodes.value = []; // reset sélection
             }
+        }
 
-            async function validerCandidats() {
-                if (!selectedCvCodes.value.length) {
-                    //   alert("Veuillez sélectionner au moins un candidat !");
-                    return;
-                }
-
-                try {
-                    // Boucle sur chaque CV sélectionné et insertion
-                    for (const cvCode of selectedCvCodes.value) {
-                        const formData = new FormData();
-                        formData.append("cv_code", cvCode);
-                        formData.append("cv_recru_code", props.recru.recru_code);
-
-                        await storec.insertLigneCV(formData);
-                    }
-
-                    // Rafraîchit les listes
-                    // await storec.fetchListCvRecrut(code);
-                    // await store.fetchListDetailRecru(code);
-                    await detailRecru();
-
-                    //alert("CV(s) inséré(s) avec succès !");
-                } catch (err) {
-                    console.error("Erreur insertion CV(s) :", err);
-                    // alert("Erreur lors de l'insertion des CV(s).");
-                } finally {
-                    dialogVisibleCandidat.value = false; // ferme le dialog
-                    selectedCvCodes.value = []; // reset sélection
-                }
+        async function supprimerOffre() {
+            try {
+                await storeo.deleteOffre(donneesD.value);
+                await detailRecru();
+                // storeo.fetchListOffre(code);
+                // store.fetchListDetailRecru(code);
+                showAlertD.value = false;
+            } catch (err) {
+                console.error("Erreur lors de la suppression de la sélection :", err);
             }
+        }
 
-            async function supprimerOffre() {
-                try {
-                    await storeo.deleteOffre(donneesD.value);
-                    await detailRecru();
-                    // storeo.fetchListOffre(code);
-                    // store.fetchListDetailRecru(code);
-                    showAlertD.value = false;
-                } catch (err) {
-                    console.error("Erreur lors de la suppression de la sélection :", err);
-                }
-            }
+        function handleDelete(item) {
 
-            function handleDelete(item) {
+            showAlertD.value = true;
+            donneesD.value = item;
 
-                showAlertD.value = true;
-                donneesD.value = item;
+        }
 
-            }
+        const countNotEmpty = (items, key) => {
+            return items.filter(item =>
+                item[key] !== null &&
+                item[key] !== undefined &&
+                item[key] !== ''
+            ).length;
+        };
 
-            const countNotEmpty = (items, key) => {
-                return items.filter(item =>
-                    item[key] !== null &&
-                    item[key] !== undefined &&
-                    item[key] !== ''
-                ).length;
-            };
+        return {
+            prefixe, insert_doc,
+            list_etape, list_offre, list_candidat,
+            table, prefixe1, table1, defaultCode, defaultCode1, formatDate, tab, expandedPoste, headersdetail, headerscv, headersFormation, store, stored, storec, storec1, storeo, details, dialogVisibleCV,
+            dialogVisibleOffre, dialogVisibleAddDoc, dialogVisibleCandidat, opencv, openoffre, fermerformcv, fermerformcv1, close_add_doc, handleSaved, handleSavedOffre, cvs, ofs, code,
+            updatecvSelection, updatecvEntretien, updatecvproposition, updateValidationCandidat, modifierOffre, offModif, supprimerOffre, dialogDate, dialogDateProposition, dialogDateValidation, selectedDate, menu, cvToUpdate,
+            confirmDate, confirmDateProposition, confirmDateValidation, openCandidat, listCvGlobal, selectedCvCodes, validerCandidats, handleDelete, showAlertD, donneesD,
+            dialogVisibleTest, fermerformTest, selectedCvCodeTest, selectedCvNomTest, handleSavedTest, openDialogTest, selectedMode,
+            selectedDateTest, selectedDateEntretien, selectedDateCvEnrg,
+            countNotEmpty,
+            etat: props.etat,
+            list_mat_dispo, headersMat, matricule, list_formation, empl_code,detailRecru,type,
 
-            return {
-                prefixe, insert_doc,
-                list_etape, list_offre, list_candidat,
-                table, prefixe1, table1, defaultCode, defaultCode1, formatDate, tab, expandedPoste, headersdetail, headerscv, headersFormation, store, stored, storec, storec1, storeo, details, dialogVisibleCV,
-                dialogVisibleOffre, dialogVisibleAddDoc, dialogVisibleCandidat, opencv, openoffre, fermerformcv, fermerformcv1, close_add_doc, handleSaved, handleSavedOffre, cvs, ofs, code,
-                updatecvSelection, updatecvEntretien, updatecvproposition, updateValidationCandidat, modifierOffre, offModif, supprimerOffre, dialogDate, dialogDateProposition, dialogDateValidation, selectedDate, menu, cvToUpdate,
-                confirmDate, confirmDateProposition, confirmDateValidation, openCandidat, listCvGlobal, selectedCvCodes, validerCandidats, handleDelete, showAlertD, donneesD,
-                dialogVisibleTest, fermerformTest, selectedCvCodeTest, selectedCvNomTest, handleSavedTest, openDialogTest, selectedMode,
-                selectedDateTest, selectedDateEntretien, selectedDateCvEnrg,
-                countNotEmpty,
-                etat: props.etat,
-                list_mat_dispo, headersMat,matricule,list_formation,
-
-            };
-        },
-    });
+        };
+    },
+});
 </script>
 
-    <style>
-    .close-icon {
-        cursor: pointer;
-        color: #555;
-        transition: 0.2s;
-    }
+<style>
+.close-icon {
+    cursor: pointer;
+    color: #555;
+    transition: 0.2s;
+}
 
-    .close-icon:hover {
-        color: red;
-    }
+.close-icon:hover {
+    color: red;
+}
 
-    .custom-tabs1 {
-        max-width: 490px;
-        display: flex;
-        justify-content: left;
-    }
+.custom-tabs1 {
+    max-width: 490px;
+    display: flex;
+    justify-content: left;
+}
 
-    .info-principale {
-        position: relative;
-        padding: 10px;
-        background-color: #fafafa;
-        /* fond léger */
-        border-radius: 8px;
-        border: 1px solid #e0e0e0;
-        /* bord discret */
-    }
+.info-principale {
+    position: relative;
+    padding: 10px;
+    background-color: #fafafa;
+    /* fond léger */
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+    /* bord discret */
+}
 
-    .info-col {
-        padding: 4px 0;
-        display: flex;
-        align-items: center;
-        flex-wrap: nowrap;
-        /* ✅ évite que les éléments aillent à la ligne */
-        gap: 1px;
-    }
+.info-col {
+    padding: 4px 0;
+    display: flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    /* ✅ évite que les éléments aillent à la ligne */
+    gap: 1px;
+}
 
-    .info-label {
-        font-weight: 600;
-        color: #555;
-        white-space: nowrap;
-        min-width: 125px;
-    }
+.info-label {
+    font-weight: 600;
+    color: #555;
+    white-space: nowrap;
+    min-width: 125px;
+}
 
-    .info-value {
-        font-weight: 400;
-        color: #222;
-    }
+.info-value {
+    font-weight: 400;
+    color: #222;
+}
 
-    .truncate {
-        max-width: 160px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        display: inline-block;
-        vertical-align: middle;
-        cursor: pointer;
-        transition: all 0.3s ease;
-    }
+.truncate {
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: inline-block;
+    vertical-align: middle;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
 
-    .truncate.expanded {
-        white-space: normal;
-        /* Permet d’afficher plusieurs lignes */
-        word-break: break-word;
-        /* Coupe proprement les longues phrases */
-        background-color: #f7f7f7;
-        /* Fond doux quand développé */
-        border-radius: 4px;
-        padding: 2px 4px;
-        max-width: none;
-        /* Retire la limite de largeur */
-    }
+.truncate.expanded {
+    white-space: normal;
+    /* Permet d’afficher plusieurs lignes */
+    word-break: break-word;
+    /* Coupe proprement les longues phrases */
+    background-color: #f7f7f7;
+    /* Fond doux quand développé */
+    border-radius: 4px;
+    padding: 2px 4px;
+    max-width: none;
+    /* Retire la limite de largeur */
+}
 
-    /* Style pour tete du dialog */
+/* Style pour tete du dialog */
 
-    /* On force notre propre flex container */
-    .title-container {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        width: 100%;
-        padding: 10px 2px 2px 2px;
-        margin-top: 0px;
-        margin-bottom: -5px;
-        background-color: #f8f9fa;
-        border-bottom: 2px solid #d7ead5;
-        border-top-left-radius: 4px;
-        border-top-right-radius: 4px;
-    }
+/* On force notre propre flex container */
+.title-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 10px 2px 2px 2px;
+    margin-top: 0px;
+    margin-bottom: -5px;
+    background-color: #f8f9fa;
+    border-bottom: 2px solid #d7ead5;
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+}
 
-    .custom-card-dm {
-        padding: 0;
-        /* on enlève le padding natif du v-card-title */
-        margin-bottom: -5px;
-    }
+.custom-card-dm {
+    padding: 0;
+    /* on enlève le padding natif du v-card-title */
+    margin-bottom: -5px;
+}
 
-    .title-left {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        max-height: 20px;
-    }
+.title-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    max-height: 20px;
+}
 
-    .title-text {
-        font-size: 1.15rem;
-        color: #333;
-    }
+.title-text {
+    font-size: 1.15rem;
+    color: #333;
+}
 
-    .recru-code {
-        font-weight: 600;
-        color: #4caf50;
-    }
+.recru-code {
+    font-weight: 600;
+    color: #4caf50;
+}
 
-    .recru-date {
-        font-weight: 600;
-        color: #191b19;
-    }
+.recru-date {
+    font-weight: 600;
+    color: #191b19;
+}
 
-    .close-btn {
+.close-btn {
 
-        transition: transform 0.2s ease, color 0.2s ease;
-        margin-top: -10px;
-    }
+    transition: transform 0.2s ease, color 0.2s ease;
+    margin-top: -10px;
+}
 
-    .close-btn:hover {
-        color: red !important;
-        transform: rotate(90deg);
-    }
+.close-btn:hover {
+    color: red !important;
+    transform: rotate(90deg);
+}
 
-    /* --- Petit badge du code --- */
-    /* Badge en haut à gauche */
-    .code-label {
-        position: absolute;
-        top: -15px;
-        /* juste au-dessus de la bordure */
-        left: 0px;
-        background-color: #1976d2;
-        color: white;
-        font-weight: 600;
-        font-size: 13px;
-        padding: 3px 10px;
-        border-radius: 6px;
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-    }
+/* --- Petit badge du code --- */
+/* Badge en haut à gauche */
+.code-label {
+    position: absolute;
+    top: -15px;
+    /* juste au-dessus de la bordure */
+    left: 0px;
+    background-color: #1976d2;
+    color: white;
+    font-weight: 600;
+    font-size: 13px;
+    padding: 3px 10px;
+    border-radius: 6px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
 
-    .info-principale-cards {
-        display: flex;
-        /* transforme en flex container */
-        justify-content: space-between;
-        /* centre horizontalement les cartes */
-        gap: 30px;
-        /* espace entre chaque carte */
-        margin-bottom: 0px;
-        margin-top: -20px;
-    }
+.info-principale-cards {
+    display: flex;
+    /* transforme en flex container */
+    justify-content: space-between;
+    /* centre horizontalement les cartes */
+    gap: 30px;
+    /* espace entre chaque carte */
+    margin-bottom: 0px;
+    margin-top: -20px;
+}
 
-    .info-card {
-        padding: 8px;
-        background-color: #fafafa;
-        border-radius: 6px;
-        max-height: 90px;
-        min-width: 280px;
-    }
+.info-card {
+    padding: 8px;
+    background-color: #fafafa;
+    border-radius: 6px;
+    max-height: 90px;
+    min-width: 280px;
+}
 
-    .card-title {
-        font-size: 13px;
-        font-weight: 700;
-        color: #1976d2;
-        padding: 0 0 4px 0;
-    }
+.card-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #1976d2;
+    padding: 0 0 4px 0;
+}
 
-    .info-item {
-        display: flex;
-        flex-direction: row;
-        /* label et valeur côte à côte */
-        justify-content: flex-start;
-        /* label à gauche, valeur à droite */
-        margin-bottom: 4px;
-        gap: 2px;
-    }
+.info-item {
+    display: flex;
+    flex-direction: row;
+    /* label et valeur côte à côte */
+    justify-content: flex-start;
+    /* label à gauche, valeur à droite */
+    margin-bottom: 4px;
+    gap: 2px;
+}
 
-    .info-label {
-        font-weight: 600;
-        font-size: 12px;
-        color: #555;
-        min-width: auto;
-    }
+.info-label {
+    font-weight: 600;
+    font-size: 12px;
+    color: #555;
+    min-width: auto;
+}
 
-    .info-value {
-        font-weight: 400;
-        font-size: 13px;
-        color: #222;
-    }
+.info-value {
+    font-weight: 400;
+    font-size: 13px;
+    color: #222;
+}
 
-    .truncate.expanded {
-        white-space: normal;
-        word-break: break-word;
-        background-color: #f7f7f7;
-        border-radius: 4px;
-        padding: 2px 4px;
-    }
+.truncate.expanded {
+    white-space: normal;
+    word-break: break-word;
+    background-color: #f7f7f7;
+    border-radius: 4px;
+    padding: 2px 4px;
+}
 
-    .info-row {
-        display: flex;
-        gap: 5px;
-    }
+.info-row {
+    display: flex;
+    gap: 5px;
+}
 
-    .departement-card {
-        min-width: 520px;
-        /* largeur maximum */
-    }
+.departement-card {
+    min-width: 520px;
+    /* largeur maximum */
+}
 
-    .contrat-card {
-        min-width: 50px;
-        /* largeur maximum */
-    }
+.contrat-card {
+    min-width: 50px;
+    /* largeur maximum */
+}
 
-    .readonly-field {
-        cursor: not-allowed;
-        background-color: #f9f9f9;
-        pointer-events: none;
-        /* Empêche clic et curseur */
-        user-select: none;
-        /* Empêche sélection de texte */
-    }
+.readonly-field {
+    cursor: not-allowed;
+    background-color: #f9f9f9;
+    pointer-events: none;
+    /* Empêche clic et curseur */
+    user-select: none;
+    /* Empêche sélection de texte */
+}
 
-    .v-simple-table {
-        border-collapse: collapse;
-        /* fusionne bordures */
-        width: 100%;
-        border: 1px solid #8130e4;
-        /* bordure autour du tableau */
-    }
+.v-simple-table {
+    border-collapse: collapse;
+    /* fusionne bordures */
+    width: 100%;
+    border: 1px solid #8130e4;
+    /* bordure autour du tableau */
+}
 
-    .v-simple-table th,
-    .v-simple-table td {
-        border: 1px solid #ccc;
-        /* bordure autour de chaque cellule */
-        padding: 8px 12px;
-    }
+.v-simple-table th,
+.v-simple-table td {
+    border: 1px solid #ccc;
+    /* bordure autour de chaque cellule */
+    padding: 8px 12px;
+}
 
-    .v-simple-table thead th {
-        background-color: #f0f0f0;
-        /* couleur fond header */
-        border-color: #8130e4;
-        /* couleur bordure header */
-        font-weight: 600;
-    }
+.v-simple-table thead th {
+    background-color: #f0f0f0;
+    /* couleur fond header */
+    border-color: #8130e4;
+    /* couleur bordure header */
+    font-weight: 600;
+}
 
-    .cv-selection-table {
-        border-collapse: collapse;
-        width: 100%;
-        /* bordure extérieure */
-        border-radius: 6px;
-        overflow: hidden;
-    }
+.cv-selection-table {
+    border-collapse: collapse;
+    width: 100%;
+    /* bordure extérieure */
+    border-radius: 6px;
+    overflow: hidden;
+}
 
-    .cv-selection-table th {
-        border: 1px solid #ccc;
-        /* bordure des cellules */
+.cv-selection-table th {
+    border: 1px solid #ccc;
+    /* bordure des cellules */
 
-        padding: 10px 10px;
-    }
+    padding: 10px 10px;
+}
 
-    .cv-selection-table td {
-        border: 1px solid #ccc;
-        /* bordure des cellules */
+.cv-selection-table td {
+    border: 1px solid #ccc;
+    /* bordure des cellules */
 
-        padding: 2px 4px 2px 2px;
-    }
+    padding: 2px 4px 2px 2px;
+}
 </style>
-    >
+>

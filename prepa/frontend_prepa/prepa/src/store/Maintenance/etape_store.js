@@ -241,21 +241,22 @@ export const useEtapeStore = defineStore("etapeStore", {
  * @param {*} etapeLigne 
  * @returns 
  */
-        async validerEtapePrepa(maintCode, etapeLigne) {
+        async validerEtapePrepa(maintCode, etapeLigne, file = null) {
             const sessionId = localStorage.getItem("sessionId");
             const { handleLogout } = useLogout();
+
+            const formData = new FormData();
+            formData.append("MAINT_CODE_LIGNE", maintCode);
+            formData.append("MAINT_ETAPE_LIGNE", etapeLigne);
+            if (file) formData.append("file", file, file.name);
 
             this.loading = true;
             try {
                 const response = await axios.post(
                     Config.SERVER_URL + "api/validerEtapePrepa",
-                    null,
+                    formData,
                     {
                         headers: { Authorization: sessionId },
-                        params: {
-                            MAINT_CODE_LIGNE: maintCode,
-                            MAINT_ETAPE_LIGNE: etapeLigne,
-                        }
                     }
                 );
                 // console.log("[validerEtapePrepa] Étape PREPA validée :", response.data);
@@ -277,27 +278,35 @@ export const useEtapeStore = defineStore("etapeStore", {
  * @param {*} data 
  * @returns 
  */
-        async validerEtapeReal(maintCode, data = {}) {
+        async validerEtapeReal(maintCode, data = {}, file = null) {
             const sessionId = localStorage.getItem("sessionId");
             const { handleLogout } = useLogout();
+
+            const formData = new FormData();
+            formData.append("MAINT_CODE_REAL", maintCode);
+            formData.append("MAINT_INTERV_REAL", data.intervReal);
+            const champs = {
+                MAINT_ACTION_REAL: data.action,
+                MAINT_EXECUTION: data.exect,
+                MAINT_FNR_REAL: data.fournisseur,
+                MAINT_PRIX_REAL: data.prix ?? 0,
+                MAINT_MRAQUE_MARQUE: data.marque,
+                MAINT_DATE_REAL: data.dateReal,
+            };
+            Object.entries(champs).forEach(([nom, valeur]) => {
+                if (valeur !== null && valeur !== undefined && valeur !== "") {
+                    formData.append(nom, valeur);
+                }
+            });
+            if (file) formData.append("file", file, file.name);
 
             this.loading = true;
             try {
                 const response = await axios.post(
                     Config.SERVER_URL + "api/validerEtapeReal",
-                    null,
+                    formData,
                     {
                         headers: { Authorization: sessionId },
-                        params: {
-                            MAINT_CODE_REAL: maintCode,
-                            MAINT_INTERV_REAL: data.intervReal,
-                            MAINT_ACTION_REAL: data.action,
-                            MAINT_EXECUTION: data.exect,
-                            MAINT_FNR_REAL: data.fournisseur,
-                            MAINT_PRIX_REAL: data.prix ?? 0,
-                            MAINT_MRAQUE_MARQUE: data.marque,
-                            MAINT_DATE_REAL: data.dateReal,
-                        }
                     }
                 );
                 return response.data;
@@ -383,10 +392,72 @@ export const useEtapeStore = defineStore("etapeStore", {
             }finally {
                 this.loading = false;
             }
-        } 
+        },
         
         ////////////////////////////////////////////////////////////////////////////////////
-        ,async getTypeActionReal(){
+
+        /**
+         * Récupérer la PJ d'une étape (retourne hex/base64/data URL)
+         */
+        async fetchEtapePrepaPJ(maintCode, etapeLigne) {
+            const sessionId = localStorage.getItem("sessionId");
+            const { handleLogout } = useLogout();
+
+            this.loading = true;
+            try {
+                const response = await axios.get(
+                    Config.SERVER_URL + "api/getEtapePrepaPJ",
+                    {
+                        params: {
+                            MAINT_CODE_LIGNE: maintCode,
+                            MAINT_ETAPE_LIGNE: etapeLigne,
+                        },
+                        headers: {
+                            Authorization: sessionId,
+                        },
+                    }
+                );
+                return response.data;
+            } catch (error) {
+                console.error("[fetchEtapePrepaPJ] Erreur :", error);
+                if (error.response?.status === 401) {
+                    await handleLogout();
+                }
+                return null;
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        async fetchEtapeRealPJ(maintCode, intervReal) {
+            const sessionId = localStorage.getItem("sessionId");
+            const { handleLogout } = useLogout();
+
+            this.loading = true;
+            try {
+                const response = await axios.get(
+                    Config.SERVER_URL + "api/getEtapeRealPJ",
+                    {
+                        params: {
+                            MAINT_CODE_REAL: maintCode,
+                            MAINT_INTERV_REAL: intervReal,
+                        },
+                        headers: { Authorization: sessionId },
+                    }
+                );
+                return response.data;
+            } catch (error) {
+                console.error("[fetchEtapeRealPJ] Erreur :", error);
+                if (error.response?.status === 401) {
+                    await handleLogout();
+                }
+                return null;
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        async getTypeActionReal(){
             const sessionId = localStorage.getItem("sessionId");
             const { handleLogout } = useLogout();
             

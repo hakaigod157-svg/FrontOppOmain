@@ -5,6 +5,7 @@ import PageCVglobal from '@/views/rh/pageCv.vue';
 import PageIntegration from '@/views/rh/pageIntegration.vue';
 import PageEmployee from '@/views/rh/pageEmployee.vue';
 import PageParams from '@/views/rh/pageParams.vue';
+import PageFormations from '@/views/rh/pageFormations.vue';
 import useCheckSessionID from '@/composables/useCheckSessionID';
 
 const { checkSessionID } = useCheckSessionID();
@@ -49,6 +50,11 @@ export default [
         path: 'params',       
         name: 'rh-params',
         component: PageParams
+      },
+      {
+        path: 'formations',       
+        name: 'rh-formations',
+        component: PageFormations
       },
       {
         path: '',             

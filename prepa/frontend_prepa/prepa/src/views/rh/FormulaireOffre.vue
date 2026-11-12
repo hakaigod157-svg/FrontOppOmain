@@ -47,8 +47,8 @@
           <v-select
             v-model="form.OFFRE_ENTITE"
             :items="cabinetsDisponibles"
-            item-title="cab_nom"
-            item-value="cab_nom"
+            item-title="cabinet"
+            item-value="cabinet"
             label="Cabinet"
             variant="underlined"
             density="compact"
@@ -232,6 +232,8 @@ export default defineComponent({
       cabinet.value = offreStore.listcabinet;
       // console.log(cabinet);
     });
+
+
     onMounted(() => {
       if (isEdit.value) {
         const offre = props.offresModif._value || props.offresModif;

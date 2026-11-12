@@ -8,19 +8,20 @@
                 <!-- RECHERCHE -->
                 <!-- ========================= -->
                 <v-row>
+                    <!-- DÉPARTEMENT -->
                     <v-col cols="12" md="2">
-                        <v-select v-model="form.DEMANDE_DEPARTEMENT" :items="departements" item-title="lib_departement"
-                            item-value="code_departement" label="Département" @update:modelValue="onDepartementChange"
-                            variant="underlined" density="compact" color="deep-purple-accent-4"
-                            :error="!!errors.DEMANDE_DEPARTEMENT" :error-messages="errors.DEMANDE_DEPARTEMENT"
-                            clearable />
+                        <v-select v-model="form.DEMANDE_DEPARTEMENT" :items="departements"
+                            :item-title="getDepartementLabel" item-value="code_departement" label="Département"
+                            variant="underlined" density="compact" color="deep-purple-accent-4" clearable
+                            @update:model-value="onDepartementChange" />
                     </v-col>
 
+                    <!-- POSTE -->
                     <v-col cols="12" md="2">
-                        <v-select v-model="form.DEMANDE_POSTE" :items="postesFiltrees" item-title="poste_libelle"
+                        <v-select v-model="form.DEMANDE_POSTE" :items="postesFiltrees" :item-title="getPosteLabel"
                             item-value="code_poste" label="Poste" variant="underlined" density="compact"
-                            color="deep-purple-accent-4" :error="!!errors.DEMANDE_POSTE"
-                            :error-messages="errors.DEMANDE_POSTE" clearable />
+                            color="deep-purple-accent-4"
+                            :disabled="!form.DEMANDE_DEPARTEMENT || postesFiltrees.length === 0" clearable />
                     </v-col>
 
                     <!-- Bouton rechercher -->
@@ -43,7 +44,7 @@
                         </v-tab>
 
                         <v-tab value="formation">
-                            Formation
+                            Formation a l'embauche
                         </v-tab>
                     </v-tabs>
 
@@ -92,7 +93,8 @@
                         <!-- ========================= -->
                         <v-window-item value="formation">
 
-                            <div v-if="loading || list_formation.length" class="table-scroll">
+                            <!-- <div v-if="loading || list_formation.length" class="table-scroll"> -->
+                            <div v-if="loading || list_formation.length" class="table-scroll formation-table">
 
                                 <v-progress-linear v-if="loading" color="#263238" rounded indeterminate height="2" />
 
@@ -166,6 +168,7 @@ export default defineComponent({
         const storeClient = useClientStore();
         const loading = computed(() => store.loading);
         const tab = ref("outil");
+        const storeDemande = useDemande();
 
         useSessionTimeout(Config.DURRE_SESSION, router);
 
@@ -183,16 +186,90 @@ export default defineComponent({
             DEMANDE_POSTE: "",
         });
 
-        function onDepartementChange(codeDep) {
-            const dep = departements.value.find(
-                (d) => d.code_departement === codeDep
+        const getDepartementLabel = (item) => {
+            if (!item) return "";
+
+            return (
+                item.lib_dep ||
+                item.libelle_departement ||
+                item.nom_departement ||
+                item.departement ||
+                item.lib_departement ||
+                item.code_departement
             );
-            postesFiltrees.value = dep ? dep.postes : [];
-            // Réinitialise le poste si le poste actuel n'est plus dans la liste
-            if (!postesFiltrees.value.find((p) => p.code_poste === form.DEMANDE_POSTE)) {
-                form.DEMANDE_POSTE = null;
+        };
+
+        const getPosteLabel = (item) => {
+            if (!item) return "";
+
+            return (
+                item.libelle_poste ||
+                item.poste_libelle ||
+                item.nom_poste ||
+                item.intitule_poste ||
+                item.poste ||
+                item.code_poste ||
+                ""
+            );
+        };
+
+        // function onDepartementChange(codeDep) {
+        //     const dep = departements.value.find(
+        //         (d) => d.code_departement === codeDep
+        //     );
+        //     postesFiltrees.value = dep ? dep.postes : [];
+        //     // Réinitialise le poste si le poste actuel n'est plus dans la liste
+        //     if (!postesFiltrees.value.find((p) => p.code_poste === form.DEMANDE_POSTE)) {
+        //         form.DEMANDE_POSTE = null;
+        //     }
+        // }
+
+        // Charger les postes du département sélectionné
+        const onDepartementChange = async (departement) => {
+            postesFiltrees.value = [];
+            form.DEMANDE_POSTE = null;
+
+            if (!departement) {
+                return;
             }
-        }
+
+            try {
+                const postes = await storeDemande.fetchDepartementPostes(
+                    departement
+                );
+
+                postesFiltrees.value = Array.isArray(postes)
+                    ? postes
+                    : [];
+
+                console.log("Département sélectionné :", departement);
+                console.log("Postes disponibles :", postesFiltrees.value);
+
+            } catch (error) {
+                console.error("Erreur lors du chargement des postes :", error);
+                postesFiltrees.value = [];
+            }
+        };
+
+        // Charger les départements comme dans pageEmployee
+        const listDepartements = async () => {
+            await storeDemande.fetchDepartement();
+
+            departements.value = storeDemande.listDepartements;
+        };
+
+        // watch(
+        //     () => form.DEMANDE_DEPARTEMENT,
+        //     (codeDep) => {
+        //         const dep = departements.value.find(
+        //             (d) => d.code_departement === codeDep
+        //         );
+        //         postesFiltrees.value = dep ? dep.postes : [];
+        //         if (!postesFiltrees.value.find((p) => p.code_poste === form.DEMANDE_POSTE)) {
+        //             form.DEMANDE_POSTE = null;
+        //         }
+        //     }
+        // );
 
         watch(
             () => form.DEMANDE_DEPARTEMENT,
@@ -200,8 +277,12 @@ export default defineComponent({
                 const dep = departements.value.find(
                     (d) => d.code_departement === codeDep
                 );
+
                 postesFiltrees.value = dep ? dep.postes : [];
-                if (!postesFiltrees.value.find((p) => p.code_poste === form.DEMANDE_POSTE)) {
+
+                if (!postesFiltrees.value.find(
+                    (p) => p.code_poste === form.DEMANDE_POSTE
+                )) {
                     form.DEMANDE_POSTE = null;
                 }
             }
@@ -241,8 +322,8 @@ export default defineComponent({
         // ];
 
         const headers = [
-            { title: "DEPARTEMENT", align: "start", key: "nom_dep", sortable: false, rowspan: 2, width: "150px" },
-            { title: "POSTE", align: "start", key: "nom_poste", sortable: false, rowspan: 2 },
+            { title: "DEPARTEMENT", align: "start", key: "dep", sortable: false, rowspan: 2, width: "150px" },
+            { title: "POSTE", align: "start", key: "poste", sortable: false, rowspan: 2 },
 
             {
                 title: "ASSURANCE",
@@ -331,32 +412,15 @@ export default defineComponent({
                     ? form.DEMANDE_POSTE
                     : null;
 
-            console.log("Département sélectionné :", departementCode);
-            console.log("Poste sélectionné :", posteCode);
+            // console.log("Département sélectionné :", departementCode);
+            // console.log("Poste sélectionné :", posteCode);
 
             await store.fetchListParams(departementCode, posteCode);
 
             list.value = store.listparams;
 
             await store.fetchListParamsFormation(departementCode, posteCode);
-            list_formation.value = store.listparamsFormations.map((item) => {
-
-                const newItem = {
-                    ...item
-                };
-
-                store.HeadersFormation.forEach((column) => {
-
-                    if (column.includes("__")) {
-
-                        const [code] = column.split("__");
-
-                        newItem[code] = item[column];
-                    }
-                });
-
-                return newItem;
-            });
+            list_formation.value = store.listparamsFormations
 
             console.log("HEADERS FORMATION :", store.HeadersFormation);
             console.log("DATA FORMATION :", list_formation.value);
@@ -380,40 +444,17 @@ export default defineComponent({
             }
         });
 
+
         onMounted(async () => {
-            // Chargement des départements et postes
-            const { fetchDepartementPostes } = useDemande();
-            await fetchDepartementPostes();
+            // Chargement des départements comme dans pageEmployee
+            await listDepartements();
 
-            departements.value = useDemande().donnesdemande;
-
-            // Chargement initial de la liste complète (sans filtre département/poste)
+            // Chargement initial de la liste complète
             await store.fetchListParams(null, null);
             list.value = store.listparams;
 
             await store.fetchListParamsFormation(null, null);
-            list_formation.value = store.listparamsFormations.map((item) => {
-
-                const newItem = {
-                    ...item
-                };
-
-                store.HeadersFormation.forEach((column) => {
-
-                    if (column.includes("__")) {
-
-                        const [code] = column.split("__");
-
-                        newItem[code] = item[column];
-                    }
-                });
-
-                return newItem;
-            });
-
-            // console.log("HEADERS FORMATION :", store.HeadersFormation);
-            // console.log("DATA FORMATION :", list_formation.value);
-
+            list_formation.value = store.listparamsFormations
         });
 
 
@@ -435,7 +476,7 @@ export default defineComponent({
         const onCheckboxChange = ({ item, key, value }) => {
             const existing = modifications.value.find(
                 (m) => m.code_departement === item.code_departement &&
-                    m.code_poste === item.code_poste &&
+                    m.code_poste === item.poste &&
                     m.champ === key
             );
             if (existing) {
@@ -443,7 +484,7 @@ export default defineComponent({
             } else {
                 modifications.value.push({
                     code_departement: item.code_departement,
-                    code_poste: item.code_poste,
+                    code_poste: item.poste,
                     champ: key,
                     valeur: value,
                 });
@@ -480,7 +521,7 @@ export default defineComponent({
 
             const payload = {
                 dep: item.dep,
-                code_poste: item.code_poste,
+                code_poste: item.poste,
 
                 categorie: info.categorie,
                 materiel: info.materiel,
@@ -565,119 +606,54 @@ export default defineComponent({
         };
 
 
-        /*   const headers_formation = [
-               { title: "DEPARTEMENT", align: "start", key: "nom_dep", sortable: false, width: "150px" },
-               { title: "POSTE", align: "start", key: "nom_poste", sortable: false },
-               { title: "FORMATION PHARM M1", align: "start", key: "formation_pharm_m1", sortable: false },
-               { title: "FORMATION PHARM M2", align: "start", key: "formation_pharm_m2", sortable: false },
-               { title: "FORMATION PHARM M3", align: "start", key: "formation_pharm_m3", sortable: false },
-               { title: "FORMATION PHARM M4", align: "start", key: "formation_pharm_m4", sortable: false },
-               { title: "FORMATION PHARM M5", align: "start", key: "formation_pharm_m5", sortable: false },
-               { title: "FORMATION PHARM M6", align: "start", key: "formation_pharm_m6", sortable: false },
-               { title: "FORMATION PHARM M7", align: "start", key: "formation_pharm_m7", sortable: false },
-   
-           ]; */
 
+        const COLONNES_FIXES = ["DEP", "CODE_POSTE"];
 
-        // const headers_formation = computed(() => {
+        const formatTitre = (col) => col.replace(/_/g, " ");
 
-        //     if (
-        //         !store.HeadersFormation ||
-        //         store.HeadersFormation.length === 0
-        //     ) {
-        //         return [];
-        //     }
-
-        //     return store.HeadersFormation.map((column) => {
-
-        //         if (column.includes("__")) {
-
-        //             const [code, titre] = column.split("__");
-
-        //             return {
-        //                 title: titre,
-        //                 align: "center",
-        //                 key: code,
-        //                 sortable: false,
-        //             };
-        //         }
-
-        //         return {
-        //             title: column,
-        //             align: "start",
-        //             key: column,
-        //             sortable: false,
-        //         };
-        //     });
-        // });
 
         const headers_formation = computed(() => {
+            const cols = store.HeadersFormation || [];
+            if (!cols.length) return [];
 
-            if (
-                !store.HeadersFormation ||
-                store.HeadersFormation.length === 0
-            ) {
-                return [];
-            }
+            let i = 0; // compteur des colonnes de formation (hors DEP / CODE_POSTE)
 
-            return store.HeadersFormation
-                .filter(column =>
-                    column !== "DEP" &&
-                    column !== "CODE_POSTE"
-                )
-                .map((column) => {
+            return cols.map((column) => {
+                if (column === "DEP") {
+                    return { title: "DEPARTEMENT", align: "start", key: "DEP", sortable: false, width: "150px" };
+                }
+                if (column === "CODE_POSTE") {
+                    return { title: "POSTE", align: "start", key: "CODE_POSTE", sortable: false };
+                }
 
-                    if (column.includes("__")) {
+                const couleur = i % 2 === 0 ? "th-violet" : "th-vert";
+                i++;
 
-                        const [code, titre] = column.split("__");
-
-                        return {
-                            title: titre,
-                            align: "center",
-                            key: code,
-                            sortable: false,
-                        };
-                    }
-
-                    return {
-                        title: column,
-                        align: "start",
-                        key: column,
-                        sortable: false,
-                    };
-                });
+                return {
+                    title: formatTitre(column),
+                    align: "center",
+                    key: column,
+                    sortable: false,
+                    headerProps: { class: couleur },   // Vuetify 3.5+
+                };
+            });
         });
 
-        const checkboxKeysFormation = computed(() => {
 
-            if (
-                !store.HeadersFormation ||
-                store.HeadersFormation.length === 0
-            ) {
-                return [];
-            }
-
-            return store.HeadersFormation
-                .filter(column => column.includes("__"))
-                .map(column => column.split("__")[0]);
-        });
-
+        const checkboxKeysFormation = computed(() =>
+            (store.HeadersFormation || []).filter((c) => !COLONNES_FIXES.includes(c))
+        );
 
         const handleFormationCheckboxChange = ({ item, key, value }) => {
-
-            const codeFormation = key;
-
             const payload = {
                 dep: item.DEP,
-                code_poste: item.CODE_POSTE,
-                champ: codeFormation,
-                valeur: value
+                code_poste: item.CODE_POSTE,   // ← était item.POSTE
+                champ: key,                    // ex: "PHARM_M1"
+                valeur: Number(value),         // true/false → 1/0
             };
 
-            console.log("PAYLOAD FORMATION :", payload);
-
             const index = modifications_formation.value.findIndex(
-                m =>
+                (m) =>
                     m.dep === payload.dep &&
                     m.code_poste === payload.code_poste &&
                     m.champ === payload.champ
@@ -690,135 +666,110 @@ export default defineComponent({
             }
         };
 
-
         const enregistrer_formation = async () => {
-
-            console.log(
-                "A enregistrer FORMATION :",
-                modifications_formation.value
-            );
-
             if (modifications_formation.value.length === 0) {
                 Swal.fire({
-                    toast: true,
-                    position: "top",
-                    icon: "info",
+                    toast: true, position: "top", icon: "info",
                     title: "Aucune modification à enregistrer",
-                    showConfirmButton: false,
-                    timer: 2000,
+                    showConfirmButton: false, timer: 2000,
                 });
                 return;
             }
 
             try {
+                const insertList = modifications_formation.value.filter((m) => m.valeur === 1);
+                const deleteList = modifications_formation.value.filter((m) => m.valeur === 0);
 
-                const insertList = modifications_formation.value.filter(
-                    m => m.valeur === 1
-                );
-
-                const deleteList = modifications_formation.value.filter(
-                    m => m.valeur === 0
-                );
-
-                // console.log("FORMATION INSERT =>", insertList);
-                // console.log("FORMATION DELETE =>", deleteList);
-
-                // Exécute les suppressions
-                if (deleteList.length > 0) {
-                    await store.deleteParamsFormation(deleteList);
-                }
-
-                // Exécute les insertions
-                if (insertList.length > 0) {
-                    await store.insertParamsFormation(insertList);
-                }
+                if (deleteList.length > 0) await store.deleteParamsFormation(deleteList);
+                if (insertList.length > 0) await store.insertParamsFormation(insertList);
 
                 modifications_formation.value = [];
 
+                await store.fetchListParamsFormation(
+                    form.DEMANDE_DEPARTEMENT || null,
+                    form.DEMANDE_POSTE || null
+                );
+                list_formation.value = store.listparamsFormations;
+
                 Swal.fire({
-                    toast: true,
-                    position: "top",
-                    icon: "success",
+                    toast: true, position: "top", icon: "success",
                     title: "Modification effectuée",
-                    showConfirmButton: false,
-                    timer: 2000,
+                    showConfirmButton: false, timer: 2000,
                 });
-
             } catch (error) {
-
                 console.error(error);
-
                 Swal.fire({
-                    toast: true,
-                    position: "top",
-                    icon: "error",
+                    toast: true, position: "top", icon: "error",
                     title: "Erreur lors de l'enregistrement",
-                    showConfirmButton: false,
-                    timer: 3000,
+                    showConfirmButton: false, timer: 3000,
                 });
             }
         };
 
 
 
-        // // Onglet précédent
-        // const previousTab = ref("outil");
+        // Onglet précédent
+        const previousTab = ref("outil");
 
-        // // Surveillance du changement d'onglet
-        // watch(tab, async (newTab, oldTab) => {
+        // Surveillance du changement d'onglet
+        watch(tab, async (newTab, oldTab) => {
 
-        //     // Pas de changement réel
-        //     if (newTab === oldTab) {
-        //         return;
-        //     }
+            // Pas de changement réel
+            if (newTab === oldTab) {
+                return;
+            }
 
-        //     // Passage de Outil → Formation
-        //     if (
-        //         oldTab === "outil" &&
-        //         newTab === "formation" &&
-        //         modifications.value.length > 0
-        //     ) {
-        //         const result = await Swal.fire({
-        //             icon: "warning",
-        //             title: "Modifications non enregistrées",
-        //             text: "Vous avez des modifications non enregistrées dans l'onglet Outil.",
-        //             showCancelButton: true,
-        //             confirmButtonText: "Continuer",
-        //             cancelButtonText: "Rester sur Outil",
-        //             reverseButtons: true,
-        //         });
+            // Passage de Outil → Formation
+            if (
+                oldTab === "outil" &&
+                newTab === "formation" &&
+                modifications.value.length > 0
+            ) {
+                const result = await Swal.fire({
+                    icon: "warning",
+                    title: "Modifications non enregistrées",
+                    text: "Vous avez des modifications non enregistrées dans l'onglet Outil.",
+                    showCancelButton: true,
+                    confirmButtonText: "Continuer",
+                    cancelButtonText: "Rester sur Outil",
+                    reverseButtons: true,
+                    allowOutsideClick: false, // bloque le clic à l'extérieur
+                    allowEscapeKey: false,    // bloque la touche Échap
+                });
 
-        //         if (!result.isConfirmed) {
-        //             // Retour à l'ancien onglet
-        //             tab.value = "outil";
-        //             return;
-        //         }
-        //     }
+                if (!result.isConfirmed) {
+                    // Retour à l'ancien onglet
+                    tab.value = "outil";
+                    return;
+                }
+            }
 
-        //     // Passage de Formation → Outil
-        //     if (
-        //         oldTab === "formation" &&
-        //         newTab === "outil" &&
-        //         modifications_formation.value.length > 0
-        //     ) {
-        //         const result = await Swal.fire({
-        //             icon: "warning",
-        //             title: "Modifications non enregistrées",
-        //             text: "Vous avez des modifications non enregistrées dans l'onglet Formation.",
-        //             showCancelButton: true,
-        //             confirmButtonText: "Continuer",
-        //             cancelButtonText: "Rester sur Formation",
-        //             reverseButtons: true,
-        //         });
+            // Passage de Formation → Outil
+            if (
+                oldTab === "formation" &&
+                newTab === "outil" &&
+                modifications_formation.value.length > 0
+            ) {
+                const result = await Swal.fire({
+                    icon: "warning",
+                    title: "Modifications non enregistrées",
+                    text: "Vous avez des modifications non enregistrées dans l'onglet Formation.",
+                    showCancelButton: true,
+                    confirmButtonText: "Continuer",
+                    cancelButtonText: "Rester sur Formation",
+                    reverseButtons: true,
+                    allowOutsideClick: false, // bloque le clic à l'extérieur
+                    allowEscapeKey: false,    // bloque la touche Échap
+                });
 
-        //         if (!result.isConfirmed) {
-        //             tab.value = "formation";
-        //             return;
-        //         }
-        //     }
+                if (!result.isConfirmed) {
+                    tab.value = "formation";
+                    return;
+                }
+            }
 
-        //     previousTab.value = newTab;
-        // });
+            previousTab.value = newTab;
+        });
 
         // const actualiserListes = async () => {
 
@@ -886,7 +837,8 @@ export default defineComponent({
             form, errors, departements, postesFiltrees, onDepartementChange, isOnline, user, loading, list, list_formation, totalList, headers, client, clientCode, isSaving, ip_server,
             rechercher, enregistrer, fetchClient, onCheckboxChange, handleCheckboxChange, tab,
             headers_formation, enregistrer_formation, checkboxKeysFormation, handleFormationCheckboxChange, modifications_formation,
-            // previousTab,
+            previousTab,
+            getDepartementLabel, getPosteLabel, listDepartements,
         };
     },
 });
@@ -987,5 +939,31 @@ export default defineComponent({
     color: #512da8 !important;
     font-weight: 600;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+}
+
+/* FORMATION : en-têtes DEPARTEMENT et POSTE (neutres, comme le corps) */
+.formation-table :deep(.v-data-table.blue-header20 .v-table__wrapper > table > thead > tr > th:nth-child(-n+2)) {
+    background-color: #ECEFF1 !important;
+}
+
+/* FORMATION : en-tête violet clair (même couleur que le corps) */
+.formation-table :deep(.v-data-table.blue-header20 .v-table__wrapper > table > thead > tr > th:nth-child(2n+3)) {
+    background-color: #EDE7F6 !important;
+    color: #000 !important;
+}
+
+/* FORMATION : en-tête vert clair (même couleur que le corps) */
+.formation-table :deep(.v-data-table.blue-header20 .v-table__wrapper > table > thead > tr > th:nth-child(2n+4)) {
+    background-color: #E8F5E9 !important;
+    color: #000 !important;
+}
+
+/* FORMATION : corps (inchangé) */
+.formation-table :deep(tbody td:nth-child(2n+3)) {
+    background-color: #EDE7F6;
+}
+
+.formation-table :deep(tbody td:nth-child(2n+4)) {
+    background-color: #E8F5E9;
 }
 </style>

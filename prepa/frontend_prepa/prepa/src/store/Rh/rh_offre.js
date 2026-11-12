@@ -108,6 +108,7 @@ export const useOffre = defineStore("listoffre", {
         this.loading = false;
       }
     },
+
     async updateOffre(form) {
       const formData = new FormData();
 

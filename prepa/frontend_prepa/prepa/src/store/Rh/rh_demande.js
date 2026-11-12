@@ -8,6 +8,9 @@ export const useDemande = defineStore("listdemande", {
     listdemande: [],
     nouveaucode: [],
     donnesdemande: [],
+    listDepartements: [],
+    postesDepartement: [],
+
     loading: false,
     params: {
       dossier: "",
@@ -49,6 +52,7 @@ export const useDemande = defineStore("listdemande", {
         this.loading = false;
       }
     },
+
     async fetchCodeNouveau(prefixe, table) {
       const sessionId = localStorage.getItem("sessionId");
       this.loading = true;
@@ -80,6 +84,7 @@ export const useDemande = defineStore("listdemande", {
         this.loading = false;
       }
     },
+
     async insertDemande(form) {
       const formData = new FormData();
 
@@ -183,42 +188,119 @@ export const useDemande = defineStore("listdemande", {
       }
     },
 
-    async fetchDepartementPostes() {
+    // async fetchDepartementPostes() {
+    //   const sessionId = localStorage.getItem("sessionId");
+    //   this.loading = true;
+    //   const { handleLogout } = useLogout();
+    //   try {
+    //     const response = await axios.get(
+    //       Config.SERVER_URL + "api/departement-poste",
+    //       { headers: { Authorization: sessionId } },
+    //     );
+    //     const data = response.data;
+
+    //     // Regroupement par département
+    //     const grouped = {};
+    //     data.forEach((item) => {
+    //       if (!grouped[item.code_departement]) {
+    //         grouped[item.code_departement] = {
+    //           code_departement: item.code_departement,
+    //           lib_departement: item.lib_departement,
+    //           postes: [],
+    //         };
+    //       }
+    //       grouped[item.code_departement].postes.push({
+    //         code_poste: item.code_poste,
+    //         poste_libelle: item.poste_libelle,
+    //       });
+    //     });
+
+    //     this.donnesdemande = Object.values(grouped); // front
+    //   } catch (error) {
+    //     alert(`Erreur fetch departement-poste: ${error.message}`);
+    //     await handleLogout();
+    //   } finally {
+    //     this.loading = false;
+    //   }
+    // },
+
+    async fetchDepartementPostes(departement) {
+      const sessionId = localStorage.getItem("sessionId");
+      const { handleLogout } = useLogout();
+
+      // console.log("Département envoyé à l'API :", departement);
+
+      if (!departement) {
+        this.postesDepartement = [];
+        // console.log("Aucun département sélectionné.");
+        return [];
+      }
+
+      this.loading = true;
+
+      try {
+        const response = await axios.get(
+          Config.SERVER_URL + "api/departement-poste",
+          {
+            headers: {
+              Authorization: sessionId,
+            },
+            params: {
+              departement: departement,
+            },
+          },
+        );
+
+        // console.log("Réponse complète de l'API :", response);
+        // console.log("Données reçues de l'API :", response.data);
+
+        const data = response.data || [];
+
+        this.postesDepartement = data.map((item) => ({
+          code_poste: item.code_poste,
+        }));
+
+        // console.log("Postes récupérés :", this.postesDepartement);
+
+        return this.postesDepartement;
+      } catch (error) {
+        console.error("Erreur API département-poste :", error);
+        console.error("Détails de l'erreur :", error.response?.data);
+
+        alert(`Erreur fetch département-poste : ${error.message}`);
+        await handleLogout();
+
+        return [];
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async fetchDepartement() {
       const sessionId = localStorage.getItem("sessionId");
       this.loading = true;
       const { handleLogout } = useLogout();
       try {
         const response = await axios.get(
-          Config.SERVER_URL + "api/departement-poste",
-          { headers: { Authorization: sessionId } },
+          Config.SERVER_URL + "api/listdepartement",
+          {
+            headers: { Authorization: sessionId },
+          },
         );
         const data = response.data;
-
-        // Regroupement par département
-        const grouped = {};
-        data.forEach((item) => {
-          if (!grouped[item.code_departement]) {
-            grouped[item.code_departement] = {
-              code_departement: item.code_departement,
-              lib_departement: item.lib_departement,
-              postes: [],
-            };
-          }
-          grouped[item.code_departement].postes.push({
-            code_poste: item.code_poste,
-            poste_libelle: item.poste_libelle,
-          });
-        });
-
-        this.donnesdemande = Object.values(grouped); // front
-        //console.log("Departements groupés:", this.donnesdemande);
+        if (Array.isArray(data)) {
+          this.listDepartements = data;
+        } else {
+          // console.error("Unexpected data structure:", data);
+        }
       } catch (error) {
-        alert(`Erreur fetch departement-poste: ${error.message}`);
+        alert(`Error: ${error.message}`);
         await handleLogout();
       } finally {
         this.loading = false;
       }
     },
+
     async updateDemande(form) {
       const formData = new FormData();
       // Champs texte / dates / nombres

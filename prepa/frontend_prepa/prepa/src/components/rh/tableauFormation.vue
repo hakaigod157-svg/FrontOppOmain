@@ -22,9 +22,9 @@
                         <span>
                             {{ formatDate(item.form_datereel) }}
 
-                            <v-btn v-if="index === lastDatedIndex" icon="mdi-close" size="x-small" variant="text"
+                            <!-- <v-btn v-if="index === lastDatedIndex" icon="mdi-close" size="x-small" variant="text"
                                 color="error" density="compact" title="Supprimer la date" class="ml-1"
-                                @click="clearDate(item)" />
+                                @click="clearDate(item)" /> -->
                         </span>
 
                     </template>
@@ -32,9 +32,9 @@
                     <!-- Première ligne sans date -->
                     <template v-else-if="index === firstUndatedIndex">
 
-                        <v-btn size="small" variant="text" color="primary" prepend-icon="mdi-calendar-plus"
+                        <!-- <v-btn size="small" variant="text" color="primary" prepend-icon="mdi-calendar-plus"
                             density="compact" title="Ajouter une date" @click="openDatePicker(item)">
-                        </v-btn>
+                        </v-btn> -->
 
                     </template>
 

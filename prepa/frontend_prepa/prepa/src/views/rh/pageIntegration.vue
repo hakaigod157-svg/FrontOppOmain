@@ -18,8 +18,7 @@
         <v-dialog v-if="dialogVisibleDetailIntegration" v-model="dialogVisibleDetailIntegration" :persistent="true"
           width="1590px" height="755px">
 
-          <DetailIntegration v-if="selectedIntegr" :recru="selectedIntegr"
-            @close="fermerDialog" />
+          <DetailIntegration v-if="selectedIntegr" :recru="selectedIntegr" @close="fermerDialog" />
         </v-dialog>
       </div>
     </v-col>
@@ -43,7 +42,7 @@ import DetailIntegration from "./detailIntegration.vue";
 
 export default defineComponent({
   name: "PageCVglobal",
-  components: { TableauIntegration ,DetailIntegration },
+  components: { TableauIntegration, DetailIntegration },
   setup() {
     const store = useEmployeeStore();
     const stored = useDemande();
@@ -61,10 +60,12 @@ export default defineComponent({
       { title: "NOM", align: "start", key: "empl_nom", sortable: false },
       { title: "PRENOM", align: "start", key: "empl_prenom", sortable: false },
       { title: "DATE DE NAISSANCE", align: "center", key: "empl_date_naiss", sortable: false },
-      { title: "DEPARTEMENT", align: "start", key: "lib_dep", sortable: false },
-      { title: "POSTE", align: "start", key: "poste_libelle", sortable: false },
+      { title: "DEPARTEMENT", align: "start", key: "empl_dep", sortable: false },
+      // { title: "POSTE", align: "start", key: "poste_libelle", sortable: false },
+      { title: "POSTE", align: "start", key: "empl_poste", sortable: false },
       { title: "PRISE DE FONCTION", align: "center", key: "empl_prise_fonction", sortable: false },
       { title: "CONTRAT", align: "center", key: "empl_contrat", sortable: false },
+      { title: "CATEGORIE", align: "center", key: "empl_categorie", sortable: false },
       { title: "DATE FIN D'ESSAI", align: "center", key: "empl_date_fin_essai1", sortable: false },
       // { title: "DATE FIN D'ESSAI 2", align: "center", key: "empl_date_fin_essai2", sortable: false },
       // { title: "ETAT", align: "start", key: "empl_etat", sortable: false },
@@ -129,7 +130,7 @@ export default defineComponent({
       try {
         cvModif.value = cvItem;
         dialogVisibleCV.value = true; // ← ouvre le formulaire
-        console.log("Ligne cv à modifier : ", cvModif.value);
+        // console.log("Ligne cv à modifier : ", cvModif.value);
       } catch (err) {
         console.error("Erreur lors de la mise à jour de la sélection :", err);
       }

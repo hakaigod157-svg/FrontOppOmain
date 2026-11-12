@@ -24,7 +24,7 @@
             </v-card>
         </v-dialog> -->
 
-        <v-dialog v-model="dialogAddEmploye" max-width="700px" max-height="690px" persistent>
+        <v-dialog v-model="dialogAddEmploye" max-width="950px" max-height="690px" persistent>
             <v-card>
                 <v-card-text>
                     <!-- <addEmploye :employe="employeEnEdition" @saved="handleSaved" @cancel="closedAddEmploye" /> -->
@@ -167,7 +167,9 @@ export default defineComponent({
         );
 
         // ── Liste / Recherche ─────────────────
-        const list = ref([]);
+        // const list = ref([]);
+
+        const list = computed(() => store.listemployes);
         const client = ref([]);
         const clientCode = ref("");
         const ip_server = ref("");
@@ -181,13 +183,16 @@ export default defineComponent({
             { title: "NOM", align: "start", key: "empl_nom", sortable: false },
             { title: "PRENOM", align: "start", key: "empl_prenom", sortable: false },
             { title: "DATE DE NAISSANCE", align: "center", key: "empl_date_naiss", sortable: false },
-            { title: "DEPARTEMENT", align: "start", key: "lib_dep", sortable: false },
-            { title: "POSTE", align: "start", key: "poste_libelle", sortable: false },
+            { title: "DATE EMBAUCHE", align: "center", key: "empl_date_embauche", sortable: false },
+            { title: "DEPARTEMENT", align: "start", key: "empl_dep", sortable: false },
+            { title: "POSTE", align: "start", key: "empl_poste", sortable: false },
             { title: "PRISE DE FONCTION", align: "center", key: "empl_prise_fonction", sortable: false },
             { title: "CONTRAT", align: "center", key: "empl_contrat", sortable: false },
-            { title: "DATE FIN D'ESSAI ", align: "center", key: "empl_date_fin_essai1", sortable: false },
-            { title: "ETAT", align: "start", key: "empl_etat", sortable: false },
+            { title: "CATEGORIE", align: "center", key: "empl_categorie", sortable: false },
+            // { title: "DATE FIN D'ESSAI ", align: "center", key: "empl_date_fin_essai1", sortable: false },
+            { title: "ETAT", align: "center", key: "empl_etat", sortable: false },
             { title: "ACTIONS", align: "start", key: "action", sortable: false },
+            { title: "", align: "start", key: "mobilite", sortable: false },
 
         ];
 
@@ -329,8 +334,11 @@ export default defineComponent({
             dialogAddEmploye.value = true;
         }
 
-        const closedAddEmploye = () => {
+        const closedAddEmploye = async() => {
             dialogAddEmploye.value = false;
+            employeEnEdition.value = null;
+            await store.fetchListEmployes();
+            list.value = store.listemployes;
         };
 
         // const handleSaved = async (employe) => {
@@ -468,6 +476,7 @@ export default defineComponent({
         const fermerDialog = async () => {
             dialogVisibleDetailEmploye.value = false;
             await store.fetchListEmployes();
+            list.value = store.listemployes;
         };
 
         const showDetail = (item) => {

@@ -6,10 +6,10 @@
             :loading="loading" density="compact" hide-default-footer :etape="etape" hover="true"
             no-data-text="Pas données disponibles" :items-per-page="-1" :row-props="rowColor"> -->
 
-        <v-data-table :class="['blue-header20', { 'grouped-table': hasGroupedHeaders }]" :headers="headers" :items="items"
-            :fixed-header="true" v-if="!loading" :loading="loading" density="compact" hide-default-footer :etape="etape"
-            hover="true" no-data-text="Pas données disponibles" :items-per-page="-1" :row-props="rowColor"
-            height="650px">
+        <v-data-table :class="['blue-header20', { 'grouped-table': hasGroupedHeaders }]" :headers="headers"
+            :items="items" :fixed-header="true" v-if="!loading" :loading="loading" density="compact" hide-default-footer
+            :etape="etape" hover="true" no-data-text="Pas données disponibles" :items-per-page="-1"
+            :row-props="rowColor" height="650px">
 
 
 
@@ -17,7 +17,7 @@
             <template v-slot:[`item.ascoma_assurance`]="{ item }">
                 <div class="cell-center">
                     <v-checkbox v-model="item.ascoma_assurance" :true-value="1" :false-value="0" hide-details
-                        density="compact" 
+                        density="compact"
                         @update:model-value="val => onCheckboxChange(item, 'ascoma_assurance', val)" />
                 </div>
 
@@ -27,8 +27,7 @@
             <template v-slot:[`item.casier_casier`]="{ item }">
                 <div class="cell-center">
                     <v-checkbox v-model="item.casier_casier" :true-value="1" :false-value="0" hide-details
-                        density="compact" 
-                        @update:model-value="val => onCheckboxChange(item, 'casier_casier', val)"/>
+                        density="compact" @update:model-value="val => onCheckboxChange(item, 'casier_casier', val)" />
                 </div>
 
             </template>
@@ -37,8 +36,7 @@
             <template v-slot:[`item.blouse_epi`]="{ item }">
                 <div class="cell-center">
                     <v-checkbox v-model="item.blouse_epi" :true-value="1" :false-value="0" hide-details
-                        density="compact"
-                        @update:model-value="val => onCheckboxChange(item, 'blouse_epi', val)" />
+                        density="compact" @update:model-value="val => onCheckboxChange(item, 'blouse_epi', val)" />
                 </div>
 
             </template>
@@ -46,8 +44,7 @@
             <template v-slot:[`item.casque_epi`]="{ item }">
                 <div class="cell-center">
                     <v-checkbox v-model="item.casque_epi" :true-value="1" :false-value="0" hide-details
-                        density="compact" 
-                        @update:model-value="val => onCheckboxChange(item, 'casque_epi', val)"/>
+                        density="compact" @update:model-value="val => onCheckboxChange(item, 'casque_epi', val)" />
                 </div>
 
             </template>
@@ -55,8 +52,7 @@
             <template v-slot:[`item.chaussure_epi`]="{ item }">
                 <div class="cell-center">
                     <v-checkbox v-model="item.chaussure_epi" :true-value="1" :false-value="0" hide-details
-                        density="compact"
-                        @update:model-value="val => onCheckboxChange(item, 'chaussure_epi', val)" />
+                        density="compact" @update:model-value="val => onCheckboxChange(item, 'chaussure_epi', val)" />
                 </div>
 
             </template>
@@ -64,8 +60,7 @@
             <template v-slot:[`item.combinaison_epi`]="{ item }">
                 <div class="cell-center">
                     <v-checkbox v-model="item.combinaison_epi" :true-value="1" :false-value="0" hide-details
-                        density="compact" 
-                        @update:model-value="val => onCheckboxChange(item, 'combinaison_epi', val)"/>
+                        density="compact" @update:model-value="val => onCheckboxChange(item, 'combinaison_epi', val)" />
                 </div>
 
             </template>
@@ -73,35 +68,31 @@
             <template v-slot:[`item.doudoune_epi`]="{ item }">
                 <div class="cell-center">
                     <v-checkbox v-model="item.doudoune_epi" :true-value="1" :false-value="0" hide-details
-                        density="compact"
-                        @update:model-value="val => onCheckboxChange(item, 'doudoune_epi', val)" />
+                        density="compact" @update:model-value="val => onCheckboxChange(item, 'doudoune_epi', val)" />
                 </div>
 
             </template>
 
             <template v-slot:[`item.gant_epi`]="{ item }">
                 <div class="cell-center">
-                    <v-checkbox v-model="item.gant_epi" :true-value="1" :false-value="0" hide-details
-                        density="compact" 
-                        @update:model-value="val => onCheckboxChange(item, 'gant_epi', val)"/>
+                    <v-checkbox v-model="item.gant_epi" :true-value="1" :false-value="0" hide-details density="compact"
+                        @update:model-value="val => onCheckboxChange(item, 'gant_epi', val)" />
                 </div>
 
             </template>
 
             <template v-slot:[`item.gilet_epi`]="{ item }">
                 <div class="cell-center">
-                    <v-checkbox v-model="item.gilet_epi" :true-value="1" :false-value="0" hide-details
-                        density="compact" 
-                        @update:model-value="val => onCheckboxChange(item, 'gilet_epi', val)"/>
+                    <v-checkbox v-model="item.gilet_epi" :true-value="1" :false-value="0" hide-details density="compact"
+                        @update:model-value="val => onCheckboxChange(item, 'gilet_epi', val)" />
                 </div>
 
             </template>
 
             <template v-slot:[`item.impermeable_epi`]="{ item }">
                 <div class="cell-center">
-                <v-checkbox v-model="item.impermeable_epi" :true-value="1" :false-value="0" hide-details
-                    density="compact" 
-                    @update:model-value="val => onCheckboxChange(item, 'impermeable_epi', val)"/>
+                    <v-checkbox v-model="item.impermeable_epi" :true-value="1" :false-value="0" hide-details
+                        density="compact" @update:model-value="val => onCheckboxChange(item, 'impermeable_epi', val)" />
                 </div>
 
             </template>
@@ -109,27 +100,26 @@
             <!-- MAT INFO -->
             <template v-slot:[`item.laptop_mat_info`]="{ item }">
                 <div class="cell-center">
-                <v-checkbox v-model="item.laptop_mat_info" :true-value="1" :false-value="0" hide-details
-                    density="compact" 
-                    @update:model-value="val => onCheckboxChange(item, 'laptop_mat_info', val)"/>
+                    <v-checkbox v-model="item.laptop_mat_info" :true-value="1" :false-value="0" hide-details
+                        density="compact" @update:model-value="val => onCheckboxChange(item, 'laptop_mat_info', val)" />
                 </div>
 
             </template>
 
             <template v-slot:[`item.pc_bureau_mat_info`]="{ item }">
                 <div class="cell-center">
-                <v-checkbox v-model="item.pc_bureau_mat_info" :true-value="1" :false-value="0" hide-details
-                    density="compact" 
-                    @update:model-value="val => onCheckboxChange(item, 'pc_bureau_mat_info', val)"/>
+                    <v-checkbox v-model="item.pc_bureau_mat_info" :true-value="1" :false-value="0" hide-details
+                        density="compact"
+                        @update:model-value="val => onCheckboxChange(item, 'pc_bureau_mat_info', val)" />
                 </div>
 
             </template>
 
             <template v-slot:[`item.tablette_mat_info`]="{ item }">
                 <div class="cell-center">
-                <v-checkbox v-model="item.tablette_mat_info" :true-value="1" :false-value="0" hide-details
-                    density="compact"
-                    @update:model-value="val => onCheckboxChange(item, 'tablette_mat_info', val)" />
+                    <v-checkbox v-model="item.tablette_mat_info" :true-value="1" :false-value="0" hide-details
+                        density="compact"
+                        @update:model-value="val => onCheckboxChange(item, 'tablette_mat_info', val)" />
                 </div>
 
             </template>
@@ -137,27 +127,26 @@
             <!-- ROULANT -->
             <template v-slot:[`item.carte_carburant_roulant`]="{ item }">
                 <div class="cell-center">
-                <v-checkbox v-model="item.carte_carburant_roulant" :true-value="1" :false-value="0" hide-details
-                    density="compact"
-                    @update:model-value="val => onCheckboxChange(item, 'carte_carburant_roulant', val)"  />
+                    <v-checkbox v-model="item.carte_carburant_roulant" :true-value="1" :false-value="0" hide-details
+                        density="compact"
+                        @update:model-value="val => onCheckboxChange(item, 'carte_carburant_roulant', val)" />
                 </div>
 
             </template>
 
             <template v-slot:[`item.moto_roulant`]="{ item }">
                 <div class="cell-center">
-                <v-checkbox v-model="item.moto_roulant" :true-value="1" :false-value="0" hide-details
-                    density="compact"
-                    @update:model-value="val => onCheckboxChange(item, 'moto_roulant', val)" />
+                    <v-checkbox v-model="item.moto_roulant" :true-value="1" :false-value="0" hide-details
+                        density="compact" @update:model-value="val => onCheckboxChange(item, 'moto_roulant', val)" />
                 </div>
 
             </template>
 
             <template v-slot:[`item.vehicule_roulant`]="{ item }">
                 <div class="cell-center">
-                <v-checkbox v-model="item.vehicule_roulant" :true-value="1" :false-value="0" hide-details
-                    density="compact" 
-                    @update:model-value="val => onCheckboxChange(item, 'vehicule_roulant', val)"/>
+                    <v-checkbox v-model="item.vehicule_roulant" :true-value="1" :false-value="0" hide-details
+                        density="compact"
+                        @update:model-value="val => onCheckboxChange(item, 'vehicule_roulant', val)" />
                 </div>
 
             </template>
@@ -165,27 +154,210 @@
             <!-- TELEPHONIQUE -->
             <template v-slot:[`item.appel_telephonique`]="{ item }">
                 <div class="cell-center">
-                <v-checkbox v-model="item.appel_telephonique" :true-value="1" :false-value="0" hide-details
-                    density="compact"
-                    @update:model-value="val => onCheckboxChange(item, 'appel_telephonique', val)" />
+                    <v-checkbox v-model="item.appel_telephonique" :true-value="1" :false-value="0" hide-details
+                        density="compact"
+                        @update:model-value="val => onCheckboxChange(item, 'appel_telephonique', val)" />
                 </div>
             </template>
 
             <template v-slot:[`item.data_telephonique`]="{ item }">
                 <div class="cell-center">
-                <v-checkbox v-model="item.data_telephonique" :true-value="1" :false-value="0" hide-details
-                    density="compact" 
-                    @update:model-value="val => onCheckboxChange(item, 'data_telephonique', val)"/>
+                    <v-checkbox v-model="item.data_telephonique" :true-value="1" :false-value="0" hide-details
+                        density="compact"
+                        @update:model-value="val => onCheckboxChange(item, 'data_telephonique', val)" />
                 </div>
             </template>
 
             <template v-slot:[`item.poste_telephonique`]="{ item }">
                 <div class="cell-center">
-                <v-checkbox v-model="item.poste_telephonique" :true-value="1" :false-value="0" hide-details
-                    density="compact" 
-                    @update:model-value="val => onCheckboxChange(item, 'poste_telephonique', val)"/>
+                    <v-checkbox v-model="item.poste_telephonique" :true-value="1" :false-value="0" hide-details
+                        density="compact"
+                        @update:model-value="val => onCheckboxChange(item, 'poste_telephonique', val)" />
                 </div>
 
+            </template>
+
+
+
+<!-- TITLE CHECKBOX -->
+
+
+
+
+
+            <!-- ASSURANCE -->
+            <template #header.ascoma_assurance="{ column }">
+                <div class="header-check">
+                    <span>{{ column.title }}</span>
+                    <v-checkbox :model-value="isColumnAll('ascoma_assurance')"
+                        :indeterminate="isColumnSome('ascoma_assurance')" hide-details density="compact"
+                        color="deep-purple-accent-4"
+                        @update:model-value="val => toggleColumn('ascoma_assurance', val)" />
+                </div>
+            </template>
+
+            <!-- CASIER -->
+            <template #header.casier_casier="{ column }">
+                <div class="header-check">
+                    <span>{{ column.title }}</span>
+                    <v-checkbox :model-value="isColumnAll('casier_casier')"
+                        :indeterminate="isColumnSome('casier_casier')" hide-details density="compact"
+                        color="deep-purple-accent-4" @update:model-value="val => toggleColumn('casier_casier', val)" />
+                </div>
+            </template>
+
+            <!-- EPI -->
+            <template #header.blouse_epi="{ column }">
+                <div class="header-check">
+                    <span>{{ column.title }}</span>
+                    <v-checkbox :model-value="isColumnAll('blouse_epi')" :indeterminate="isColumnSome('blouse_epi')"
+                        hide-details density="compact" color="deep-purple-accent-4"
+                        @update:model-value="val => toggleColumn('blouse_epi', val)" />
+                </div>
+            </template>
+            <template #header.casque_epi="{ column }">
+                <div class="header-check">
+                    <span>{{ column.title }}</span>
+                    <v-checkbox :model-value="isColumnAll('casque_epi')" :indeterminate="isColumnSome('casque_epi')"
+                        hide-details density="compact" color="deep-purple-accent-4"
+                        @update:model-value="val => toggleColumn('casque_epi', val)" />
+                </div>
+            </template>
+            <template #header.chaussure_epi="{ column }">
+                <div class="header-check">
+                    <span>{{ column.title }}</span>
+                    <v-checkbox :model-value="isColumnAll('chaussure_epi')"
+                        :indeterminate="isColumnSome('chaussure_epi')" hide-details density="compact"
+                        color="deep-purple-accent-4" @update:model-value="val => toggleColumn('chaussure_epi', val)" />
+                </div>
+            </template>
+            <template #header.combinaison_epi="{ column }">
+                <div class="header-check">
+                    <span>{{ column.title }}</span>
+                    <v-checkbox :model-value="isColumnAll('combinaison_epi')"
+                        :indeterminate="isColumnSome('combinaison_epi')" hide-details density="compact"
+                        color="deep-purple-accent-4"
+                        @update:model-value="val => toggleColumn('combinaison_epi', val)" />
+                </div>
+            </template>
+            <template #header.doudoune_epi="{ column }">
+                <div class="header-check">
+                    <span>{{ column.title }}</span>
+                    <v-checkbox :model-value="isColumnAll('doudoune_epi')" :indeterminate="isColumnSome('doudoune_epi')"
+                        hide-details density="compact" color="deep-purple-accent-4"
+                        @update:model-value="val => toggleColumn('doudoune_epi', val)" />
+                </div>
+            </template>
+            <template #header.gant_epi="{ column }">
+                <div class="header-check">
+                    <span>{{ column.title }}</span>
+                    <v-checkbox :model-value="isColumnAll('gant_epi')" :indeterminate="isColumnSome('gant_epi')"
+                        hide-details density="compact" color="deep-purple-accent-4"
+                        @update:model-value="val => toggleColumn('gant_epi', val)" />
+                </div>
+            </template>
+            <template #header.gilet_epi="{ column }">
+                <div class="header-check">
+                    <span>{{ column.title }}</span>
+                    <v-checkbox :model-value="isColumnAll('gilet_epi')" :indeterminate="isColumnSome('gilet_epi')"
+                        hide-details density="compact" color="deep-purple-accent-4"
+                        @update:model-value="val => toggleColumn('gilet_epi', val)" />
+                </div>
+            </template>
+            <template #header.impermeable_epi="{ column }">
+                <div class="header-check">
+                    <span>{{ column.title }}</span>
+                    <v-checkbox :model-value="isColumnAll('impermeable_epi')"
+                        :indeterminate="isColumnSome('impermeable_epi')" hide-details density="compact"
+                        color="deep-purple-accent-4"
+                        @update:model-value="val => toggleColumn('impermeable_epi', val)" />
+                </div>
+            </template>
+
+            <!-- MAT INFO -->
+            <template #header.laptop_mat_info="{ column }">
+                <div class="header-check">
+                    <span>{{ column.title }}</span>
+                    <v-checkbox :model-value="isColumnAll('laptop_mat_info')"
+                        :indeterminate="isColumnSome('laptop_mat_info')" hide-details density="compact"
+                        color="deep-purple-accent-4"
+                        @update:model-value="val => toggleColumn('laptop_mat_info', val)" />
+                </div>
+            </template>
+            <template #header.pc_bureau_mat_info="{ column }">
+                <div class="header-check">
+                    <span>{{ column.title }}</span>
+                    <v-checkbox :model-value="isColumnAll('pc_bureau_mat_info')"
+                        :indeterminate="isColumnSome('pc_bureau_mat_info')" hide-details density="compact"
+                        color="deep-purple-accent-4"
+                        @update:model-value="val => toggleColumn('pc_bureau_mat_info', val)" />
+                </div>
+            </template>
+            <template #header.tablette_mat_info="{ column }">
+                <div class="header-check">
+                    <span>{{ column.title }}</span>
+                    <v-checkbox :model-value="isColumnAll('tablette_mat_info')"
+                        :indeterminate="isColumnSome('tablette_mat_info')" hide-details density="compact"
+                        color="deep-purple-accent-4"
+                        @update:model-value="val => toggleColumn('tablette_mat_info', val)" />
+                </div>
+            </template>
+
+            <!-- ROULANT -->
+            <template #header.carte_carburant_roulant="{ column }">
+                <div class="header-check">
+                    <span>{{ column.title }}</span>
+                    <v-checkbox :model-value="isColumnAll('carte_carburant_roulant')"
+                        :indeterminate="isColumnSome('carte_carburant_roulant')" hide-details density="compact"
+                        color="deep-purple-accent-4"
+                        @update:model-value="val => toggleColumn('carte_carburant_roulant', val)" />
+                </div>
+            </template>
+            <template #header.moto_roulant="{ column }">
+                <div class="header-check">
+                    <span>{{ column.title }}</span>
+                    <v-checkbox :model-value="isColumnAll('moto_roulant')" :indeterminate="isColumnSome('moto_roulant')"
+                        hide-details density="compact" color="deep-purple-accent-4"
+                        @update:model-value="val => toggleColumn('moto_roulant', val)" />
+                </div>
+            </template>
+            <template #header.vehicule_roulant="{ column }">
+                <div class="header-check">
+                    <span>{{ column.title }}</span>
+                    <v-checkbox :model-value="isColumnAll('vehicule_roulant')"
+                        :indeterminate="isColumnSome('vehicule_roulant')" hide-details density="compact"
+                        color="deep-purple-accent-4"
+                        @update:model-value="val => toggleColumn('vehicule_roulant', val)" />
+                </div>
+            </template>
+
+            <!-- TELEPHONIQUE -->
+            <template #header.appel_telephonique="{ column }">
+                <div class="header-check">
+                    <span>{{ column.title }}</span>
+                    <v-checkbox :model-value="isColumnAll('appel_telephonique')"
+                        :indeterminate="isColumnSome('appel_telephonique')" hide-details density="compact"
+                        color="deep-purple-accent-4"
+                        @update:model-value="val => toggleColumn('appel_telephonique', val)" />
+                </div>
+            </template>
+            <template #header.data_telephonique="{ column }">
+                <div class="header-check">
+                    <span>{{ column.title }}</span>
+                    <v-checkbox :model-value="isColumnAll('data_telephonique')"
+                        :indeterminate="isColumnSome('data_telephonique')" hide-details density="compact"
+                        color="deep-purple-accent-4"
+                        @update:model-value="val => toggleColumn('data_telephonique', val)" />
+                </div>
+            </template>
+            <template #header.poste_telephonique="{ column }">
+                <div class="header-check">
+                    <span>{{ column.title }}</span>
+                    <v-checkbox :model-value="isColumnAll('poste_telephonique')"
+                        :indeterminate="isColumnSome('poste_telephonique')" hide-details density="compact"
+                        color="deep-purple-accent-4"
+                        @update:model-value="val => toggleColumn('poste_telephonique', val)" />
+                </div>
             </template>
 
 
@@ -327,12 +499,36 @@ export default defineComponent({
             return {};
         };
 
+        // Toutes les lignes de la colonne sont cochées ?
+        const isColumnAll = (key) =>
+            (props.items || []).length > 0 &&
+            props.items.every((it) => it[key] === 1);
+
+        // Certaines (mais pas toutes) sont cochées ? → état indéterminé
+        const isColumnSome = (key) =>
+            (props.items || []).some((it) => it[key] === 1) && !isColumnAll(key);
+
+        // Coche / décoche toute la colonne
+        const toggleColumn = (key, val) => {
+            const value = val ? 1 : 0;
+            (props.items || []).forEach((item) => {
+                if (item[key] !== value) {          // n'émet que si la valeur change
+                    item[key] = value;              // mise à jour visuelle
+                    emit("checkbox-change", { item, key, value });
+                }
+            });
+        };
+        const headerSlotName = (key) => `header.${key}`;
+
         return {
             action1PItem,
             getColor,
             rowColor,
             hasGroupedHeaders,
             onCheckboxChange,
+            isColumnAll,
+            isColumnSome,
+            toggleColumn, headerSlotName,
         };
     }
 
@@ -447,5 +643,45 @@ export default defineComponent({
     justify-content: center;
     align-items: center;
     width: 100%;
+}
+
+/* Case en haut, titre en bas */
+.header-check {
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+    line-height: 1;
+}
+
+.header-check .v-input,
+.header-check .v-selection-control {
+    flex: none;
+    width: auto;
+    min-height: 20px !important;
+}
+
+.header-check .v-selection-control__wrapper {
+    height: 20px;
+    width: 20px;
+}
+
+/* Case colorée différemment des en-têtes (cyan / vert) */
+.header-check .v-selection-control .v-icon {
+    color: #D81B60 !important;        /* rose foncé : case décochée et cochée */
+    opacity: 1 !important;
+    font-size: 18px !important;
+}
+
+/* Petit fond blanc arrondi pour que la case ressorte */
+.header-check .v-selection-control__input {
+    background: #ffffff;
+    border-radius: 4px;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 </style>

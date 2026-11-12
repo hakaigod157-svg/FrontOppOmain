@@ -10,6 +10,8 @@ export const useListIntegration = defineStore("listIntegration", {
     listEtapesIntegr: [],
     listMatDispos: [],
     listFormations: [],
+    listdecisions: [],
+    listdecisionsMobilite: [],
 
     // params: {
     //   dossier: "",
@@ -17,7 +19,7 @@ export const useListIntegration = defineStore("listIntegration", {
   }),
 
   actions: {
-    async fetchListDetailInteg(codeInteg, matricule) {
+    async fetchListDetailInteg(codeInteg, codeEmpl) {
       const sessionId = localStorage.getItem("sessionId");
       this.loading = true;
       const { handleLogout } = useLogout();
@@ -30,7 +32,7 @@ export const useListIntegration = defineStore("listIntegration", {
             },
             params: {
               codeInteg,
-              matricule: matricule ?? "",
+              codeEmpl: codeEmpl ?? "",
             },
           },
         );
@@ -58,7 +60,11 @@ export const useListIntegration = defineStore("listIntegration", {
       }
     },
 
-    async updateDateEtape(ligne_etape_code,ligne_etape_etape,ligne_etape_date,) {
+    async updateDateEtape(
+      ligne_etape_code,
+      ligne_etape_etape,
+      ligne_etape_date,
+    ) {
       const sessionId = localStorage.getItem("sessionId");
 
       const { handleLogout } = useLogout();
@@ -83,16 +89,21 @@ export const useListIntegration = defineStore("listIntegration", {
         );
 
         return response.data;
-      }catch (error) {
-          console.error("Erreur updateDateEtape :", error);
+      } catch (error) {
+        console.error("Erreur updateDateEtape :", error);
 
-          throw error;
+        throw error;
       } finally {
         this.loading = false;
       }
     },
 
-    async updateDateMatDispo(mise_dispo_matr,mise_dispo_cat,mise_dispo_materiel,mise_dispo_date_effect) {
+    async updateDateMatDispo(
+      mise_dispo_matr,
+      mise_dispo_cat,
+      mise_dispo_materiel,
+      mise_dispo_date_effect,
+    ) {
       const sessionId = localStorage.getItem("sessionId");
 
       const { handleLogout } = useLogout();
@@ -112,24 +123,22 @@ export const useListIntegration = defineStore("listIntegration", {
               mise_dispo_matr,
               mise_dispo_cat,
               mise_dispo_materiel,
-              mise_dispo_date_effect
+              mise_dispo_date_effect,
             },
           },
         );
 
         return response.data;
-      }catch (error) {
-          console.error("Erreur updateDateEtape :", error);
+      } catch (error) {
+        console.error("Erreur updateDateEtape :", error);
 
-          throw error;
+        throw error;
       } finally {
         this.loading = false;
       }
     },
 
-
-
-    async updateDateFormation(matricule,form_code,libelle_form,date_reel,) {
+    async updateDateFormation(matricule, form_code, libelle_form, date_reel) {
       const sessionId = localStorage.getItem("sessionId");
 
       const { handleLogout } = useLogout();
@@ -149,24 +158,113 @@ export const useListIntegration = defineStore("listIntegration", {
               matricule,
               form_code,
               libelle_form,
-              date_reel
+              date_reel,
             },
           },
         );
 
         return response.data;
-      }catch (error) {
-          console.error("Erreur updateDateEtape :", error);
+      } catch (error) {
+        console.error("Erreur updateDateEtape :", error);
 
-          throw error;
+        throw error;
       } finally {
         this.loading = false;
       }
     },
 
+    async updateDecisionEtape(ligne_etape_code, ligne_etape_etape, decision) {
+      const sessionId = localStorage.getItem("sessionId");
 
+      const { handleLogout } = useLogout();
 
+      this.loading = true;
 
+      try {
+        const params = {
+          ligne_etape_code,
+          ligne_etape_etape,
+          decision,
+        };
 
+        console.log("Paramètres envoyés :", params);
+
+        const response = await axios.post(
+          Config.SERVER_URL + "api/updateDecisionEtape",
+          null,
+          {
+            headers: {
+              Authorization: sessionId,
+            },
+            params,
+          },
+        );
+
+        console.log("Réponse API updateDecisionEtape :", response.data);
+
+        return response.data;
+      } catch (error) {
+        console.error("Erreur updateDecisionEtape :", error);
+        console.error("Données envoyées :", {
+          ligne_etape_code,
+          ligne_etape_etape,
+          decision,
+        });
+
+        throw error;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async fetchDecision() {
+      const sessionId = localStorage.getItem("sessionId");
+      this.loading = true;
+      const { handleLogout } = useLogout();
+      try {
+        const response = await axios.get(
+          Config.SERVER_URL + "api/listdecision",
+          {
+            headers: { Authorization: sessionId },
+          },
+        );
+        const data = response.data;
+        if (Array.isArray(data)) {
+          this.listdecisions = data;
+        } else {
+          // console.error("Unexpected data structure:", data);
+        }
+      } catch (error) {
+        alert(`Error: ${error.message}`);
+        await handleLogout();
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async fetchDecisionMobilite() {
+      const sessionId = localStorage.getItem("sessionId");
+      this.loading = true;
+      const { handleLogout } = useLogout();
+      try {
+        const response = await axios.get(
+          Config.SERVER_URL + "api/listdecision_mobilite",
+          {
+            headers: { Authorization: sessionId },
+          },
+        );
+        const data = response.data;
+        if (Array.isArray(data)) {
+          this.listdecisionsMobilite = data;
+        } else {
+          // console.error("Unexpected data structure:", data);
+        }
+      } catch (error) {
+        alert(`Error: ${error.message}`);
+        await handleLogout();
+      } finally {
+        this.loading = false;
+      }
+    },
   },
 });

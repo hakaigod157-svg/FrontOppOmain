@@ -1,153 +1,85 @@
-<template>
-  <div>
-    <v-form @submit.prevent="save">
-      <v-row class="mb-4" align="center">
-        <v-col cols="6">
-          <h2 class="text-h5">
-            <u>{{ isEdit ? "Modifier une demande" : "Nouvelle demande" }}</u>
-          </h2>
-        </v-col>
+  <template>
+    <div>
+      <v-form @submit.prevent="save">
+        <v-row class="mb-4" align="center">
+          <v-col cols="6">
+            <h2 class="text-h5">
+              <u>{{ isEdit ? "Modifier une demande" : "Nouvelle demande" }}</u>
+            </h2>
+          </v-col>
 
-        <v-col cols="6" class="d-flex justify-end">
-          <div class="d-flex flex-column align-end">
-            <span class="font-weight-bold">
-              <h2>{{ form.DEMANDE_CODE }}</h2></span
-            >
-          </div>
-        </v-col>
-      </v-row>
+          <v-col cols="6" class="d-flex justify-end">
+            <div class="d-flex flex-column align-end">
+              <span class="font-weight-bold">
+                <h2>{{ form.DEMANDE_CODE }}</h2>
+              </span>
+            </div>
+          </v-col>
+        </v-row>
 
-      <v-row>
-        <v-col cols="12" md="6">
-          <MyTextField
-            v-model="form.DEMANDE_DATE"
-            name_lab_text="Date de demande"
-            type_text="date"
-            :max="today"
-            ref="fieldRefs.DEMANDE_DATE"
-            :error="!!errors.DEMANDE_DATE"
-            :error-messages="errors.DEMANDE_DATE"
-          />
-        </v-col>
+        <v-row>
+          <v-col cols="12" md="6">
+            <MyTextField v-model="form.DEMANDE_DATE" name_lab_text="Date de demande" type_text="date" :max="today"
+              ref="fieldRefs.DEMANDE_DATE" :error="!!errors.DEMANDE_DATE" :error-messages="errors.DEMANDE_DATE" />
+          </v-col>
 
-        <v-col cols="12" md="6">
-          <MyTextField
-            v-model="form.DEMANDE_PRISE_FONCTION"
-            name_lab_text="Prise de fonction"
-            type_text="date"
-            :min="form.DEMANDE_DATE"
-            ref="fieldRefs.DEMANDE_DATE"
-            :error="!!errors.DEMANDE_PRISE_FONCTION"
-            :error-messages="errors.DEMANDE_PRISE_FONCTION"
-          />
-        </v-col>
-      </v-row>
+          <v-col cols="12" md="6">
+            <MyTextField v-model="form.DEMANDE_PRISE_FONCTION" name_lab_text="Prise de fonction" type_text="date"
+              :min="form.DEMANDE_DATE" ref="fieldRefs.DEMANDE_DATE" :error="!!errors.DEMANDE_PRISE_FONCTION"
+              :error-messages="errors.DEMANDE_PRISE_FONCTION" />
+          </v-col>
+        </v-row>
 
-      <v-row>
-        <v-col cols="12" md="6">
-          <v-select
-            v-model="form.DEMANDE_DEPARTEMENT"
-            :items="departements"
-            item-title="lib_departement"
-            item-value="code_departement"
-            label="Département"
-            @change="onDepartementChange"
-            variant="underlined"
-            density="compact"
-            color="deep-purple-accent-4"
-            ref="fieldRefs.DEMANDE_DEPARTEMENT"
-            :error="!!errors.DEMANDE_DEPARTEMENT"
-            :error-messages="errors.DEMANDE_DEPARTEMENT"
-          />
-        </v-col>
-        <v-col cols="12" md="6"
-          ><v-select
-            v-model="form.DEMANDE_POSTE"
-            :items="postesFiltrees"
-            item-title="poste_libelle"
-            item-value="code_poste"
-            label="Poste"
-            variant="underlined"
-            density="compact"
-            color="deep-purple-accent-4"
-            ref="fieldRefs.DEMANDE_POSTE"
-            :error="!!errors.DEMANDE_POSTE"
-            :error-messages="errors.DEMANDE_POSTE"
-          />
-        </v-col>
-      </v-row>
+        <v-row>
+          <v-col cols="12" md="6">
+            <v-select v-model="form.DEMANDE_DEPARTEMENT" :items="departements" item-title="departement"
+              item-value="departement" label="Département" variant="underlined" density="compact"
+              color="deep-purple-accent-4" :error="!!errors.DEMANDE_DEPARTEMENT"
+              :error-messages="errors.DEMANDE_DEPARTEMENT" />
+          </v-col>
+          <v-col cols="12" md="6">
+            <v-select v-model="form.DEMANDE_POSTE" :items="postesFiltrees" item-title="code_poste"
+              item-value="code_poste" label="Poste" variant="underlined" density="compact" color="deep-purple-accent-4"
+              ref="fieldRefs.DEMANDE_POSTE" :error="!!errors.DEMANDE_POSTE" :error-messages="errors.DEMANDE_POSTE" />
+          </v-col>
+        </v-row>
 
-      <v-row class="align-start">
-        <!-- Motif -->
-        <v-col cols="12" md="6" class="pt-0">
-          <span
-            class="text-subtitle-1 mb-1 d-block"
-            :style="{ color: errors.DEMANDE_MOTIF ? 'red' : '' }"
-            >Motif</span
-          >
-          <v-radio-group
-            v-model="form.DEMANDE_MOTIF"
-            inline
-            hide-details
-            density="compact"
-            class="mt-0 uppercase-radio"
-            :style="{
-              border: `1px solid ${errors.DEMANDE_MOTIF ? 'red' : 'grey'}`,
-              borderRadius: '8px',
-              padding: '8px 0',
-              display: 'flex',
-              alignItems: 'stretch',
-              backgroundColor: '#fff',
-            }"
-            ref="fieldRefs.DEMANDE_MOTIF"
-          >
-            <v-col>
-              <v-radio
-                label="Nouveau poste"
-                value="Nouveau poste"
-                color="primary"
-              />
-              <v-radio
-                label="Renforcement"
-                value="Renforcement"
-                color="primary"
-              />
-            </v-col>
-            <v-col>
-              <v-radio
-                label="Remplacement"
-                value="Remplacement"
-                color="primary"
-              />
-              <v-radio label="Autre" value="Autre" color="primary" />
-            </v-col>
-          </v-radio-group>
-          <small v-if="errors.DEMANDE_MOTIF" class="text-red">{{
-            errors.DEMANDE_MOTIF
-          }}</small>
-        </v-col>
+        <v-row class="align-start">
+          <!-- Motif -->
+          <v-col cols="12" md="6" class="pt-0">
+            <span class="text-subtitle-1 mb-1 d-block"
+              :style="{ color: errors.DEMANDE_MOTIF ? 'red' : '' }">Motif</span>
+            <v-radio-group v-model="form.DEMANDE_MOTIF" inline hide-details density="compact"
+              class="mt-0 uppercase-radio" :style="{
+                border: `1px solid ${errors.DEMANDE_MOTIF ? 'red' : 'grey'}`,
+                borderRadius: '8px',
+                padding: '8px 0',
+                display: 'flex',
+                alignItems: 'stretch',
+                backgroundColor: '#fff',
+              }" ref="fieldRefs.DEMANDE_MOTIF">
+              <v-col>
+                <v-radio label="Nouveau poste" value="Nouveau poste" color="primary" />
+                <v-radio label="Renforcement" value="Renforcement" color="primary" />
+              </v-col>
+              <v-col>
+                <v-radio label="Remplacement" value="Remplacement" color="primary" />
+                <v-radio label="Autre" value="Autre" color="primary" />
+              </v-col>
+            </v-radio-group>
+            <small v-if="errors.DEMANDE_MOTIF" class="text-red">{{
+              errors.DEMANDE_MOTIF
+            }}</small>
+          </v-col>
 
-        <v-col
-          cols="12"
-          md="6"
-          class="d-flex flex-column pt-0"
-          style="gap: 8px"
-        >
-          <div class="d-flex" style="gap: 8px">
-            <div style="flex: 1; display: flex; flex-direction: column">
-              <span
-                class="text-subtitle-1 mb-1 d-block"
-                :style="{ color: errors.DEMANDE_CONTRAT ? 'red' : '' }"
-                >Contrat</span
-              >
-              <v-radio-group
-                v-model="form.DEMANDE_CONTRAT"
-                hide-details
-                density="compact"
-                :style="{
-                  border: `1px solid ${
-                    errors.DEMANDE_CONTRAT ? 'red' : 'grey'
-                  }`,
+          <v-col cols="12" md="6" class="d-flex flex-column pt-0" style="gap: 8px">
+            <div class="d-flex" style="gap: 8px">
+              <div style="flex: 1; display: flex; flex-direction: column">
+                <span class="text-subtitle-1 mb-1 d-block"
+                  :style="{ color: errors.DEMANDE_CONTRAT ? 'red' : '' }">Contrat</span>
+                <v-radio-group v-model="form.DEMANDE_CONTRAT" hide-details density="compact" :style="{
+                  border: `1px solid ${errors.DEMANDE_CONTRAT ? 'red' : 'grey'
+                    }`,
                   borderRadius: '8px',
                   padding: '8px 8px',
                   display: 'flex',
@@ -155,128 +87,76 @@
                   gap: '8px',
                   alignItems: 'stretch',
                   backgroundColor: '#fff',
-                }"
-                ref="fieldRefs.DEMANDE_CONTRAT"
-              >
-                <v-radio label="CDI" value="CDI" color="primary" />
-                <v-radio label="CDD" value="CDD" color="primary" />
-              </v-radio-group>
-              <small v-if="errors.DEMANDE_CONTRAT" class="text-red">{{
-                errors.DEMANDE_CONTRAT
-              }}</small>
-            </div>
-
-            <div style="flex: 1; display: flex; flex-direction: column">
-              <v-select
-                v-model="form.DEMANDE_EFFECTIF"
-                :items="effectifOptions"
-                label="Effectif"
-                density="compact"
-                variant="underlined"
-                color="deep-purple-accent-4"
-                style="margin-top: 40px"
-                ref="fieldRefs.DEMANDE_EFFECTIF"
-                :error="!!errors.DEMANDE_EFFECTIF"
-                :error-messages="errors.DEMANDE_EFFECTIF"
-              />
-            </div>
-          </div>
-
-          <div class="d-flex align-center" style="gap: 8px; margin-top: -3px">
-            <v-file-input
-              v-model="form.DEMANDE_FICHE"
-              label="Parcourir le fiche"
-              density="compact"
-              variant="underlined"
-              color="deep-purple-accent-4"
-              prepend-icon=""
-              append-inner-icon="mdi-paperclip"
-              accept="image/*,.pdf"
-              style="flex: 1"
-              ref="fieldRefs.DEMANDE_FICHE"
-              :error="!!errors.DEMANDE_FICHE"
-              :error-messages="errors.DEMANDE_FICHE"
-            />
-            <v-btn
-              color="blue"
-              @click="openPreview"
-              :disabled="!form.DEMANDE_FICHE"
-              density="compact"
-              style="margin-top: -12px"
-            >
-              Aperçu
-            </v-btn>
-          </div>
-        </v-col>
-        <!-- DIALOG D’APERÇU (inchangé) -->
-        <v-dialog v-model="dialog" max-width="600px">
-          <v-card>
-            <v-card-title class="d-flex align-center">
-              <span class="text-h6">Aperçu du fichier</span>
-              <v-spacer></v-spacer>
-              <v-btn icon @click="dialog = false">
-                <v-icon>mdi-close</v-icon>
-              </v-btn>
-            </v-card-title>
-
-            <v-divider></v-divider>
-
-            <v-card-text>
-              <div v-if="filePreview">
-                <img
-                  v-if="isImage"
-                  :src="filePreview"
-                  alt="Aperçu"
-                  style="max-width: 100%; border-radius: 4px"
-                />
-                <iframe
-                  v-else-if="isPDF"
-                  :src="filePreview"
-                  width="100%"
-                  height="400px"
-                  style="border: none"
-                ></iframe>
-                <p v-else>Impossible d’afficher ce type de fichier.</p>
+                }" ref="fieldRefs.DEMANDE_CONTRAT">
+                  <v-radio label="CDI" value="CDI" color="primary" />
+                  <v-radio label="CDD" value="CDD" color="primary" />
+                </v-radio-group>
+                <small v-if="errors.DEMANDE_CONTRAT" class="text-red">{{
+                  errors.DEMANDE_CONTRAT
+                }}</small>
               </div>
-            </v-card-text>
 
-            <v-card-actions>
-              <v-spacer></v-spacer>
-              <v-btn
-                color="red"
-                density="compact"
-                variant="outlined"
-                @click="dialog = false"
-                >Fermer</v-btn
-              >
-            </v-card-actions>
-          </v-card>
-        </v-dialog>
-      </v-row>
+              <div style="flex: 1; display: flex; flex-direction: column">
+                <v-select v-model="form.DEMANDE_EFFECTIF" :items="effectifOptions" label="Effectif" density="compact"
+                  variant="underlined" color="deep-purple-accent-4" style="margin-top: 40px"
+                  ref="fieldRefs.DEMANDE_EFFECTIF" :error="!!errors.DEMANDE_EFFECTIF"
+                  :error-messages="errors.DEMANDE_EFFECTIF" />
+              </div>
+            </div>
 
-      <div class="d-flex justify-end" style="margin-top: 20px">
-        <v-btn
-          density="compact"
-          color="grey-darken-2"
-          variant="tonal"
-          @click="cancel"
-        >
-          Annuler
-        </v-btn>
+            <div class="d-flex align-center" style="gap: 8px; margin-top: -3px">
+              <v-file-input v-model="form.DEMANDE_FICHE" label="Parcourir le fiche" density="compact"
+                variant="underlined" color="deep-purple-accent-4" prepend-icon="" append-inner-icon="mdi-paperclip"
+                accept="image/*,.pdf" style="flex: 1" ref="fieldRefs.DEMANDE_FICHE" :error="!!errors.DEMANDE_FICHE"
+                :error-messages="errors.DEMANDE_FICHE" />
+              <v-btn color="blue" @click="openPreview" :disabled="!form.DEMANDE_FICHE" density="compact"
+                style="margin-top: -12px">
+                Aperçu
+              </v-btn>
+            </div>
+          </v-col>
+          <!-- DIALOG D’APERÇU (inchangé) -->
+          <v-dialog v-model="dialog" max-width="600px">
+            <v-card>
+              <v-card-title class="d-flex align-center">
+                <span class="text-h6">Aperçu du fichier</span>
+                <v-spacer></v-spacer>
+                <v-btn icon @click="dialog = false">
+                  <v-icon>mdi-close</v-icon>
+                </v-btn>
+              </v-card-title>
 
-        <v-btn
-          density="compact"
-          type="submit"
-          color="blue-darken-3"
-          variant="elevated"
-          class="ml-2"
-        >
-          {{ isEdit ? "Modifier" : "Enregistrer" }}
-        </v-btn>
-      </div>
-    </v-form>
-  </div>
-</template>
+              <v-divider></v-divider>
+
+              <v-card-text>
+                <div v-if="filePreview">
+                  <img v-if="isImage" :src="filePreview" alt="Aperçu" style="max-width: 100%; border-radius: 4px" />
+                  <iframe v-else-if="isPDF" :src="filePreview" width="100%" height="400px"
+                    style="border: none"></iframe>
+                  <p v-else>Impossible d’afficher ce type de fichier.</p>
+                </div>
+              </v-card-text>
+
+              <v-card-actions>
+                <v-spacer></v-spacer>
+                <v-btn color="red" density="compact" variant="outlined" @click="dialog = false">Fermer</v-btn>
+              </v-card-actions>
+            </v-card>
+          </v-dialog>
+        </v-row>
+
+        <div class="d-flex justify-end" style="margin-top: 20px">
+          <v-btn density="compact" color="grey-darken-2" variant="tonal" @click="cancel">
+            Annuler
+          </v-btn>
+
+          <v-btn density="compact" type="submit" color="blue-darken-3" variant="elevated" class="ml-2">
+            {{ isEdit ? "Modifier" : "Enregistrer" }}
+          </v-btn>
+        </div>
+      </v-form>
+    </div>
+  </template>
 
 <script>
 import {
@@ -310,6 +190,7 @@ export default defineComponent({
     const isImage = ref(false);
     const isPDF = ref(false);
     const dialog = ref(false);
+    const store = useDemande();
 
     function openPreview() {
       if (!form.DEMANDE_FICHE) return; // pas .value
@@ -376,22 +257,41 @@ export default defineComponent({
       );
       postesFiltrees.value = dep ? dep.postes : [];
     }
+    // watch(
+    //   () => form.DEMANDE_DEPARTEMENT,
+    //   (codeDep) => {
+    //     const dep = departements.value.find(
+    //       (d) => d.code_departement === codeDep
+    //     );
+    //     postesFiltrees.value = dep ? dep.postes : [];
+
+    //     // Réinitialiser le poste sélectionné si le poste actuel n'existe plus
+    //     if (
+    //       !postesFiltrees.value.find((p) => p.code_poste === form.DEMANDE_POSTE)
+    //     ) {
+    //       form.DEMANDE_POSTE = null;
+    //     }
+    //   }
+    // );
+
     watch(
       () => form.DEMANDE_DEPARTEMENT,
-      (codeDep) => {
-        const dep = departements.value.find(
-          (d) => d.code_departement === codeDep
-        );
-        postesFiltrees.value = dep ? dep.postes : [];
+      async (departement) => {
+        // Vider la liste et réinitialiser le poste sélectionné
+        postesFiltrees.value = [];
+        form.DEMANDE_POSTE = null;
 
-        // Réinitialiser le poste sélectionné si le poste actuel n'existe plus
-        if (
-          !postesFiltrees.value.find((p) => p.code_poste === form.DEMANDE_POSTE)
-        ) {
-          form.DEMANDE_POSTE = null;
+        if (!departement) {
+          return;
         }
+        // Appeler la méthode Pinia avec le département choisi
+        const postes = await store.fetchDepartementPostes(departement);
+
+        // Mettre à jour les postes affichés
+        postesFiltrees.value = postes;
       }
     );
+
     watch(
       () => props.defaultCode,
       (newCode) => {
@@ -407,10 +307,15 @@ export default defineComponent({
       }
     });
 
+    const listDepartements = async () => {
+      await store.fetchDepartement();
+      departements.value = store.listDepartements;
+    };
+
     onMounted(async () => {
       const { fetchDepartementPostes } = useDemande();
-      await fetchDepartementPostes();
-      departements.value = useDemande().donnesdemande;
+      // await fetchDepartementPostes();
+      await listDepartements();
 
       if (isEdit.value) {
         const demande = props.demandesModif._value || props.demandesModif;
@@ -602,9 +507,13 @@ export default defineComponent({
 <style scoped>
 /* Applique le style au texte des radios */
 ::v-deep(.v-radio .v-label) {
-  text-transform: uppercase; /* majuscules */
-  font-size: 11px; /* taille lisible */
-  font-weight: 500; /* un peu plus épais */
-  letter-spacing: 0.5px; /* espacement lettres */
+  text-transform: uppercase;
+  /* majuscules */
+  font-size: 11px;
+  /* taille lisible */
+  font-weight: 500;
+  /* un peu plus épais */
+  letter-spacing: 0.5px;
+  /* espacement lettres */
 }
 </style>

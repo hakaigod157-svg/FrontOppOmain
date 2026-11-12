@@ -1,9 +1,10 @@
 <script setup>
-import { ref, computed, onMounted, watch } from "vue";
+import { ref, computed, onMounted, onBeforeUnmount, watch } from "vue";
 import dayjs from "dayjs";
 import { useDemandeMaintenance } from "@/store/Maintenance/demande_store";
 import { useEtapeStore } from "@/store/Maintenance/etape_store";
 import { maintStore } from "@/store/Maintenance/maintenance_store";
+import DialogUploadPJ from "./DialogUploadPJ.vue";
 
 const props = defineProps({
   maintenance: {
@@ -23,7 +24,7 @@ const loadingActionPrepa = ref(false);
 const selectedEtapeFiles = ref({});
 const erreurFichierEtape = ref("");
 const MAX_ETAPE_FILE_SIZE = 10_000_000;
-const ALLOWED_ETAPE_FILE_EXTENSIONS = ["pdf", "jpg", "jpeg", "png", "webp", "avif"];
+const ALLOWED_ETAPE_FILE_EXTENSIONS = ["pdf", "jpg", "jpeg", "png", "webp"];
 
 const storeDemande = useDemandeMaintenance();
 const storeMaint = maintStore();
@@ -32,6 +33,37 @@ const storeEtape = useEtapeStore();
 const linkedMaintenance = ref(null);
 const linkedDemande = ref(null);
 const fetchedKm = ref(null);
+
+
+const headersEtapes = [
+      { title: "N°", key: "ligne_NUMERO", align: "start", width: "70px" },
+      { title: "Étape d'intervention", key: "etape_LIBELLE", align: "start" },
+      { title: "Date d'écheance Prévue", key: "etape_DATE_PREV", align: "start", width: "160px" },
+      { title: "Pièce Jointe", key: "etape_PJ", align: "center", width: "180px" },
+      { title: "Date réalisation", key: "etape_DATE", align: "start", width: "220px" },
+      // { title: "Statut", key: "etape_STATUT", align: "center", width: "135px" },
+      // { title: "Intervenant", key: "etape_USER", align: "start", width: "180px" },
+    ];
+
+const headersEtapesReal = [
+      { title: "N°", key: "ligne_NUMERO", align: "start", width: "55px" },
+      { title: "Intervention", key: "etape_LIBELLE", align: "start", minWidth: "180px" },
+      // { title: "Date d'écheance Prévue", key: "etape_DATE_PREV", align: "start", width: "115px" },
+      { title: "Action", key: "action", align: "start", width: "140px" },
+      { title: "Type d'exécution", key: "exect", align: "start", width: "140px" },
+      { title: "Fournisseur", key: "fournisseur", align: "start", width: "140px" },
+      { title: "Marque", key: "marque", align: "start", width: "120px" },
+      { title: "Prix (Ar)", key: "prix", align: "end", width: "115px" },
+      { title: "Pièce Jointe", key: "etape_PJ", align: "center", width: "105px" },
+      { title: "Date réalisation", key: "etape_DATE", align: "center", width: "135px" },
+      // { title: "Statut", key: "etape_STATUT", align: "center", width: "105px" },
+      { title: "Validation", key: "actions", align: "center", width: "100px" },
+    ];
+
+
+
+
+
 
 
 const formatKm = (valeur) =>
@@ -301,30 +333,6 @@ const statusChipText = computed(() => {
 const etapesPrepa = ref([]);
 const etapesReal = ref([]);
 
-const headersEtapes = [
-      { title: "N°", key: "ligne_NUMERO", align: "start", width: "70px" },
-      { title: "Étape d'intervention", key: "etape_LIBELLE", align: "start" },
-      { title: "Date d'écheance Prévue", key: "etape_DATE_PREV", align: "start", width: "160px" },
-      { title: "Date réalisation", key: "etape_DATE", align: "start", width: "220px" },
-      { title: "Statut", key: "etape_STATUT", align: "center", width: "135px" },
-      { title: "Intervenant", key: "etape_USER", align: "start", width: "180px" },
-      { title: "Pièce Jointe", key: "etape_PJ", align: "center", width: "180px" },
-    ];
-
-const headersEtapesReal = [
-      { title: "N°", key: "ligne_NUMERO", align: "start", width: "55px" },
-      { title: "Intervention", key: "etape_LIBELLE", align: "start", minWidth: "180px" },
-      { title: "Date d'écheance Prévue", key: "etape_DATE_PREV", align: "start", width: "115px" },
-      { title: "Action", key: "action", align: "start", width: "140px" },
-      { title: "Type d'exécution", key: "exect", align: "start", width: "140px" },
-      { title: "Fournisseur", key: "fournisseur", align: "start", width: "140px" },
-      { title: "Marque", key: "marque", align: "start", width: "120px" },
-      { title: "Prix (Ar)", key: "prix", align: "end", width: "115px" },
-      { title: "Date réalisation", key: "etape_DATE", align: "center", width: "135px" },
-      { title: "Statut", key: "etape_STATUT", align: "center", width: "105px" },
-      { title: "Pièce Jointe", key: "etape_PJ", align: "center", width: "105px" },
-      { title: "Validation", key: "actions", align: "center", width: "100px" },
-    ];
 
 const formatMontant = (val) => {
       if (val === null || val === undefined || val === "") return "-";
@@ -368,10 +376,18 @@ const validerEtapePrepaAction = async (item) => {
       }
       loadingActionPrepa.value = true;
       try {
+        const key = etapeFileKey(item);
+        const file = selectedEtapeFiles.value[key];
         await storeEtape.validerEtapePrepa(
           code,
-          item.code || item.etape_LIBELLE
+          item.code || item.etape_LIBELLE,
+          file
         );
+        if (file) {
+          const updated = { ...selectedEtapeFiles.value };
+          delete updated[key];
+          selectedEtapeFiles.value = updated;
+        }
         await chargerDonneesEtEtapes(false);
       } catch (err) {
         console.error("Erreur lors de la validation PREPA :", err);
@@ -388,6 +404,8 @@ const validerEtapeRealDirect = async (item) => {
       const code = getMaintCode();
       loadingActionReal.value = true;
       try {
+        const key = etapeFileKey(item);
+        const file = selectedEtapeFiles.value[key];
         const verif = isVerification(item);
         await storeEtape.validerEtapeReal(code, {
           intervReal: item.etape_LIBELLE || item.code,
@@ -397,7 +415,12 @@ const validerEtapeRealDirect = async (item) => {
           marque: verif ? null : (item.marque || null),
           prix: verif ? null : (item.prix !== null && item.prix !== undefined && item.prix !== "" ? Number(item.prix) : null),
           dateReal: null,
-        });
+        }, file);
+        if (file) {
+          const updated = { ...selectedEtapeFiles.value };
+          delete updated[key];
+          selectedEtapeFiles.value = updated;
+        }
         await chargerDonneesEtEtapes(false);
       } catch (err) {
         console.error("Erreur validation étape REAL :", err);
@@ -414,7 +437,7 @@ const chooseEtapeFile = (item, event) => {
   if (!file) return;
   const extension = file.name.split(".").pop()?.toLowerCase();
   if (!ALLOWED_ETAPE_FILE_EXTENSIONS.includes(extension)) {
-    erreurFichierEtape.value = "Format non accepté. Choisissez un PDF, JPG, PNG, WEBP ou AVIF.";
+    erreurFichierEtape.value = "Format non accepté. Choisissez un PDF, JPG, PNG ou WEBP.";
     return;
   }
   if (file.size > MAX_ETAPE_FILE_SIZE) {
@@ -734,6 +757,8 @@ const code = getMaintCode(maintCode);
       return;
     }
 const repApi = await storeEtape.getListePrepaMaint(code);
+console.log("PREPA reçu :", JSON.stringify(repApi?.[0]));
+
 
     if (Array.isArray(repApi) && repApi.length > 0) {
       const liste = repApi.map((item, index) => ({
@@ -743,7 +768,8 @@ const repApi = await storeEtape.getListePrepaMaint(code);
         etape_DATE: item.maint_ETAPE_REEL ?? null,
         etape_USER: item.maint_ETAPE_USER ?? item.intervenant ??item.maint_USER ?? "", 
         etape_UPLOAD: item.maint_ETAPE_UPLOAD,
-        etape_PJ:item.maint_ETAPE_PJ,
+        // Le GET de la liste doit renvoyer un indicateur, pas le contenu IMAGE.
+        etape_PJ: Number(item.maint_ETAPE_HAS_PJ ?? item.MAINT_ETAPE_HAS_PJ) === 1,
         enCours: Number(item.maint_ETAPE_ETAT) === 1,
         valide: Number(item.maint_ETAPE_ETAT) === 2,
         menuOpen: false,
@@ -791,7 +817,8 @@ const repApiREAL = await storeEtape.getListeRealMaint(code);
         const datePrev = item.maint_DATE_PREVU ??  null;
         const interv = item.maint_INTERV_REAL;
         const upload = item.maint_UPLOAD_REAL;
-        const pj = item.maint_PJ_REAL;
+        // Le GET de la liste doit renvoyer un indicateur, pas le contenu IMAGE.
+        const pj = Number(item.maint_REAL_HAS_PJ ?? item.MAINT_REAL_HAS_PJ) === 1;
 
         return {
           ligne_NUMERO: index + 1,
@@ -923,6 +950,127 @@ const onActionChange = (item) => {
       await storeEtape.getMarques();
 
     });
+
+
+// ═══════════════════════════════════════════════════════════════
+// ▸ DIALOG UPLOAD DRAG & DROP (Composant DialogUploadPJ)
+// ═══════════════════════════════════════════════════════════════
+const dialogUpload = ref(false);
+const uploadTargetItem = ref(null);
+
+const openUploadDialog = (item) => {
+  uploadTargetItem.value = item;
+  erreurFichierEtape.value = "";
+  dialogUpload.value = true;
+};
+
+const onFileSelectedFromDialog = ({ item, file }) => {
+  if (!item || !file) return;
+  const key = etapeFileKey(item);
+  selectedEtapeFiles.value = { ...selectedEtapeFiles.value, [key]: file };
+  erreurFichierEtape.value = "";
+  dialogUpload.value = false;
+};
+
+
+// ═══════════════════════════════════════════════════════════════
+// ▸ DÉCODAGE UNIVERSEL DES PJ (hex / base64 / data URL)
+// ═══════════════════════════════════════════════════════════════
+const decodeFiche = (ficheData) => {
+  let mimeType = "application/pdf";
+  let byteArray;
+
+  const fromBase64 = (b64) => {
+    const bin = atob(b64);
+    const arr = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+    return arr;
+  };
+
+  if (ficheData.startsWith("data:")) {
+    const match = ficheData.match(/^data:(.*?);base64,(.*)$/);
+    if (!match) throw new Error("Data URL invalide");
+    mimeType = match[1];
+    byteArray = fromBase64(match[2]);
+  } else if (/^[0-9A-Fa-f]+$/.test(ficheData) && ficheData.length % 2 === 0) {
+    const hex = ficheData.toUpperCase();
+    if (hex.startsWith("25504446"))       mimeType = "application/pdf";
+    else if (hex.startsWith("FFD8FF"))    mimeType = "image/jpeg";
+    else if (hex.startsWith("89504E47"))  mimeType = "image/png";
+    else if (hex.startsWith("52494646"))  mimeType = "image/webp";
+
+    byteArray = new Uint8Array(ficheData.length / 2);
+    for (let i = 0; i < ficheData.length; i += 2) {
+      byteArray[i / 2] = parseInt(ficheData.substring(i, i + 2), 16);
+    }
+  } else {
+    if (ficheData.startsWith("/9j/"))        mimeType = "image/jpeg";
+    else if (ficheData.startsWith("iVBOR"))  mimeType = "image/png";
+    else if (ficheData.startsWith("UklGR"))  mimeType = "image/webp";
+    else if (ficheData.startsWith("JVBER"))  mimeType = "application/pdf";
+    byteArray = fromBase64(ficheData);
+  }
+
+  return { byteArray, mimeType };
+};
+
+
+// ═══════════════════════════════════════════════════════════════
+// ▸ PRÉVISUALISATION DES PJ
+// ═══════════════════════════════════════════════════════════════
+const dialogPJ = ref(false);
+const filePJPreview = ref(null);
+const isImagePJ = ref(false);
+const isPDFPJ = ref(false);
+const loadingPJ = ref(false);
+
+const closePJPreview = () => {
+  dialogPJ.value = false;
+  if (filePJPreview.value) {
+    URL.revokeObjectURL(filePJPreview.value);
+    filePJPreview.value = null;
+  }
+};
+
+onBeforeUnmount(() => {
+  if (filePJPreview.value) URL.revokeObjectURL(filePJPreview.value);
+});
+
+const openPJPreview = async (item, fetchPJ) => {
+  const code = getMaintCode();
+  const etapeLigne = item.code || item.etape_LIBELLE;
+
+  if (!code || !etapeLigne) {
+    console.error("Données manquantes pour récupérer la PJ");
+    return;
+  }
+
+  try {
+    loadingPJ.value = true;
+    const ficheData = await fetchPJ(code, etapeLigne);
+    if (!ficheData) throw new Error("Aucun fichier trouvé");
+
+    const { byteArray, mimeType } = decodeFiche(ficheData);
+    const blob = new Blob([byteArray], { type: mimeType });
+
+    if (filePJPreview.value) URL.revokeObjectURL(filePJPreview.value);
+
+    filePJPreview.value = URL.createObjectURL(blob);
+    isImagePJ.value = mimeType.startsWith("image/");
+    isPDFPJ.value = mimeType === "application/pdf";
+    dialogPJ.value = true;
+  } catch (err) {
+    console.error("Erreur lors de la récupération du fichier :", err);
+  } finally {
+    loadingPJ.value = false;
+  }
+};
+
+const openPrepaPJPreview = (item) =>
+  openPJPreview(item, (code, etapeLigne) => storeEtape.fetchEtapePrepaPJ(code, etapeLigne));
+
+const openRealPJPreview = (item) =>
+  openPJPreview(item, (code, etapeLigne) => storeEtape.fetchEtapeRealPJ(code, etapeLigne));
 
 </script>
 
@@ -1176,7 +1324,7 @@ const onActionChange = (item) => {
               density="compact"
               hover
               hide-default-footer
-              class="custom-table1 dettab"
+              class="custom-table1 maint-table"
             >
             
               <template #headers="{ columns }">
@@ -1257,18 +1405,25 @@ const onActionChange = (item) => {
 
               <template v-slot:[`item.etape_PJ`]="{ item }">
                 <div class="d-flex align-center justify-center ga-1">
+                  <!-- Bouton Aperçu si fichier déjà en BDD -->
+                  <v-btn v-if="item.etape_PJ"
+                    icon="mdi-eye" size="x-small" variant="text"
+                    color="primary" density="compact" title="Aperçu"
+                    :loading="loadingPJ"
+                    @click.stop="openPrepaPJPreview(item)" />
+
+                  <!-- Upload via dialog drag & drop -->
                   <template v-if="uploadAutorise(item)">
                     <v-btn size="x-small" variant="tonal" color="primary" prepend-icon="mdi-paperclip"
-                      @click="$event.currentTarget.nextElementSibling.click()">
+                      @click="openUploadDialog(item)">
                       {{ selectedEtapeFiles[etapeFileKey(item)] ? "Changer" : "Joindre" }}
                     </v-btn>
-                    <input class="d-none" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.avif,application/pdf,image/jpeg,image/png,image/webp,image/avif"
-                      @change="chooseEtapeFile(item, $event)" />
                     <span v-if="selectedEtapeFiles[etapeFileKey(item)]" class="text-caption text-truncate" style="max-width: 110px">
                       {{ selectedEtapeFiles[etapeFileKey(item)].name }}
                     </span>
                   </template>
-                  <span v-if="!uploadAutorise(item)" class="text-grey text-caption">—</span>
+
+                  <span v-if="!uploadAutorise(item) && !item.etape_PJ" class="text-grey text-caption">—</span>
                 </div>
               </template>
             </v-data-table>
@@ -1324,7 +1479,7 @@ const onActionChange = (item) => {
               density="compact"
               hover
               hide-default-footer
-              class="custom-table1 dettab"
+              class="custom-table1 maint-table"
             >
               <template #headers="{ columns }">
                 <tr>
@@ -1504,17 +1659,24 @@ const onActionChange = (item) => {
 
               <template v-slot:[`item.etape_PJ`]="{ item }">
                 <div class="d-flex align-center justify-center ga-1">
+                  <!-- Bouton Aperçu si fichier déjà en BDD -->
+                  <v-btn v-if="item.etape_PJ"
+                    icon="mdi-eye" size="x-small" variant="text"
+                    color="primary" density="compact" title="Aperçu"
+                    :loading="loadingPJ"
+                    @click.stop="openRealPJPreview(item)" />
+
+                  <!-- Upload via dialog drag & drop -->
                   <template v-if="uploadAutorise(item)">
                     <v-btn size="x-small" variant="tonal" color="primary" icon="mdi-paperclip"
                       :aria-label="selectedEtapeFiles[etapeFileKey(item)] ? 'Changer le fichier' : 'Joindre un fichier'"
-                      @click="$event.currentTarget.nextElementSibling.click()" />
-                    <input class="d-none" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.avif,application/pdf,image/jpeg,image/png,image/webp,image/avif"
-                      @change="chooseEtapeFile(item, $event)" />
+                      @click="openUploadDialog(item)" />
                     <span v-if="selectedEtapeFiles[etapeFileKey(item)]" class="text-caption text-truncate" style="max-width: 90px">
                       {{ selectedEtapeFiles[etapeFileKey(item)].name }}
                     </span>
                   </template>
-                  <span v-if="!uploadAutorise(item)" class="text-grey text-caption">—</span>
+
+                  <span v-if="!uploadAutorise(item) && !item.etape_PJ" class="text-grey text-caption">—</span>
                 </div>
               </template>
 
@@ -1667,8 +1829,8 @@ const onActionChange = (item) => {
 
     <v-dialog v-model="dialogAjoutReal" max-width="580" scrim="black" persistent>
       <v-card class="pa-2 rounded-lg">
-        <v-card-title class="d-flex align-center font-weight-bold" style="color: #6200ea">
-          <v-icon color="deep-purple-accent-4" class="mr-2">mdi-plus-circle-outline</v-icon>
+        <v-card-title class="d-flex align-center font-weight-bold" style="color: #0e4934">
+          <v-icon color="#0e4934" class="mr-2">mdi-plus-circle-outline</v-icon>
           <span>Nouvelle étape de réalisation</span>
           <v-spacer />
           <v-btn icon="mdi-close" variant="text" size="small" :disabled="loadingAjoutReal" @click="dialogAjoutReal = false" />
@@ -1758,7 +1920,7 @@ const onActionChange = (item) => {
             Annuler
           </v-btn>
           <v-btn
-            color="deep-purple-accent-4"
+            color="#0e4934"
             variant="flat"
             density="compact"
             prepend-icon="mdi-plus"
@@ -1771,6 +1933,42 @@ const onActionChange = (item) => {
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <!-- ══════ Composant Dialog Upload Drag & Drop ══════ -->
+    <DialogUploadPJ
+      v-model="dialogUpload"
+      :target-item="uploadTargetItem"
+      @file-selected="onFileSelectedFromDialog"
+    />
+
+    <!-- ══════ Dialog Prévisualisation PJ ══════ -->
+    <v-dialog v-model="dialogPJ" max-width="900" persistent
+      @update:model-value="(v) => !v && closePJPreview()">
+      <v-card>
+        <v-card-title class="d-flex align-center">
+          <v-icon class="mr-2">mdi-file-eye</v-icon>
+          Aperçu pièce jointe
+          <v-spacer />
+          <v-btn icon="mdi-close" variant="text" size="small" @click="closePJPreview" />
+        </v-card-title>
+
+        <v-card-text class="d-flex justify-center">
+          <iframe v-if="isPDFPJ && filePJPreview" :src="filePJPreview"
+            style="width: 100%; height: 70vh; border: none;" />
+          <img v-else-if="isImagePJ && filePJPreview" :src="filePJPreview"
+            style="max-width: 100%; max-height: 70vh; object-fit: contain;" />
+          <div v-else>Format non pris en charge</div>
+        </v-card-text>
+
+        <v-divider />
+
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="outlined" color="red" @click="closePJPreview">Fermer</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
   </v-card>
 </template>
 
@@ -1811,7 +2009,7 @@ const onActionChange = (item) => {
 }
 
 .detail-maintenance-card .maint-code {
-  color: #7d2fdc;
+  color: #0f621e;
   font-weight: 700;
 }
 
@@ -1840,7 +2038,7 @@ const onActionChange = (item) => {
   margin-top: 5px;
   font-weight: 700;
   letter-spacing: 0.5px;
-  color: #1976d2;
+  color: #084715;
   padding: 0 0 4px 0;
 }
 
@@ -1939,8 +2137,15 @@ const onActionChange = (item) => {
   border: 1px solid #e0e0e0;
 }
 
+/* Header des tableaux d'étape - Vert Maintenance garanti contre tout style externe */
+.detail-maintenance-card .maint-table .v-table__wrapper > table > thead > tr,
+.detail-maintenance-card .maint-table .v-table__wrapper > table > thead > tr:hover,
+.detail-maintenance-card .maint-table .v-table__wrapper > table > thead > tr > th,
+.detail-maintenance-card .maint-table .v-table__wrapper > table > thead > tr:hover > th,
 .detail-maintenance-card .table-header {
+  background: #0e4934fb !important;
   background-color: #0e4934fb !important;
+  background-image: none !important;
   color: white !important;
   font-weight: 600 !important;
   text-transform: uppercase !important;

@@ -13,6 +13,7 @@
       <v-tab :to="{ name: 'rh-integration' }">INTEGRATION</v-tab>
       <v-tab :to="{ name: 'rh-employee' }">EMPLOYEE</v-tab>
       <v-tab :to="{ name: 'rh-params' }">PARAMÈTRAGE OUTIL</v-tab>
+      <v-tab :to="{ name: 'rh-formations' }">FORMATION</v-tab>
     </v-tabs>
   </v-card>
 </template>

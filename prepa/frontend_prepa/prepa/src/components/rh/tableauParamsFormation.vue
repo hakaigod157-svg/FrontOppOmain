@@ -20,6 +20,16 @@
             </template>
 
 
+            <!-- EN-TÊTES : CHECKBOX "TOUT COCHER" AU-DESSUS DU TITRE -->
+            <template v-for="key in checkboxKeys" v-slot:[`header.${key}`]="{ column }" :key="'h-' + key">
+                <div class="header-check">
+                    <span>{{ column.title }}</span>
+                    <v-checkbox :model-value="isColumnAll(key)" :indeterminate="isColumnSome(key)" hide-details
+                        density="compact" @update:model-value="val => toggleColumn(key, val)" />
+                </div>
+            </template>
+
+
         </v-data-table>
     </div>
     <!-- </div> -->
@@ -139,6 +149,26 @@ export default defineComponent({
 
         })
 
+        // Toutes les lignes de la colonne sont cochées ?
+        const isColumnAll = (key) =>
+            (props.items || []).length > 0 &&
+            props.items.every((it) => it[key] === 1);
+
+        // Certaines (mais pas toutes) ? → état indéterminé
+        const isColumnSome = (key) =>
+            (props.items || []).some((it) => it[key] === 1) && !isColumnAll(key);
+
+        // Coche / décoche toute la colonne
+        const toggleColumn = (key, val) => {
+            const value = val ? 1 : 0;
+            (props.items || []).forEach((item) => {
+                if (item[key] !== value) {
+                    item[key] = value;
+                    emit("checkbox-change", { item, key, value });
+                }
+            });
+        };
+
 
 
 
@@ -147,6 +177,9 @@ export default defineComponent({
             getColor,
             hasGroupedHeaders,
             onCheckboxChange,
+            isColumnAll,
+            isColumnSome,
+            toggleColumn,
         };
     }
 
@@ -261,5 +294,60 @@ export default defineComponent({
     justify-content: center;
     align-items: center;
     width: 100%;
+}
+
+/* Case en haut, titre en bas */
+.header-check {
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+    line-height: 1;
+}
+
+.header-check .v-input,
+.header-check .v-selection-control {
+    flex: none;
+    width: auto;
+    min-height: 20px !important;
+}
+
+.header-check .v-selection-control__wrapper {
+    height: 20px;
+    width: 20px;
+}
+
+/* Case colorée différemment des en-têtes */
+.header-check .v-selection-control .v-icon {
+    color: #D81B60 !important;
+    opacity: 1 !important;
+    font-size: 18px !important;
+}
+
+.header-check .v-selection-control__input {
+    background: #ffffff;
+    border-radius: 4px;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.header-check span {
+    color: #000;
+    font-weight: 700;
+}
+
+/* En-tête de 2e ligne : compact, titres longs non coupés */
+.v-data-table.blue-header20 thead tr:nth-child(2) th {
+    height: auto !important;
+    padding: 2px 4px !important;
+    min-width: 70px !important;
+    width: auto !important;
+    white-space: normal !important;
+    text-align: center;
+    vertical-align: middle;
 }
 </style>

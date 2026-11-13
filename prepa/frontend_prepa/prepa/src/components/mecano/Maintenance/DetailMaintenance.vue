@@ -21,9 +21,13 @@ const tab = ref("prepa");
 
 const loadingEtapes = ref(false);
 const loadingActionPrepa = ref(false);
+const dialogDateValidation = ref(false);
+const etapeAValider = ref(null);
+const typeEtapeAValider = ref(null);
+const dateValidationSelectionnee = ref(new Date());
 const selectedEtapeFiles = ref({});
 const erreurFichierEtape = ref("");
-const MAX_ETAPE_FILE_SIZE = 10_000_000;
+const MAX_ETAPE_FILE_SIZE = 10000000;
 const ALLOWED_ETAPE_FILE_EXTENSIONS = ["pdf", "jpg", "jpeg", "png", "webp"];
 
 const storeDemande = useDemandeMaintenance();
@@ -53,6 +57,7 @@ const headersEtapesReal = [
       { title: "Type d'exécution", key: "exect", align: "start", width: "140px" },
       { title: "Fournisseur", key: "fournisseur", align: "start", width: "140px" },
       { title: "Marque", key: "marque", align: "start", width: "120px" },
+      { title: "Référence", key: "reference", align: "start", width: "120px" },
       { title: "Prix (Ar)", key: "prix", align: "end", width: "115px" },
       { title: "Pièce Jointe", key: "etape_PJ", align: "center", width: "105px" },
       { title: "Date réalisation", key: "etape_DATE", align: "center", width: "135px" },
@@ -109,6 +114,21 @@ const listeMarquePiece = computed(() => {
         .map((e) => e.enum_CODE)
         .filter(Boolean);
 });
+
+const listeReferences = computed(() => {
+      return (storeEtape.reference)
+        .map((e) => e.enum_CODE)
+        .filter(Boolean);
+});
+
+const listeLibellesEtape = computed(() => {
+      return (storeEtape.parametre)
+        .map((e) => e.enum_CODE)
+        .filter(Boolean);
+});
+
+
+
 
 
 
@@ -369,18 +389,39 @@ const addBusinessDays = (date, days) => {
 
 
 
-const validerEtapePrepaAction = async (item) => {
+const ouvrirDatePickerValidation = (item, type) => {
+      etapeAValider.value = item;
+      typeEtapeAValider.value = type;
+      dateValidationSelectionnee.value = new Date();
+      dialogDateValidation.value = true;
+    };
+
+const confirmerValidationEtape = async () => {
+      if (!etapeAValider.value || !dateValidationSelectionnee.value) return;
+      const dateChoisie = dayjs(dateValidationSelectionnee.value).format("YYYY-MM-DD");
+      dialogDateValidation.value = false;
+      if (typeEtapeAValider.value === "prepa") {
+        await validerEtapePrepaAction(etapeAValider.value, dateChoisie);
+      } else {
+        await validerEtapeRealDirect(etapeAValider.value, dateChoisie);
+      }
+      etapeAValider.value = null;
+      typeEtapeAValider.value = null;
+    };
+
+const validerEtapePrepaAction = async (item, datePrepa) => {
       const code = getMaintCode();
-      if (!code) {
+      const key = etapeFileKey(item);
+      if (!code || !datePrepa) {
         return;
       }
       loadingActionPrepa.value = true;
       try {
-        const key = etapeFileKey(item);
         const file = selectedEtapeFiles.value[key];
         await storeEtape.validerEtapePrepa(
           code,
           item.code || item.etape_LIBELLE,
+          datePrepa,
           file
         );
         if (file) {
@@ -389,6 +430,7 @@ const validerEtapePrepaAction = async (item) => {
           selectedEtapeFiles.value = updated;
         }
         await chargerDonneesEtEtapes(false);
+        window.location.reload();
       } catch (err) {
         console.error("Erreur lors de la validation PREPA :", err);
       } finally {
@@ -398,13 +440,14 @@ const validerEtapePrepaAction = async (item) => {
 
 const loadingActionReal = ref(false);
 
-const validerEtapeRealDirect = async (item) => {
+const validerEtapeRealDirect = async (item, dateReal) => {
       if (incomplet(item)) return;
       if (!item.action)return;
       const code = getMaintCode();
+      const key = etapeFileKey(item);
+      if (!dateReal) return;
       loadingActionReal.value = true;
       try {
-        const key = etapeFileKey(item);
         const file = selectedEtapeFiles.value[key];
         const verif = isVerification(item);
         await storeEtape.validerEtapeReal(code, {
@@ -414,7 +457,7 @@ const validerEtapeRealDirect = async (item) => {
           fournisseur: verif ? null : (item.fournisseur || null),
           marque: verif ? null : (item.marque || null),
           prix: verif ? null : (item.prix !== null && item.prix !== undefined && item.prix !== "" ? Number(item.prix) : null),
-          dateReal: null,
+          dateReal,
         }, file);
         if (file) {
           const updated = { ...selectedEtapeFiles.value };
@@ -422,6 +465,7 @@ const validerEtapeRealDirect = async (item) => {
           selectedEtapeFiles.value = updated;
         }
         await chargerDonneesEtEtapes(false);
+        window.location.reload();
       } catch (err) {
         console.error("Erreur validation étape REAL :", err);
       } finally {
@@ -431,6 +475,8 @@ const validerEtapeRealDirect = async (item) => {
 
 const etapeFileKey = (item) => `${item?.nature || "ETAPE"}:${item?.code || item?.etape_LIBELLE || item?.ligne_NUMERO}`;
 const uploadAutorise = (item) => Number(item?.etape_UPLOAD) === 1 && !!item?.enCours;
+
+
 const chooseEtapeFile = (item, event) => {
   const file = event.target.files?.[0];
   event.target.value = "";
@@ -543,6 +589,7 @@ const soumettreAjoutReal = async () => {
         });
         dialogAjoutReal.value = false;
         await chargerDonneesEtEtapes(false);
+        window.location.reload();
       } catch (err) {
         console.error("Erreur ajout étape REAL :", err);
         erreurAjoutReal.value = "Erreur lors de l'enregistrement de l'étape de réalisation.";
@@ -608,10 +655,8 @@ const loadingCloture = ref(false);
 const dialogConfirmationCloture = ref(false);
 const demandeEtat = computed(() => Number(
   itemData.value?.demande_ETAT ??
-  itemData.value?.DEMANDE_ETAT ??
   itemData.value?.demande_etat ??
   linkedDemande.value?.demande_ETAT ??
-  linkedDemande.value?.DEMANDE_ETAT ??
   linkedDemande.value?.demande_etat
 ));
 const demandeCloturee = computed(() => demandeTerminee.value || demandeEtat.value === 99);
@@ -768,7 +813,7 @@ console.log("PREPA reçu :", JSON.stringify(repApi?.[0]));
         etape_DATE: item.maint_ETAPE_REEL ?? null,
         etape_USER: item.maint_ETAPE_USER ?? item.intervenant ??item.maint_USER ?? "", 
         etape_UPLOAD: item.maint_ETAPE_UPLOAD,
-        // Le GET de la liste doit renvoyer un indicateur, pas le contenu IMAGE.
+        
         etape_PJ: Number(item.maint_ETAPE_HAS_PJ ?? item.MAINT_ETAPE_HAS_PJ) === 1,
         enCours: Number(item.maint_ETAPE_ETAT) === 1,
         valide: Number(item.maint_ETAPE_ETAT) === 2,
@@ -817,9 +862,8 @@ const repApiREAL = await storeEtape.getListeRealMaint(code);
         const datePrev = item.maint_DATE_PREVU ??  null;
         const interv = item.maint_INTERV_REAL;
         const upload = item.maint_UPLOAD_REAL;
-        // Le GET de la liste doit renvoyer un indicateur, pas le contenu IMAGE.
         const pj = Number(item.maint_REAL_HAS_PJ ?? item.MAINT_REAL_HAS_PJ) === 1;
-
+        const refPiece = item.maint_REFERENCE_PIECE;
         return {
           ligne_NUMERO: index + 1,
           etape_LIBELLE: interv,
@@ -833,6 +877,7 @@ const repApiREAL = await storeEtape.getListeRealMaint(code);
           fournisseur: fnr,
           prix: prix,
           marque: marque,
+          reference : refPiece,
           enCours: false, 
           valide: prepaTerminee && !!dateReal,
           menuOpen: false,
@@ -878,6 +923,8 @@ const chargerDonneesEtEtapes = async (choisirOnglet = true) => {
         await storeEtape.getTypeActionReal();
         await storeEtape.getFournisseurs();
         await storeEtape.getMarques();
+        await storeEtape.getReferences();
+        await storeEtape.getParametreRhtra();
         if (choisirOnglet) choisirOngletInitial();
       } finally {
         loadingEtapes.value = false;
@@ -895,6 +942,7 @@ const cloturerMaintenance = async () => {
             demandeTerminee.value = true;
             dialogConfirmationCloture.value = false;
             await chargerDonneesEtEtapes();
+            window.location.reload();
           }
         } finally {
           loadingCloture.value = false;
@@ -948,6 +996,8 @@ const onActionChange = (item) => {
       await storeEtape.getTypeExecution();
       await storeEtape.getFournisseurs();
       await storeEtape.getMarques();
+      await storeEtape.getParametreRhtra();
+      await storeEtape.getReferences();
 
     });
 
@@ -1259,7 +1309,7 @@ const openRealPJPreview = (item) =>
           slider-color="deep-purple-accent-4"
         >
           <v-tab value="prepa" class="tab-item">
-            PRÉPARATION
+            ETAPE
             <v-badge
               :content="etapesPrepa.length"
               color="#FF8A65"
@@ -1268,7 +1318,7 @@ const openRealPJPreview = (item) =>
             />
           </v-tab>
           <v-tab value="realisation" class="tab-item">
-            RÉALISATION
+            TECHNIQUE
             <v-badge
               :content="etapesReal.length"
               color="#388e3c"
@@ -1372,7 +1422,7 @@ const openRealPJPreview = (item) =>
                       color="success"
                       class="tb-date-btn"
                       :loading="loadingActionPrepa"
-                      @click="validerEtapePrepaAction(item)"
+                      @click="ouvrirDatePickerValidation(item, 'prepa')"
                     >
                       Valider
                     </v-btn>
@@ -1511,10 +1561,6 @@ const openRealPJPreview = (item) =>
                 <span>{{ item.etape_DATE_PREV ? formatDate(item.etape_DATE_PREV) : "-" }}</span>
               </template>
 
-
-
-
-
               <!-- Colonne Action -->
               <template v-slot:[`item.action`]="{ item }">
                 <template v-if="!item.etape_DATE && item.enCours">
@@ -1595,6 +1641,28 @@ const openRealPJPreview = (item) =>
                 </template>
                 <template v-else>
                   <span class="text-caption">{{ item.marque || "-" }}</span>
+                </template>
+              </template>
+
+
+              <template v-slot:[`item.reference`]="{ item }">
+                <template v-if="!item.etape_DATE && item.enCours">
+                  <v-autocomplete 
+                    v-model="item.reference"
+                    :items="listeReferences"
+                    placeholder="Reference de la pièce..."
+                    density="compact"
+                    variant="underlined"
+                    clearable
+                    hide-details
+                    class="table-inline-input"
+                    :disabled="isVerification(item)"
+                    :error="requis(item) && !item.reference"
+                    
+                  />
+                </template>
+                <template v-else>
+                  <span class="text-caption">{{ item.reference || "-" }}</span>
                 </template>
               </template>
 
@@ -1694,8 +1762,8 @@ const openRealPJPreview = (item) =>
                       class="tb-date-btn"
                       prepend-icon="mdi-check"
                       :loading="loadingActionReal"
-                      :disabled="incomplet(item)" || {{ (!item.action) }}
-                      @click="validerEtapeRealDirect(item)"
+                      :disabled="incomplet(item) || !item.action"
+                      @click="ouvrirDatePickerValidation(item, 'real')"
                     >
                       Valider
                     </v-btn>
@@ -1851,13 +1919,16 @@ const openRealPJPreview = (item) =>
 
           <v-row dense>
             <v-col cols="12">
-              <v-text-field
+              <v-autocomplete
                 v-model="formAjoutReal.intervReal"
+                :items="listeLibellesEtape"
                 label="Intervention / Libellé de l'étape *"
                 placeholder="Ex: Changement filtre à huile..."
                 variant="outlined"
                 density="compact"
                 required
+                clearable
+                no-data-text="Aucune étape disponible"
               />
             </v-col>
             <v-col cols="12" md="6">
@@ -1965,6 +2036,31 @@ const openRealPJPreview = (item) =>
         <v-card-actions>
           <v-spacer />
           <v-btn variant="outlined" color="red" @click="closePJPreview">Fermer</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog v-model="dialogDateValidation" max-width="360">
+      <v-card>
+        <v-card-title>Choisir la date de réalisation</v-card-title>
+        <v-card-text class="d-flex justify-center">
+          <v-date-picker
+            v-model="dateValidationSelectionnee"
+            color="success"
+            show-adjacent-months
+          />
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" @click="dialogDateValidation = false">Annuler</v-btn>
+          <v-btn
+            color="success"
+            variant="flat"
+            :loading="typeEtapeAValider === 'prepa' ? loadingActionPrepa : loadingActionReal"
+            @click="confirmerValidationEtape"
+          >
+            Confirmer
+          </v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>

@@ -12,7 +12,7 @@ const props = defineProps({
   },
   maxFileSize: {
     type: Number,
-    default: 10_000_000, // 10 Mo
+    default: 10000000, // 10 Mo
   },
   allowedExtensions: {
     type: Array,
@@ -53,7 +53,7 @@ const validateAndEmitFile = (file) => {
   }
 
   if (file.size > props.maxFileSize) {
-    const maxMo = Math.round(props.maxFileSize / 1_000_000);
+    const maxMo = Math.round(props.maxFileSize / 1000000);
     errorMessage.value = `Le fichier dépasse la limite de ${maxMo} Mo.`;
     return;
   }

@@ -148,7 +148,8 @@ const enregistrer = async () => {
     await store.updateDemande(code.value, payload);
 
     showMessage("Demande modifiée avec succès");
-    router.go(-1)
+    await router.push({ name: "maintenance-demande" });
+    window.location.reload();
     // await chargerDemande();
     
   } catch (e) {

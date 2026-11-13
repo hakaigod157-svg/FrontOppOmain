@@ -15,6 +15,8 @@ export const useEtapeStore = defineStore("etapeStore", {
         fournisseurs :[],
         marques :[],
         exect :[],
+        reference : [],
+        parametre : [],
         loading: false,
     }),
 
@@ -237,17 +239,15 @@ export const useEtapeStore = defineStore("etapeStore", {
 /**
  * VALIDATION ANA ETAPE PREPARATION (Mecanicien)
  * MANAO POST
- * @param {*} maintCode 
- * @param {*} etapeLigne 
- * @returns 
  */
-        async validerEtapePrepa(maintCode, etapeLigne, file = null) {
+        async validerEtapePrepa(maintCode, etapeLigne, datePrepa, file = null) {
             const sessionId = localStorage.getItem("sessionId");
             const { handleLogout } = useLogout();
 
             const formData = new FormData();
             formData.append("MAINT_CODE_LIGNE", maintCode);
             formData.append("MAINT_ETAPE_LIGNE", etapeLigne);
+            if (datePrepa) formData.append("MAINT_ETAPE_REEL", datePrepa);
             if (file) formData.append("file", file, file.name);
 
             this.loading = true;
@@ -612,6 +612,95 @@ export const useEtapeStore = defineStore("etapeStore", {
                     );
                 }
                 return this.exect;
+            } catch (error) {
+                console.error("Tena tsy azo ilay marques mec : " , error);
+                if (error?.response?.status === 401) {
+                    await handleLogout();
+                }
+                return null;
+            }
+
+        },
+        
+        async getReferences(){
+            const sessionId = localStorage.getItem("sessionId");
+            const { handleLogout } = useLogout();
+            
+            this.loading = true;
+            try {
+                const refefff = await axios.get(Config.SERVER_URL + "api/getRef",
+                    {
+                        headers:{
+                            "Authorization" : sessionId
+                        }
+                    }
+                );
+                if (Array.isArray(refefff.data)) {
+                    this.reference = refefff.data.map(
+                        (mrkp) => ({ ...mrkp })
+                    );
+                } else if (
+                    refefff.data &&
+                    Array.isArray(refefff.data.target)
+                ) {
+                    this.reference = refefff.data.target.map(
+                        (mrkp) => ({ ...mrkp })
+                    );
+                } else {
+                    this.reference = [];
+                    console.log(
+                        "TSISY Marques ao am base fa mande requeten'ise"
+                    );
+                }
+                return this.reference;
+            } catch (error) {
+                console.error("Tena tsy azo ilay marques mec : " , error);
+                if (error?.response?.status === 401) {
+                    await handleLogout();
+                }
+                return null;
+            }
+
+        },
+        
+        async getParametreRhtra(){
+            const sessionId = localStorage.getItem("sessionId");
+            const { handleLogout } = useLogout();
+            
+            this.loading = true;
+            try {
+                const refefff = await axios.get(Config.SERVER_URL + "api/getParametreRhtra",
+                    {
+                        headers:{
+                            "Authorization" : sessionId
+                        }
+                    }
+                );
+                let listeParametres = null;
+                if (Array.isArray(refefff.data)) {
+                    listeParametres = refefff.data;
+                } else if (refefff.data) {
+                    const candidats = [refefff.data.target, refefff.data.data, refefff.data.result];
+                    for (let i = 0; i < candidats.length; i += 1) {
+                        if (Array.isArray(candidats[i])) {
+                            listeParametres = candidats[i];
+                            break;
+                        }
+                    }
+                }
+                if (listeParametres) {
+                    this.parametre = listeParametres.map(
+                        (mrkp) => typeof mrkp === "object" && mrkp !== null
+                            ? Object.assign({}, mrkp)
+                            : mrkp
+                    );
+                } else {
+                    this.parametre = [];
+                    console.log(
+                        "TSISY Marques ao am base fa mande requeten'ise"
+                    );
+                }
+                return this.parametre;
             } catch (error) {
                 console.error("Tena tsy azo ilay marques mec : " , error);
                 if (error?.response?.status === 401) {

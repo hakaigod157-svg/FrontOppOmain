@@ -44,8 +44,8 @@ const WEEK_DAYS = [
   "Dimanche"
 ];
 
-const CLOCK_INTERVAL_MS = 60_000;
-const REFRESH_INTERVAL_MS = 60_000;
+const CLOCK_INTERVAL_MS = 60000;
+const REFRESH_INTERVAL_MS = 60000;
 const MONTH_GRID_SIZE = 42;
 
 const MAINTENANCE_FILTERS = [
@@ -173,7 +173,7 @@ const getIsoWeekNumber = (date) => {
   target.setHours(0, 0, 0, 0);
   target.setDate(target.getDate() + 4 - (target.getDay() || 7));
   const yearStart = new Date(target.getFullYear(), 0, 1);
-  return Math.ceil(((target - yearStart) / 86_400_000 + 1) / 7);
+  return Math.ceil(((target - yearStart) / 86400000 + 1) / 7);
 };
 
 /** "2 – 8 novembre 2026" ou "28 oct. – 3 nov. 2026" */
@@ -370,7 +370,7 @@ const getStepsForDate = (event, day) => {
   if (exact.length) return exact;
 
   const fallback =
-    event.steps.find((step) => step.date.getTime() >= time) ?? event.steps.at(-1);
+    event.steps.find((step) => step.date.getTime() >= time) ?? event.steps[event.steps.length - 1];
   return fallback ? [fallback] : [];
 };
 
@@ -802,9 +802,6 @@ const jumpToDayView = (date) => {
           />
         </v-radio-group>
 
-
-
-          <!-- Sélecteur de vues : Mensuel / Hebdomadaire / Par jour -->
           <v-btn-toggle
             v-model="currentView"
             mandatory

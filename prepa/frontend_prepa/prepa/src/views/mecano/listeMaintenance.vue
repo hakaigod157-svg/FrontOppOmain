@@ -230,9 +230,7 @@ const voir = (item) => {
       v-if="dialogVisible"
       v-model="dialogVisible"
       :persistent="true"
-      width="1610px"
-      max-width="120vw"
-      height="850px"
+      
       class="maintenance-dialog"
     >
       <DetailMaintenance

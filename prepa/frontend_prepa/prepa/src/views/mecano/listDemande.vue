@@ -50,7 +50,7 @@ const chargerDemandes = async () => {
 
 const onSaved = (code) => {
   demandeClignotante.value = code || "";
-  chargerDemandes();
+  window.location.reload();
 };
 
 const headersDemandes = [
@@ -269,7 +269,7 @@ onMounted(async () => {
       </v-btn>
       <FormDialog
         v-model="showForm"
-        s@saved="onSaved"
+        @saved="onSaved"
       />
       <EditDialog
         v-model="showEdit"
@@ -373,9 +373,7 @@ onMounted(async () => {
       v-if="dialogVisibleDetail"
       v-model="dialogVisibleDetail"
       :persistent="true"
-      width="1610"
-      max-width="120vw"
-      height="850px"
+      
       class="maintenance-dialog"
     >
       <DetailMaintenance

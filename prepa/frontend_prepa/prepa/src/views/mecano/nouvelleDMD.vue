@@ -106,6 +106,7 @@ const save = async () => {
     console.log("Demande créée :", form.DEMANDE_CODE);
 
     await router.push({ name: "maintenance-demande" });
+    window.location.reload();
   } catch (error) {
     console.error("Erreur lors de la création :", error);
   } finally {

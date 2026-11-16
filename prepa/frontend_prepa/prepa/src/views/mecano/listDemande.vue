@@ -49,8 +49,8 @@ const chargerDemandes = async () => {
 };
 
 const onSaved = (code) => {
-  demandeClignotante.value = code || "";
   window.location.reload();
+  demandeClignotante.value = code || "";
 };
 
 const headersDemandes = [

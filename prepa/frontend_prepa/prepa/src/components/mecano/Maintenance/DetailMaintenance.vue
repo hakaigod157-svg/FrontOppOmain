@@ -122,9 +122,11 @@ const listeReferences = computed(() => {
 });
 
 const listeLibellesEtape = computed(() => {
-      return (storeEtape.parametre)
-        .map((e) => e.enum_CODE)
-        .filter(Boolean);
+      return [...new Set((storeEtape.parametre || [])
+        .map((e) => String(
+          e?.code 
+        ).trim())
+        .filter(Boolean))];
 });
 
 
@@ -402,6 +404,8 @@ const confirmerValidationEtape = async () => {
       dialogDateValidation.value = false;
       if (typeEtapeAValider.value === "prepa") {
         await validerEtapePrepaAction(etapeAValider.value, dateChoisie);
+      } else if (typeEtapeAValider.value === "intervention") {
+        await validerEtapePrepaAction(etapeAValider.value, dateChoisie);
       } else {
         await validerEtapeRealDirect(etapeAValider.value, dateChoisie);
       }
@@ -430,7 +434,7 @@ const validerEtapePrepaAction = async (item, datePrepa) => {
           selectedEtapeFiles.value = updated;
         }
         await chargerDonneesEtEtapes(false);
-        window.location.reload();
+        // window.location.reload();
       } catch (err) {
         console.error("Erreur lors de la validation PREPA :", err);
       } finally {
@@ -465,7 +469,7 @@ const validerEtapeRealDirect = async (item, dateReal) => {
           selectedEtapeFiles.value = updated;
         }
         await chargerDonneesEtEtapes(false);
-        window.location.reload();
+        // window.location.reload();
       } catch (err) {
         console.error("Erreur validation étape REAL :", err);
       } finally {
@@ -553,6 +557,7 @@ const formAjoutReal = ref({
 
 
   const ouvrirDialogAjoutReal = () => {
+      if (demandeCloturee.value || interventionCloturee.value) return;
       formAjoutReal.value = {
         intervReal: null,
         datePrevu: dayjs().format("YYYY-MM-DD"),
@@ -566,6 +571,10 @@ const formAjoutReal = ref({
     };
 
 const soumettreAjoutReal = async () => {
+      if (demandeCloturee.value || interventionCloturee.value) {
+        dialogAjoutReal.value = false;
+        return;
+      }
       if (!formAjoutReal.value.intervReal || !formAjoutReal.value.intervReal.trim()) {
         erreurAjoutReal.value = "Le libellé de l'intervention est obligatoire.";
         return;
@@ -589,7 +598,7 @@ const soumettreAjoutReal = async () => {
         });
         dialogAjoutReal.value = false;
         await chargerDonneesEtEtapes(false);
-        window.location.reload();
+        // window.location.reload();
       } catch (err) {
         console.error("Erreur ajout étape REAL :", err);
         erreurAjoutReal.value = "Erreur lors de l'enregistrement de l'étape de réalisation.";
@@ -665,10 +674,27 @@ const toutesEtapesRealValidees = computed(() => {
   return etapesReal.value.length > 0 && etapesReal.value.every((e) => e.valide);
 });
 
+const etapeTechnique = computed(() => {
+  const classification = String(displayClassification.value || "").trim().toLocaleUpperCase();
+  return etapesPrepa.value.find((etape) =>
+    String(etape.etape_LIBELLE || "").trim().toLocaleUpperCase() === classification
+  ) || null;
+});
+const interventionCloturee = computed(() => !!etapeTechnique.value?.valide);
+const toutesEtapesPrepaValidees = computed(() =>
+  etapesPrepa.value.length > 0 && etapesPrepa.value.every((etape) => etape.valide)
+);
+
 const choisirOngletInitial = () => {
   const prepaTerminee =
     etapesPrepa.value.length > 0 && etapesPrepa.value.every((e) => e.valide);
-  tab.value = prepaTerminee && etapesReal.value.length > 0 ? "realisation" : "prepa";
+  // Une fois toutes les lignes ETAPE terminées, garder l'onglet ETAPE visible
+  // afin que l'action finale « Clôturer demande » soit directement accessible.
+  if (prepaTerminee) {
+    tab.value = "prepa";
+    return;
+  }
+  tab.value = etapeTechnique.value?.enCours ? "realisation" : "prepa";
 };
 
 
@@ -848,8 +874,8 @@ const repApiREAL = await storeEtape.getListeRealMaint(code);
     if (Array.isArray(repApiREAL) && repApiREAL.length > 0) {
 
 
-      const prepaTerminee = etapesPrepa.value.length === 0 ||
-        etapesPrepa.value.every((e) => Number(e.etat_ID) === 2);
+      // Réutilise la même détection que le repère orange dans l'onglet ETAPE.
+      const etapeTechniqueActive = !!etapeTechnique.value?.enCours;
 
       const liste = repApiREAL.map((item, index) => {
         const action = item.maint_ACTION_REAL ;
@@ -878,28 +904,20 @@ const repApiREAL = await storeEtape.getListeRealMaint(code);
           prix: prix,
           marque: marque,
           reference : refPiece,
-          enCours: false, 
-          valide: prepaTerminee && !!dateReal,
+          enCours: etapeTechniqueActive && !dateReal,
+          valide: !!dateReal,
           menuOpen: false,
           tempDate: "",
           nature: "REAL",
           code: interv,
           valeur: interv,
           ordre: index + 1,
-          etat_ID: (prepaTerminee && dateReal) ? 2 : 0,
+          etat_ID: dateReal ? 2 : (etapeTechniqueActive ? 1 : 0),
           raw: item,
         };
       });
 
       
-      if (prepaTerminee) {
-        const idx = liste.findIndex((e) => !e.valide);
-        if (idx !== -1) {
-          liste[idx].enCours = true;
-          liste[idx].etat_ID = 1;
-        }
-      }
-
       etapesReal.value = liste;
     } else {
       etapesReal.value = [];
@@ -925,6 +943,7 @@ const chargerDonneesEtEtapes = async (choisirOnglet = true) => {
         await storeEtape.getMarques();
         await storeEtape.getReferences();
         await storeEtape.getParametreRhtra();
+       
         if (choisirOnglet) choisirOngletInitial();
       } finally {
         loadingEtapes.value = false;
@@ -963,6 +982,7 @@ const incomplet = (item) => requis(item) && (!item.fournisseur || !item.marque |
 
 const onActionChange = (item) => {
       if (isVerification(item)) {
+        item.exect= "INTERNE";
         item.fournisseur = "";
         item.marque = "";
         item.prix = null;
@@ -1399,7 +1419,15 @@ const openRealPJPreview = (item) =>
 
               <!-- Colonne Libellé -->
               <template v-slot:[`item.etape_LIBELLE`]="{ item }">
-                <span class="font-weight-bold">{{ item.etape_LIBELLE }}</span>
+                <div class="technical-step-label">
+                  <span
+                    v-if="item.code === etapeTechnique?.code"
+                    class="technical-step-pin"
+                    title="Étape technique"
+                    aria-label="Étape technique"
+                  ></span>
+                  <span class="font-weight-bold">{{ item.etape_LIBELLE }}</span>
+                </div>
               </template>
 
               <!-- Colonne Date prévue -->
@@ -1415,7 +1443,7 @@ const openRealPJPreview = (item) =>
                     <span class="cell-text">{{ formatDate(item.etape_DATE) }}</span>
                   </template>
 
-                  <template v-else-if="item.enCours">
+              <template v-else-if="item.enCours && item.code !== etapeTechnique?.code">
                     <v-btn
                       size="x-small"
                       variant="tonal"
@@ -1484,6 +1512,29 @@ const openRealPJPreview = (item) =>
               <b>{{ etapesPrepaRealiseesCount }}</b> réalisée<span v-if="etapesPrepaRealiseesCount > 1">s</span> &bull;
               <b>{{ etapesPrepa.length - etapesPrepaRealiseesCount }}</b> restante<span v-if="etapesPrepa.length - etapesPrepaRealiseesCount > 1">s</span>.
             </div>
+
+            <div
+              v-if="toutesEtapesPrepaValidees"
+              class="d-flex justify-center py-3"
+            >
+              <v-chip
+                v-if="demandeCloturee"
+                size="medium"
+                color="green-darken-1"
+                variant="flat"
+                class="font-weight-bold closure-control"
+                prepend-icon="mdi-check-decagram"
+              >Demande clôturée</v-chip>
+              <v-btn
+                v-else
+                color="success"
+                variant="flat"
+                class="px-5 font-weight-bold closure-control"
+                prepend-icon="mdi-flag-checkered"
+                :loading="loadingCloture"
+                @click="dialogConfirmationCloture = true"
+              >Clôturer demande</v-btn>
+            </div>
           </div>
 
           <div v-else-if="tab === 'realisation'" class="tab1 tableau-maint-wrapper">
@@ -1497,7 +1548,7 @@ const openRealPJPreview = (item) =>
                 variant="flat"
                 prepend-icon="mdi-plus-circle"
                 class="text-none font-weight-bold"
-                :disabled="demandeCloturee"
+                :disabled="demandeCloturee || interventionCloturee"
                 @click="ouvrirDialogAjoutReal"
               >
                 Ajouter une réalisation
@@ -1777,29 +1828,18 @@ const openRealPJPreview = (item) =>
             <v-alert v-if="erreurFichierEtape" type="error" density="compact" class="mt-2">{{ erreurFichierEtape }}</v-alert>
 
             <div
-              v-if="(toutesEtapesRealValidees && !demandeCloturee) || demandeCloturee"
+              v-if="toutesEtapesRealValidees && etapeTechnique && !etapeTechnique.valide && !demandeCloturee"
               class="d-flex justify-center py-3"
             >
-              <v-chip
-                v-if="demandeCloturee"
-                size="medium"
-                color="green-darken-1"
-                variant="flat"
-                class="font-weight-bold closure-control"
-                prepend-icon="mdi-check-decagram"
-              >
-                Demande clôturée
-              </v-chip>
               <v-btn
-                v-else
                 color="success"
                 variant="flat"
                 class="px-5 font-weight-bold closure-control"
-                prepend-icon="mdi-flag-checkered"
-                :loading="loadingCloture"
-                @click="dialogConfirmationCloture = true"
+                prepend-icon="mdi-check"
+                :loading="loadingActionPrepa"
+                @click="ouvrirDatePickerValidation(etapeTechnique, 'intervention')"
               >
-                Clôturer la demande
+                Clôturer intervention
               </v-btn>
             </div>
 
@@ -2296,6 +2336,30 @@ const openRealPJPreview = (item) =>
   justify-content: space-between;
   align-items: center;
   gap: 8px;
+}
+
+.technical-step-label {
+  display: flex;
+  align-items: flex-start;
+}
+
+.technical-step-pin {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  flex: 0 0 8px;
+  margin: 2px 3px 0 0;
+  border-radius: 50%;
+  background: #ff8a00;
+  box-shadow: 0 0 0 2px rgba(255, 138, 0, 0.16), 0 0 8px rgba(255, 138, 0, 0.8);
+  animation: technical-pin-glow 1.8s ease-in-out infinite;
+  vertical-align: top;
+}
+
+@keyframes technical-pin-glow {
+  50% {
+    box-shadow: 0 0 0 4px rgba(255, 138, 0, 0.1), 0 0 11px rgba(255, 138, 0, 0.95);
+  }
 }
 
 .detail-maintenance-card .tb-date-btn {

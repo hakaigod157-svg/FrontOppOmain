@@ -53,7 +53,7 @@ const headersMaintenance = [
     }),
   },
   // { title: "Étape en cours", key: "etape_EN_COURS" , width:"150px" },
-  { title: "Durée en jours", key: "duree" , align: "center"},
+  // { title: "Durée en jours", key: "duree" , align: "center"},
   { title: "Actions", key: "actions", sortable: true, align: "center" },
   // { title: "Modifié par", key: "maint_USERMODIF" , align: "center"},
   // { title: "Date", key: "maint_DATE", align: "center" },

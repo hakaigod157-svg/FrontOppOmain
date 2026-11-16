@@ -17,6 +17,7 @@ export const useEtapeStore = defineStore("etapeStore", {
         exect :[],
         reference : [],
         parametre : [],
+        deadLine: null,
         loading: false,
     }),
 
@@ -338,7 +339,7 @@ export const useEtapeStore = defineStore("etapeStore", {
                             MAINT_CODE_REAL: maintCode,
                             MAINT_INTERV_REAL: data.intervReal ,
                             MAINT_DATE_PREVU: data.datePrevu || null,
-                            MAINT_ACTION_REAL: data.actionReal || null,
+                            MAINT_ACTION_REAL: data.actionReal ,
                             // MAINT_FNR_REAL: data.fnrReal || "",
                             // MAINT_PRIX_REAL: data.prixReal || 0,
                             // MAINT_MRAQUE_MARQUE: data.marqueReal || "",
@@ -709,6 +710,47 @@ export const useEtapeStore = defineStore("etapeStore", {
                 return null;
             }
 
+        },
+
+
+        async getDeadline(maintCode, etapeLigne) {
+            if (!maintCode || !etapeLigne) {
+                console.warn("[getDeadline] maintCode ou etapeLigne manquant, appel annulé");
+                this.deadLine = null;
+                return null;
+            }
+
+            const sessionId = localStorage.getItem("sessionId");
+            const { handleLogout } = useLogout();
+            this.loading = true;
+            try {
+                const response = await axios.get(
+                    Config.SERVER_URL + "api/getDeadline",
+                    {
+                        headers: { Authorization: sessionId },
+                        params: {
+                            MAINT_CODE: maintCode,
+                            ETAPE_LIGNE: etapeLigne,
+                        },
+                    }
+                );
+
+                let data = response.data;
+                if (data?.target !== undefined) data = data.target;
+                if (Array.isArray(data)) data = data[0] ?? null;
+
+                this.deadLine = data;
+                return data;
+            } catch (error) {
+                console.error("Erreur lors de la récupération de la deadline :", error);
+                this.deadLine = null;
+                if (error.response?.status === 401) {
+                    await handleLogout();
+                }
+                return null;
+            } finally {
+                this.loading = false;
+            }
         },
         
 

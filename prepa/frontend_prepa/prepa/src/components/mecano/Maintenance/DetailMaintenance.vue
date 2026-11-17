@@ -391,13 +391,37 @@ const addBusinessDays = (date, days) => {
 
 
 
-const ouvrirDatePickerValidation = (item, type) => {
+const ouvrirDatePickerValidation = async (item, type) => {
       etapeAValider.value = item;
       typeEtapeAValider.value = type;
-      dateValidationSelectionnee.value = new Date();
+      if (type === "intervention" || type === "real") {
+        const code = getMaintCode();
+        // Les lignes TECHNIQUES héritent de la deadline de l'étape ETAPE_LIGNE
+        // marquée en orange, qui représente l'étape technique de préparation.
+        const etapeDeadline = etapeTechnique.value;
+        if (code && etapeDeadline?.code) {
+          await storeEtape.getDeadline(code, etapeDeadline.code);
+        }
+      }
+      const start = dateValidationMin.value ? dayjs(dateValidationMin.value) : null;
+      const end = dateValidationMax.value ? dayjs(dateValidationMax.value) : null;
+      let selected = dayjs();
+      if (start?.isValid() && selected.isBefore(start, "day")) selected = start;
+      if (end?.isValid() && selected.isAfter(end, "day")) selected = end;
+      dateValidationSelectionnee.value = selected.toDate();
       dialogDateValidation.value = true;
     };
 
+const dateValidationMin = computed(() => {
+  const date = linkedDemande.value?.demande_DATE_MODIF || itemData.value?.demande_DATE_MODIF || linkedMaintenance.value?.maint_DATE;
+  return date && dayjs(date).isValid() ? dayjs(date).format("YYYY-MM-DD") : null;
+});
+const dateValidationMax = computed(() => {
+  if (typeEtapeAValider.value !== "intervention" && typeEtapeAValider.value !== "real") return null;
+  const deadline = storeEtape.deadLine;
+  const date = deadline?.date || deadline?.DATE || deadline?.maint_DATE_PREVU || deadline;
+  return date && dayjs(date).isValid() ? dayjs(date).format("YYYY-MM-DD") : null;
+});
 const confirmerValidationEtape = async () => {
       if (!etapeAValider.value || !dateValidationSelectionnee.value) return;
       const dateChoisie = dayjs(dateValidationSelectionnee.value).format("YYYY-MM-DD");
@@ -2063,7 +2087,7 @@ const openRealPJPreview = (item) =>
           <v-btn icon="mdi-close" variant="text" size="small" @click="closePJPreview" />
         </v-card-title>
 
-        <v-card-text class="d-flex justify-center">
+        <v-card-text class="d-flex flex-column align-center">
           <iframe v-if="isPDFPJ && filePJPreview" :src="filePJPreview"
             style="width: 100%; height: 70vh; border: none;" />
           <img v-else-if="isImagePJ && filePJPreview" :src="filePJPreview"
@@ -2088,7 +2112,21 @@ const openRealPJPreview = (item) =>
             v-model="dateValidationSelectionnee"
             color="success"
             show-adjacent-months
-          />
+            locale="fr-FR"
+            :min="dateValidationMin"
+            :max="dateValidationMax"
+          >
+            <template #day="{ item, props }">
+              <v-btn
+                v-bind="props"
+                :color="item.isoDate === dateValidationMax ? 'success' : props.color"
+                :variant="item.isoDate === dateValidationMax ? 'flat' : props.variant"
+                :class="{ 'deadline-date': item.isoDate === dateValidationMax }"
+              >
+                {{ item.localized }}
+              </v-btn>
+            </template>
+          </v-date-picker>
         </v-card-text>
         <v-card-actions>
           <v-spacer />

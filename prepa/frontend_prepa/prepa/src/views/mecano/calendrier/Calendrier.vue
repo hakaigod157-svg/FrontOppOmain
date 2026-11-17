@@ -1,18 +1,4 @@
 <script setup>
-/**
- * Calendrier de maintenance : toute la logique est ici, l'affichage est dans
- * les composants du dossier components (CalendarMonthView, CalendarWeekView,
- * CalendarDayView, SlotDialog, MaintenanceChip, MaintenanceDetail).
- *
- * Sommaire :
- *   1. Configuration (filtres, styles, sources d'étapes…)
- *   2. Dates
- *   3. Règles métier des maintenances
- *   4. Chargement des données
- *   5. Horloge
- *   6. Navigation et grilles (mois / semaine / jour)
- *   7. Dialogue, snackbar et actions
- */
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { maintStore } from "@/store/Maintenance/maintenance_store";
@@ -361,8 +347,7 @@ const buildMaintenanceEvent = ({ maintenance, code, schedule, demand }) => {
 
 // ---------- Projection d'un événement sur un jour donné ----------
 const isActiveOn = (event, day) =>
-  day.getTime() >= event.startDate.getTime() &&
-  day.getTime() <= event.endDate.getTime();
+  event.steps.some((step) => step.date.getTime() === day.getTime());
 
 const getStepsForDate = (event, day) => {
   const time = day.getTime();
@@ -468,8 +453,7 @@ const getEventsForDate = (date) => {
 // les deux lectures doivent rester séquentielles.
 const fetchRawSteps = async (code) => {
   const preparation = await etapeStore.getListePrepaMaint(code);
-  const realization = await etapeStore.getListeRealMaint(code);
-  return { preparation, realization };
+  return { preparation, realization: [] };
 };
 
 const loadMaintenances = async () => {

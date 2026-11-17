@@ -48,9 +48,15 @@ const chargerDemandes = async () => {
   );
 };
 
-const onSaved = (code) => {
-  window.location.reload();
+const onSaved = async (code) => {
+  showForm.value = false;
+  showEdit.value = false;
+  await chargerDemandes();
   demandeClignotante.value = code || "";
+};
+
+const onValidated = () => {
+  window.location.reload();
 };
 
 const headersDemandes = [
@@ -389,9 +395,9 @@ onMounted(async () => {
       v-model="ponctuelValider"
       :demande="demandeAValider"
       :mode="modeValidation"
-      @saved="onSaved"
-      @validated="onSaved"
-      @refused="onSaved"
+      @saved="onValidated"
+      @validated="onValidated"
+      @refused="onValidated"
     />
   </div>
 </template>

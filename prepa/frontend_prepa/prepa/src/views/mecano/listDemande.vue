@@ -1,5 +1,6 @@
 <script setup>
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted, computed, watch, nextTick } from "vue";
+import { useRoute, useRouter } from "vue-router";
 
 import TableVirtuelle from "@/components/mecano/TableVirtuelle.vue";
 import FormDialog from "@/components/mecano/Demande/FormDialog.vue";
@@ -13,6 +14,8 @@ import { useEtapeStore } from "@/store/Maintenance/etape_store";
 import { getMaintenanceTypeColor } from "@/utils/maintenanceTypeColor";
 
 const searchQuery = ref("");
+const route = useRoute();
+const router = useRouter();
 const store = useDemandeMaintenance();
 const storeEtape = useEtapeStore();
 
@@ -30,6 +33,19 @@ const demandeClignotante = ref("");
 const nouvelleDemande = () => {
   showForm.value = true;
 };
+
+// Le raccourci « Nouvelle demande » du dashboard arrive ici avec nouvelle=1.
+watch(
+  () => route.query.nouvelle,
+  async (value) => {
+    if (value !== "1") return;
+    showForm.value = true;
+    const query = { ...route.query };
+    delete query.nouvelle;
+    await router.replace({ query });
+  },
+  { immediate: true }
+);
 
 const chargerDemandes = async () => {
   await Promise.all([store.fetchDemandes(), store.getTypeMaint()]);
@@ -51,8 +67,13 @@ const chargerDemandes = async () => {
 const onSaved = async (code) => {
   showForm.value = false;
   showEdit.value = false;
+  searchQuery.value = "";
+  demandeClignotante.value = "";
   await chargerDemandes();
-  demandeClignotante.value = code || "";
+  if (code) {
+    await nextTick();
+    demandeClignotante.value = String(code);
+  }
 };
 
 const onValidated = () => {
@@ -511,7 +532,8 @@ onMounted(async () => {
 
 <style>
 @keyframes demande-clignote {
-  85% { background-color: #ebfbeb; }
+  0%, 100% { background-color: #ffffff; }
+  50% { background-color: #b9efb9; }
 }
 
 .nouvelle-demande-clignote > td {

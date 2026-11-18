@@ -292,6 +292,7 @@ export const useEtapeStore = defineStore("etapeStore", {
                 MAINT_FNR_REAL: data.fournisseur,
                 MAINT_PRIX_REAL: data.prix ?? 0,
                 MAINT_MRAQUE_MARQUE: data.marque,
+                MAINT_REFERENCE_PIECE: data.reference,
                 MAINT_DATE_REAL: data.dateReal,
             };
             Object.entries(champs).forEach(([nom, valeur]) => {

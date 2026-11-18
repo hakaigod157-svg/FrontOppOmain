@@ -6,12 +6,10 @@
         <v-card density="compact">
           <v-tabs
             v-model="tabs"
-            
             bg-color="#d7ead5"
             color="deep-purple-accent-4"
             align-tabs="left"
             density="compact"
-            
           >
             <v-tab :to="{ name: 'maintenance-demande' }">DEMANDES</v-tab>
             <v-tab :to="{ name: 'maintenance-liste' }">MAINTENANCE</v-tab>
@@ -22,8 +20,20 @@
 
         <v-spacer></v-spacer>
 
+        <!-- Bouton Dashboard OMAIN -->
+        <v-btn
+          variant="outlined"
+          size="small"
+          color="#2e7d32"
+          class="mr-2"
+          @click="openDashboard"
+        >
+          <v-icon start size="18">mdi-view-dashboard-outline</v-icon>
+          OMAIN
+        </v-btn>
+
         <div>
-          <u>Login</u> :&nbsp;<b><span style="color: #388e3c margin='20px'">{{ user }}</span></b>
+          <u>Login</u> :&nbsp;<b><span style="color: #388e3c">{{ user }}</span></b>
         </div>
         &nbsp;&nbsp;
 
@@ -35,12 +45,10 @@
               height: '10px',
               borderRadius: '50%',
               display: 'inline-block',
-              
             }"
           ></span>
         </div>
 
-        <!-- Bouton Home -->
         <div>
           <v-btn @click="onHome">
             <v-img :width="20" :src="require('@/assets/home.png')"></v-img>
@@ -48,30 +56,94 @@
         </div>
       </v-app-bar>
 
-      <!-- Contenu principal -->
       <v-main>
         <v-container fluid class="pa-4">
-          <router-view />
+          <router-view :key="refreshKey" />
         </v-container>
       </v-main>
+
+      <Teleport to="body">
+        <Transition name="dashboard-fade">
+          <TableauDeBord
+            v-if="showDashboard"
+            :stats="dashboardStats"
+            :user="user"
+            @close="refreshCurrentView"
+            @login="refreshCurrentView"
+            @back-home="refreshCurrentView"
+            @new-request="onDashboardNewRequest"
+            @open-item="onDashboardItem"
+            @open-maintenance="onDashboardOpenMaintenance"
+          />
+        </Transition>
+      </Teleport>
     </v-app>
   </v-card>
 </template>
 
 <script>
-import { defineComponent, ref, onMounted, onUnmounted } from "vue";
+import { defineComponent, ref, onMounted, onUnmounted, computed } from "vue";
 import { useRouter } from "vue-router";
 import Config from "@/utils/config.js";
 import useSessionTimeout from "@/utils/useSessionTimeout";
+import TableauDeBord from "@/components/mecano/TableauDeBord/TableauDeBord.vue";
+import { maintStore } from "@/store/Maintenance/maintenance_store";
+import { useDemandeMaintenance } from "@/store/Maintenance/demande_store";
 
 export default defineComponent({
+  components: { TableauDeBord },
   setup() {
     const user = localStorage.getItem("username") || "Invité";
     const isOnline = ref(navigator.onLine);
     const tabs = ref(null);
+    const showDashboard = ref(false);
+    const refreshKey = ref(0);
 
     const setOnline = () => (isOnline.value = true);
     const setOffline = () => (isOnline.value = false);
+
+    // Store pour alimenter les stats du dashboard
+    const store = maintStore();
+    const demandeStore = useDemandeMaintenance();
+
+    const dashboardStats = computed(() => {
+      const demandes = demandeStore.demandes || [];
+      const pendingItems = demandes.filter((d) => Number(d.demande_ETAT ?? d.DEMANDE_ETAT) === 1);
+      const inProgressItems = demandes
+        .filter((d) => Number(d.demande_ETAT ?? d.DEMANDE_ETAT) === 2)
+        .map((demand) => {
+          const maintenance = store.maintnces.find((item) =>
+            String(item.maint_DEMANDE ?? item.MAINT_DEMANDE ?? "") ===
+            String(demand.demande_CODE ?? demand.DEMANDE_CODE ?? "")
+          );
+          return {
+            ...demand,
+            maintenanceCode: maintenance?.maint_CODE ?? maintenance?.MAINT_CODE ?? "",
+            maintenanceClassification:
+              maintenance?.maint_CLASSIFICATION ?? maintenance?.MAINT_CLASSIFICATION ?? "",
+          };
+        });
+
+      return {
+        overdue: 0,
+        completed: 0,
+        inProgress: inProgressItems.length,
+        pending: pendingItems.length,
+        inProgressItems,
+        pendingItems,
+        newRequests: 0,
+      };
+    });
+
+    const openDashboard = async () => {
+      await Promise.all([demandeStore.fetchDemandes(), store.getMaintenances()]);
+      showDashboard.value = true;
+    };
+
+    const refreshCurrentView = () => {
+      showDashboard.value = false;
+      refreshKey.value += 1;
+    };
 
     onMounted(() => {
       window.addEventListener("online", setOnline);
@@ -83,14 +155,62 @@ export default defineComponent({
       window.removeEventListener("offline", setOffline);
     });
 
+    const router = useRouter();
+
     const onHome = () => {
       window.location.hash = "#/AccueilPage";
     };
 
-    const router = useRouter();
+    const onDashboardHome = () => {
+      refreshCurrentView();
+    };
+
+    const onDashboardNewRequest = () => {
+      showDashboard.value = false;
+      router.push({ name: "maintenance-demande", query: { nouvelle: "1" } });
+    };
+
+    const onDashboardItem = (item, kind) => {
+      showDashboard.value = false;
+      if (kind === "maintenance" && item.maintenanceCode) {
+        router.push({
+          name: "maintenance-liste",
+          query: { highlightMaint: String(item.maintenanceCode) },
+        });
+        return;
+      }
+
+      router.push({
+        name: "maintenance-demande",
+        query: { highlightDemand: String(item.demande_CODE ?? "") },
+      });
+    };
+
+    const onDashboardOpenMaintenance = (code) => {
+      showDashboard.value = false;
+      router.push({
+        name: "maintenance-liste",
+        query: { highlightMaint: String(code), openMaint: String(code) },
+      });
+    };
+
     useSessionTimeout(Config.DURRE_SESSION, router);
 
-    return { user, isOnline, onHome, tabs };
+    return {
+      user,
+      isOnline,
+      onHome,
+      tabs,
+      showDashboard,
+      refreshKey,
+      openDashboard,
+      refreshCurrentView,
+      dashboardStats,
+      onDashboardHome,
+      onDashboardNewRequest,
+      onDashboardItem,
+      onDashboardOpenMaintenance,
+    };
   },
 });
 </script>
@@ -102,11 +222,10 @@ export default defineComponent({
   pointer-events: none;
   user-select: none;
 }
-u{
+u {
   font-family: Helvetica;
   font-display: auto;
 }
-
 
 .v-data-table tbody td {
   font-size: 0.89rem;
@@ -114,5 +233,17 @@ u{
   overflow: hidden;
   text-overflow: ellipsis;
   padding: 8px 12px;
+}
+
+/* Transition du dashboard overlay */
+.dashboard-fade-enter-active {
+  transition: opacity 0.25s ease-out;
+}
+.dashboard-fade-leave-active {
+  transition: opacity 0.2s ease-in;
+}
+.dashboard-fade-enter-from,
+.dashboard-fade-leave-to {
+  opacity: 0;
 }
 </style>

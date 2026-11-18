@@ -484,6 +484,7 @@ const validerEtapeRealDirect = async (item, dateReal) => {
           exect: item.exect || null,
           fournisseur: verif ? null : (item.fournisseur || null),
           marque: verif ? null : (item.marque || null),
+          reference: verif ? null : (item.reference || null),
           prix: verif ? null : (item.prix !== null && item.prix !== undefined && item.prix !== "" ? Number(item.prix) : null),
           dateReal,
         }, file);
@@ -493,7 +494,6 @@ const validerEtapeRealDirect = async (item, dateReal) => {
           selectedEtapeFiles.value = updated;
         }
         await chargerDonneesEtEtapes(false);
-        // window.location.reload();
       } catch (err) {
         console.error("Erreur validation étape REAL :", err);
       } finally {
@@ -997,19 +997,38 @@ const cloturerMaintenance = async () => {
 const isVerification = (item) => {
       return String(item.action || "").toUpperCase() === "VERIFICATION";
     };
+const isRetour = (item) => {
+      return String(item.action || "").toUpperCase() === "RETOUR";
+    };
+const RemplacementVe = (item) => {
+      return String(item.action || "").toUpperCase() === "REMPLACEMENT";
+    };
+const RenouvVe = (item) => {
+      return String(item.action || "").toUpperCase() === "RENOUVELLEMENT";
+    };
+
+
+
+
     
 
 
-const requis = (item) => String(item.action || "").toUpperCase().startsWith("REMPLAC");
+const requis = (item) => {
+  const a = String(item.action || "").toUpperCase();
+  return a.startsWith("REMPLAC") || a === "RENOUVELLEMENT";
+}
 
 const incomplet = (item) => requis(item) && (!item.fournisseur || !item.marque || !(Number(item.prix) > 0)) ;
 
 const onActionChange = (item) => {
-      if (isVerification(item)) {
+      if (isVerification(item) || isRetour(item)) {
         item.exect= "INTERNE";
-        item.fournisseur = "";
-        item.marque = "";
+        item.fournisseur = null;
+        item.marque = null;
+        item.reference= null;
         item.prix = null;
+      } else if (RenouvVe(item)) {
+        item.exect= "EXTERNE";
       }
       
     };
@@ -1117,6 +1136,7 @@ const filePJPreview = ref(null);
 const isImagePJ = ref(false);
 const isPDFPJ = ref(false);
 const loadingPJ = ref(false);
+const nomFichierPJ = ref("piece-jointe");
 
 const closePJPreview = () => {
   dialogPJ.value = false;
@@ -1152,6 +1172,13 @@ const openPJPreview = async (item, fetchPJ) => {
     filePJPreview.value = URL.createObjectURL(blob);
     isImagePJ.value = mimeType.startsWith("image/");
     isPDFPJ.value = mimeType === "application/pdf";
+    const extensionParType = {
+      "application/pdf": "pdf",
+      "image/jpeg": "jpg",
+      "image/png": "png",
+      "image/webp": "webp",
+    };
+    nomFichierPJ.value = `piece-jointe-${String(etapeLigne).replace(/[^a-zA-Z0-9_-]/g, "-")}.${extensionParType[mimeType] || "bin"}`;
     dialogPJ.value = true;
   } catch (err) {
     console.error("Erreur lors de la récupération du fichier :", err);
@@ -1223,11 +1250,11 @@ const openRealPJPreview = (item) =>
 
     <v-divider class="my-2"></v-divider>
 
-    <!-- Informations principales (3 cartes alignées comme RH mais aérées) -->
+    <!-- Informations principales -->
     <v-card-text class="pt-0">
       <div class="info-principale-cards">
         <v-row dense class="info-row-container">
-          <!-- Carte 1 : Demande -->
+          <!-- Demande -->
           <v-col cols="12" md="3">
             <v-card class="info-card" outlined>
               <v-card-title class="card-title">DEMANDE</v-card-title>
@@ -1256,7 +1283,7 @@ const openRealPJPreview = (item) =>
             </v-card>
           </v-col>
 
-          <!-- Carte 2 : Véhicule & Travaux -->
+          <!--Véhicule & Travaux-->
           <v-col cols="12" md="5">
             <v-card class="info-card" outlined>
               <v-card-title class="card-title">VÉHICULE & TRAVAUX</v-card-title>
@@ -1296,7 +1323,7 @@ const openRealPJPreview = (item) =>
             </v-card>
           </v-col>
 
-          <!-- Carte 3 : Traçabilité -->
+          <!--Traçabilité-->
           <v-col cols="12" md="4">
             <v-card class="info-card tracabilite-card" outlined>
               <v-card-title class="card-title" style="justify-content: flex-end">TRAÇABILITÉ</v-card-title>
@@ -1619,19 +1646,16 @@ const openRealPJPreview = (item) =>
                 </tr>
               </template>
 
-              <!-- Colonne N° -->
               <template v-slot:[`item.ligne_NUMERO`]="{ item }">
                 <span class="font-weight-bold text-medium-emphasis">
                   #{{ item.ligne_NUMERO }}
                 </span>
               </template>
 
-              <!-- Colonne Libellé -->
               <template v-slot:[`item.etape_LIBELLE`]="{ item }">
                 <span class="font-weight-bold">{{ item.etape_LIBELLE }}</span>
               </template>
 
-              <!-- Colonne Date prévue -->
               <template v-slot:[`item.etape_DATE_PREV`]="{ item }">
                 <span>{{ item.etape_DATE_PREV ? formatDate(item.etape_DATE_PREV) : "-" }}</span>
               </template>
@@ -1657,7 +1681,6 @@ const openRealPJPreview = (item) =>
                 </template>
               </template>
 
-              <!-- Colonne Type d'exécution -->
               <template v-slot:[`item.exect`]="{ item }">
                 <template v-if="!item.etape_DATE && item.enCours">
                   <v-autocomplete
@@ -1688,7 +1711,8 @@ const openRealPJPreview = (item) =>
                     clearable
                     hide-details
                     class="table-inline-input"
-                    :disabled="isVerification(item)"
+                    :disabled="isVerification(item) || isRetour(item)"
+
                     :error="requis(item) && !item.fournisseur"
                   />
                 </template>
@@ -1709,7 +1733,8 @@ const openRealPJPreview = (item) =>
                     clearable
                     hide-details
                     class="table-inline-input"
-                    :disabled="isVerification(item)"
+                    :disabled="isVerification(item) || isRetour(item)"
+
                     :error="requis(item) && !item.marque"
                     
                   />
@@ -1719,7 +1744,7 @@ const openRealPJPreview = (item) =>
                 </template>
               </template>
 
-
+              <!-- REFERENCE -->
               <template v-slot:[`item.reference`]="{ item }">
                 <template v-if="!item.etape_DATE && item.enCours">
                   <v-autocomplete 
@@ -1731,7 +1756,7 @@ const openRealPJPreview = (item) =>
                     clearable
                     hide-details
                     class="table-inline-input"
-                    :disabled="isVerification(item)"
+                    :disabled="isVerification(item) || isRetour(item)"
                     :error="requis(item) && !item.reference"
                     
                   />
@@ -1741,11 +1766,6 @@ const openRealPJPreview = (item) =>
                 </template>
               </template>
 
-
-
-
-
-              <!-- Colonne Prix -->
               <template v-slot:[`item.prix`]="{ item }">
                 <template v-if="!item.etape_DATE && item.enCours">
                   <v-text-field
@@ -1759,7 +1779,7 @@ const openRealPJPreview = (item) =>
                   hide-details
                   :error="prixInvalide(item.prix)"
                   class="table-inline-input text-right"
-                  :disabled="isVerification(item)"
+                  :disabled="isVerification(item) || isRetour(item)"
                   @keydown="bloquerCaracteres"
                   @blur="corrigerPrix(item)"
                 />
@@ -1775,7 +1795,6 @@ const openRealPJPreview = (item) =>
 
 
 
-              <!-- Colonne Date réalisation -->
               <template v-slot:[`item.etape_DATE`]="{ item }">
                 <div class="d-flex align-center justify-center">
                   <template v-if="item.etape_DATE">
@@ -1788,7 +1807,7 @@ const openRealPJPreview = (item) =>
                 </div>
               </template>
 
-              <!-- Colonne Statut -->
+
               <template v-slot:[`item.etape_STATUT`]="{ item }">
                 <v-chip
                   size="x-small"
@@ -1802,14 +1821,12 @@ const openRealPJPreview = (item) =>
 
               <template v-slot:[`item.etape_PJ`]="{ item }">
                 <div class="d-flex align-center justify-center ga-1">
-                  <!-- Bouton Aperçu si fichier déjà en BDD -->
                   <v-btn v-if="item.etape_PJ"
                     icon="mdi-eye" size="x-small" variant="text"
                     color="primary" density="compact" title="Aperçu"
                     :loading="loadingPJ"
                     @click.stop="openRealPJPreview(item)" />
 
-                  <!-- Upload via dialog drag & drop -->
                   <template v-if="uploadAutorise(item)">
                     <v-btn size="x-small" variant="tonal" color="primary" icon="mdi-paperclip"
                       :aria-label="selectedEtapeFiles[etapeFileKey(item)] ? 'Changer le fichier' : 'Joindre un fichier'"
@@ -1823,7 +1840,6 @@ const openRealPJPreview = (item) =>
                 </div>
               </template>
 
-              <!-- Colonne Validation -->
               <template v-slot:[`item.actions`]="{ item }">
                 <div class="d-flex align-center justify-center">
                   <template v-if="item.etape_DATE">
@@ -1874,7 +1890,6 @@ const openRealPJPreview = (item) =>
             </div>
           </div>
 
-          <!-- Ito ONGLET DESCRIPTION -->
           <div v-else-if="tab === 'description'" class="pa-4">
             <h4 class="text-subtitle-2 mb-2 font-weight-bold" style="color: #388e3c">
               Motif & Description de l'intervention
@@ -1897,7 +1912,6 @@ const openRealPJPreview = (item) =>
             </v-row>
           </div>
 
-          <!-- ONGLETS PIÈCES REQUISES -->
           <!-- <div v-else-if="tab === 'pieces'" class="pa-6 text-center">
             <v-icon size="40" color="grey-lighten-1" class="mb-2">mdi-cog-box</v-icon>
             <div class="text-body-2 text-medium-emphasis">
@@ -2077,30 +2091,27 @@ const openRealPJPreview = (item) =>
     />
 
     <!-- ══════ Dialog Prévisualisation PJ ══════ -->
-    <v-dialog v-model="dialogPJ" max-width="900" persistent
+    <v-dialog v-model="dialogPJ" max-width="1000" width="92vw" persistent
       @update:model-value="(v) => !v && closePJPreview()">
-      <v-card>
-        <v-card-title class="d-flex align-center">
-          <v-icon class="mr-2">mdi-file-eye</v-icon>
-          Aperçu pièce jointe
+      <v-card class="pj-preview-card">
+
+        <v-card-title class="d-flex align-center py-2">
+
+          <v-icon size="small" class="mr-2">mdi-file-eye</v-icon>
+
+          <span class="text-body-1">Aperçu pièce jointe</span>
           <v-spacer />
-          <v-btn icon="mdi-close" variant="text" size="small" @click="closePJPreview" />
+              <v-btn v-if="filePJPreview" icon="mdi-download" variant="text" size="small" :href="filePJPreview" :download="nomFichierPJ" title="Télécharger" />
+              <v-btn icon="mdi-close" variant="text" size="small" @click="closePJPreview" />
         </v-card-title>
 
-        <v-card-text class="d-flex flex-column align-center">
-          <iframe v-if="isPDFPJ && filePJPreview" :src="filePJPreview"
-            style="width: 100%; height: 70vh; border: none;" />
-          <img v-else-if="isImagePJ && filePJPreview" :src="filePJPreview"
-            style="max-width: 100%; max-height: 70vh; object-fit: contain;" />
-          <div v-else>Format non pris en charge</div>
+        <v-card-text class="pj-preview-content pa-3">
+          <iframe v-if="isPDFPJ && filePJPreview" :src="filePJPreview" :title="nomFichierPJ" class="pj-preview-pdf" />
+          <div v-else-if="isImagePJ && filePJPreview" class="pj-preview-image-wrap">
+            <img :src="filePJPreview" :alt="nomFichierPJ" class="pj-preview-image" />
+          </div>
+          <div v-else class="text-center pa-8">Aperçu indisponible pour ce format. <a v-if="filePJPreview" :href="filePJPreview" :download="nomFichierPJ">Télécharger le fichier</a></div>
         </v-card-text>
-
-        <v-divider />
-
-        <v-card-actions>
-          <v-spacer />
-          <v-btn variant="outlined" color="red" @click="closePJPreview">Fermer</v-btn>
-        </v-card-actions>
       </v-card>
     </v-dialog>
 
@@ -2149,7 +2160,6 @@ const openRealPJPreview = (item) =>
 
 
 <style>
-/* ===== Card Container (hauteur fixe pour éviter tout saut lors du changement d'onglet) ===== */
 .detail-maintenance-card {
   height: 680px;
   display: flex;
@@ -2422,5 +2432,46 @@ const openRealPJPreview = (item) =>
 .detail-maintenance-card .table-inline-input :deep(.v-field) {
   padding-left: 0 !important;
   padding-right: 0 !important;
+}
+
+.pj-preview-card {
+  height: min(82vh, 820px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.pj-preview-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.pj-preview-pdf {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 50vh;
+  border: 0;
+  border: 1px solid #e0e0e0;
+  background: white;
+}
+
+.pj-preview-image-wrap {
+  width: 100%;
+  height: 100%;
+  min-height: 50vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: auto;
+  background: #f5f5f5;
+}
+
+.pj-preview-image {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
 }
 </style>

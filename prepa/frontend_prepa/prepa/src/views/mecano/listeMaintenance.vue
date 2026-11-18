@@ -136,6 +136,20 @@ const chargerMaintenances = async () => {
 
 onMounted(async () => {
   await chargerMaintenances();
+  const requestedCode = String(route.query.openMaint || "");
+  if (!requestedCode) return;
+
+  const maintenance = storeMtnce.maintnces.find((item) =>
+    String(item.maint_CODE || item.MAINT_CODE || "") === requestedCode
+  );
+  if (maintenance) {
+    selectedMaintenance.value = maintenance;
+    dialogVisible.value = true;
+  }
+
+  const query = { ...route.query };
+  delete query.openMaint;
+  router.replace({ name: "maintenance-liste", query });
 });
 
 const handleRowClick = (item) => {

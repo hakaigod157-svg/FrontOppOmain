@@ -5,9 +5,9 @@ import { maintStore } from "@/store/Maintenance/maintenance_store";
 import { useEtapeStore } from "@/store/Maintenance/etape_store";
 import { useDemandeMaintenance } from "@/store/Maintenance/demande_store";
 import { getMaintenanceTypeColor } from "@/utils/maintenanceTypeColor";
-import CalendarDayView from "@/components/mecano/Calendrier/CalendarDayView.vue";
-import CalendarMonthView from "@/components/mecano/Calendrier/CalendarMonthView.vue";
-import CalendarWeekView from "@/components/mecano/Calendrier/CalendarWeekView.vue";
+import VueJour from "@/components/mecano/Calendrier/VueJour.vue";
+import VueMois from "@/components/mecano/Calendrier/VueMois.vue";
+import VueSemaine from "@/components/mecano/Calendrier/VueSemaine.vue";
 import SlotDialog from "@/components/mecano/Calendrier/SlotDialog.vue";
 import CalendarLegend from "@/components/mecano/Calendrier/CalendarLegend.vue";
 
@@ -415,7 +415,7 @@ const openMaintenanceInList = (maintenance) => {
 
   router.push({
     name: "maintenance-liste",
-    query: { highlightMaint: String(code) }
+    query: { highlightMaint: String(code), openMaint: String(code) }
   });
 };
 
@@ -823,9 +823,9 @@ const jumpToDayView = (date) => {
       </div>
     </v-card>
 
-    <!-- CORPS DU CALENDRIER : une seule vue à la fois -->
+   
     <v-card class="calendar-main-card" elevation="2">
-      <CalendarMonthView
+      <VueMois
         v-if="currentView === 'month'"
         :cells="monthCells"
         :week-day-names="WEEK_DAYS"
@@ -835,7 +835,7 @@ const jumpToDayView = (date) => {
         @open-slot="openSlotDialog"
       />
 
-      <CalendarWeekView
+      <VueSemaine
         v-else-if="currentView === 'week'"
         :days="weekDays"
         :hours="HOUR_SLOTS"
@@ -846,7 +846,7 @@ const jumpToDayView = (date) => {
         @open-slot="openSlotDialog"
       />
 
-      <CalendarDayView
+      <VueJour
         v-else
         :day="selectedDay"
         :maintenances="selectedDayMaintenances"

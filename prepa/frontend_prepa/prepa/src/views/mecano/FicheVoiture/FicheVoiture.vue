@@ -1,12 +1,14 @@
 <script setup>
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import TableVirtuelle from "@/components/mecano/TableVirtuelle.vue";
+import SelecteurAffichage from "@/components/mecano/FicheVoiture/SelecteurAffichage.vue";
 
 import imageDamas from "@/assets/damas.jpg";
 import imageBt50 from "@/assets/bt50.jpeg";
 import imageGeely from "@/assets/geely.jpeg";
 
 const searchQuery = ref("");
+const viewMode = ref("table"); // 'table' | 'grid'
 
 const selectedVehicule = ref(null);
 const panelVisible = ref(false);
@@ -73,6 +75,22 @@ const vehicules = ref([
   },
 ]);
 
+const vehiculesFiltres = computed(() => {
+  const query = searchQuery.value.trim().toLocaleLowerCase("fr");
+  if (!query) return vehicules.value;
+
+  return vehicules.value.filter((vehicule) =>
+    [
+      vehicule.voiture_IMMAT,
+      vehicule.voiture_MARQUE,
+      vehicule.voiture_ANNEE,
+      vehicule.voiture_MODELE,
+      vehicule.voiture_KM,
+      vehicule.statut,
+    ].some((value) => String(value ?? "").toLocaleLowerCase("fr").includes(query))
+  );
+});
+
 const headersVehicules = [
   { title: "Immatriculation", key: "voiture_IMMAT" },
   { title: "Marque", key: "voiture_MARQUE" },
@@ -116,7 +134,7 @@ const handleRowClick = async (item) => {
   }
   const currentRequest = ++selectionRequestId.value;
   panelVisible.value = true;
-  loadingDetails.value = true;  
+  loadingDetails.value = true;
   selectedVehicule.value = item;
   await new Promise((resolve) => setTimeout(resolve, 500));
 
@@ -124,17 +142,23 @@ const handleRowClick = async (item) => {
 
   loadingDetails.value = false;
 };
+
+const handleCardClick = (vehicule) => {
+  handleRowClick(vehicule);
+};
 </script>
 
 <template>
   <div class="page-vehicule">
 
-    
-
     <div class="vehicule-layout">
 
       <!-- PANNEAU GAUCHE -->
       <section class="vehicule-details">
+        <div class="vehicule-details__heading">
+          <v-icon icon="mdi-car-info" size="20" />
+          <h2>Véhicule sélectionné</h2>
+        </div>
 
         <Transition name="slide-panel" appear>
           <div v-if="panelVisible" class="details-content">
@@ -252,18 +276,20 @@ const handleRowClick = async (item) => {
 
         <!-- ETAT INITIAL -->
         <div v-if="!panelVisible" class="empty-selection">
-          <v-icon icon="mdi-car-outline" size="48" />
-          <p>Sélectionnez un véhicule</p>
+          <v-icon icon="mdi-car-search-outline" size="42" />
+          <p>Sélectionnez un véhicule dans la liste pour afficher sa fiche.</p>
         </div>
 
       </section>
 
-      <!-- TABLEAU VEHICULES -->
+      <!-- ZONE DROITE : TABLEAU OU CARTES -->
       <section class="vehicule-table">
         <v-card-actions density="compact" class="vehicule__actions">
-            <h2>Fiche Véhicule Interne OPHAM</h2>
-            <v-spacer />
-            </v-card-actions>
+          <h2>Fiche Véhicule Interne OPHAM</h2>
+          <v-spacer />
+          <SelecteurAffichage v-model="viewMode" />
+        </v-card-actions>
+
         <div class="vehicule-toolbar">
           <v-text-field
             v-model="searchQuery"
@@ -277,16 +303,60 @@ const handleRowClick = async (item) => {
           />
         </div>
 
+        <!-- VUE TABLEAU -->
         <TableVirtuelle
+          v-if="viewMode === 'table'"
           :headers="headersVehicules"
-          :items="vehicules"
-          :search="searchQuery"
+          :items="vehiculesFiltres"
           :loading="false"
           :height="550"
           selected-item-key="id"
           :selected-item-id="selectedVehicule?.id"
           @click:row="handleRowClick"
         />
+
+        <!-- VUE CARTES -->
+        <div v-else class="vehicule-grid">
+          <div
+            v-for="vehicule in vehiculesFiltres"
+            :key="vehicule.id"
+            class="vehicule-card"
+            :class="{ 'vehicule-card--selected': selectedVehicule?.id === vehicule.id }"
+            @click="handleCardClick(vehicule)"
+          >
+            <div class="vehicule-card__image">
+              <img
+                :src="vehicule.image"
+                :alt="`${vehicule.voiture_MARQUE} ${vehicule.voiture_MODELE}`"
+              />
+            </div>
+            <div class="vehicule-card__body">
+              <div class="vehicule-card__header">
+                <h3 class="vehicule-card__name">
+                  {{ vehicule.voiture_MARQUE }} {{ vehicule.voiture_MODELE }}
+                </h3>
+                <span
+                  class="vehicule-card__status"
+                  :style="getStatusCellStyle(vehicule)"
+                >
+                  {{ vehicule.statut }}
+                </span>
+              </div>
+              <p class="vehicule-card__immat">{{ vehicule.voiture_IMMAT }}</p>
+              <div class="vehicule-card__meta">
+                <span>{{ vehicule.voiture_ANNEE }}</span>
+                <span>{{ formatKm(vehicule.voiture_KM) }}</span>
+              </div>
+              <div class="vehicule-card__footer">
+                <v-icon icon="mdi-wrench-outline" size="14" />
+                <span>{{ vehicule.historique.length }} maintenance{{ vehicule.historique.length !== 1 ? 's' : '' }}</span>
+              </div>
+            </div>
+          </div>
+          <div v-if="!vehiculesFiltres.length" class="vehicule-grid__empty">
+            Aucun véhicule trouvé.
+          </div>
+        </div>
 
       </section>
 
@@ -302,16 +372,17 @@ const handleRowClick = async (item) => {
 }
 
 .vehicule__actions {
-    display: flex;
+  display: flex;
   padding-inline: 0;
-  justify-content: flex-end
+  justify-content: flex-end;
+  align-items: center;
 }
 
 .vehicule-layout {
   display: grid;
   grid-template-columns: 340px minmax(0, 1fr);
   gap: 16px;
-  align-items: start;
+  align-items: stretch;
 }
 
 .vehicule-details,
@@ -320,10 +391,29 @@ const handleRowClick = async (item) => {
 }
 
 .vehicule-details {
-  position: relative;
-  min-height: 400px;
-  overflow: hidden;
-  
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  padding: 16px;
+  border: 1px solid #dce5dc;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(20, 79, 14, 0.08);
+}
+
+.vehicule-details__heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e5e9e5;
+  color: #285b2a;
+}
+
+.vehicule-details__heading h2 {
+  font-size: 15px;
+  font-weight: 600;
 }
 
 .details-content {
@@ -459,13 +549,23 @@ const handleRowClick = async (item) => {
 
 /* ETAT INITIAL */
 .empty-selection {
-  min-height: 400px;
+  flex: 1;
+  min-height: 450px;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   gap: 12px;
-  color: #888;
+  padding: 20px;
+  color: #687568;
+  text-align: center;
+}
+
+.empty-selection p {
+  max-width: 230px;
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 /* BARRE DE RECHERCHE */
@@ -493,5 +593,109 @@ const handleRowClick = async (item) => {
 .slide-panel-enter-from {
   opacity: 0;
   transform: translateX(-20px);
+}
+
+/* ===================== */
+/* VUE CARTES (GRID)     */
+/* ===================== */
+.vehicule-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+  padding: 4px 0;
+}
+
+.vehicule-grid__empty {
+  grid-column: 1 / -1;
+  padding: 32px 16px;
+  color: #687568;
+  text-align: center;
+}
+
+.vehicule-card {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--color-border, #dfe6e0);
+  border-radius: var(--radius-sm, 8px);
+  background: var(--color-surface, #f5f7f5);
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.vehicule-card:hover {
+  border-color: var(--color-primary, #2e7d32);
+  box-shadow: 0 2px 8px rgba(46, 125, 50, 0.12);
+}
+
+.vehicule-card--selected {
+  border-color: var(--color-primary, #2e7d32);
+  box-shadow: 0 0 0 2px var(--color-primary-soft, #e8f5e9);
+}
+
+.vehicule-card__image {
+  height: 140px;
+  overflow: hidden;
+  background-color: #f2f2f2;
+}
+
+.vehicule-card__image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+}
+
+.vehicule-card__body {
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.vehicule-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.vehicule-card__name {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.vehicule-card__status {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.vehicule-card__immat {
+  color: var(--color-text-muted, #5b675d);
+  font-size: 12px;
+  margin: 0;
+}
+
+.vehicule-card__meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--color-text-muted, #5b675d);
+}
+
+.vehicule-card__footer {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--color-text-muted, #5b675d);
+  margin-top: 4px;
+  padding-top: 8px;
+  border-top: 1px solid var(--color-border, #dfe6e0);
 }
 </style>

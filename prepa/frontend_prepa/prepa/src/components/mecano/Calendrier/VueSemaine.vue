@@ -1,6 +1,4 @@
 <script setup>
-// Vue hebdomadaire : en-têtes, ligne "Journée" et grille horaire.
-// Composant visuel, sans logique de dates.
 import MaintenanceChip from "./MaintenanceChip.vue";
 
 defineProps({

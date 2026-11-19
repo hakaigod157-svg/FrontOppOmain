@@ -108,11 +108,12 @@ const emit = defineEmits(["open-slot", "open-maintenance"]);
                 <span class="font-weight-medium">Créneau disponible</span>
               </div>
               <v-btn
-                variant="text"
+                variant="outlined"
                 size="x-small"
-                color="primary"
+                density="compact"
+                color="#0b3b17"
                 prepend-icon="mdi-plus"
-                class="slot-action-btn"
+                class="slot-action-btn text-none"
               >
                 Sélectionner
               </v-btn>

@@ -1,86 +1,3 @@
-<template>
-  <v-card>
-    <v-app>
-      <!-- Barre d'en-tête — même style que RH / AMM -->
-      <v-app-bar :elevation="1" density="compact" color="#d7ead5" app>
-        <v-card density="compact">
-          <v-tabs
-            v-model="tabs"
-            bg-color="#d7ead5"
-            color="deep-purple-accent-4"
-            align-tabs="left"
-            density="compact"
-          >
-            <v-tab :to="{ name: 'maintenance-demande' }">DEMANDES</v-tab>
-            <v-tab :to="{ name: 'maintenance-liste' }">MAINTENANCE</v-tab>
-            <v-tab :to="{ name: 'maintenance-calendar' }">CALENDRIER</v-tab>
-            <v-tab :to="{ name: 'maintenance-cars-file' }">VOITURES</v-tab>
-          </v-tabs>
-        </v-card>
-
-        <v-spacer></v-spacer>
-
-        <!-- Bouton Dashboard OMAIN -->
-        <v-btn
-          variant="outlined"
-          size="small"
-          color="#2e7d32"
-          class="mr-2"
-          @click="openDashboard"
-        >
-          <v-icon start size="18">mdi-view-dashboard-outline</v-icon>
-          OMAIN
-        </v-btn>
-
-        <div>
-          <u>Login</u> :&nbsp;<b><span style="color: #388e3c">{{ user }}</span></b>
-        </div>
-        &nbsp;&nbsp;
-
-        <div>
-          <span
-            :style="{
-              backgroundColor: isOnline ? 'green' : 'red',
-              width: '10px',
-              height: '10px',
-              borderRadius: '50%',
-              display: 'inline-block',
-            }"
-          ></span>
-        </div>
-
-        <div>
-          <v-btn @click="onHome">
-            <v-img :width="20" :src="require('@/assets/home.png')"></v-img>
-          </v-btn>
-        </div>
-      </v-app-bar>
-
-      <v-main>
-        <v-container fluid class="pa-4">
-          <router-view :key="refreshKey" />
-        </v-container>
-      </v-main>
-
-      <Teleport to="body">
-        <Transition name="dashboard-fade">
-          <TableauDeBord
-            v-if="showDashboard"
-            :stats="dashboardStats"
-            :user="user"
-            @close="refreshCurrentView"
-            @login="refreshCurrentView"
-            @back-home="refreshCurrentView"
-            @new-request="onDashboardNewRequest"
-            @open-item="onDashboardItem"
-            @open-maintenance="onDashboardOpenMaintenance"
-          />
-        </Transition>
-      </Teleport>
-    </v-app>
-  </v-card>
-</template>
-
 <script>
 import { defineComponent, ref, onMounted, onUnmounted, computed } from "vue";
 import { useRouter } from "vue-router";
@@ -102,25 +19,22 @@ export default defineComponent({
     const setOnline = () => (isOnline.value = true);
     const setOffline = () => (isOnline.value = false);
 
-    // Store pour alimenter les stats du dashboard
     const store = maintStore();
     const demandeStore = useDemandeMaintenance();
 
     const dashboardStats = computed(() => {
       const demandes = demandeStore.demandes || [];
-      const pendingItems = demandes.filter((d) => Number(d.demande_ETAT ?? d.DEMANDE_ETAT) === 1);
+      const pendingItems = demandes.filter((d) => Number(d.demande_ETAT) === 1);
       const inProgressItems = demandes
-        .filter((d) => Number(d.demande_ETAT ?? d.DEMANDE_ETAT) === 2)
+        .filter((d) => Number(d.demande_ETAT) === 2)
         .map((demand) => {
-          const maintenance = store.maintnces.find((item) =>
-            String(item.maint_DEMANDE ?? item.MAINT_DEMANDE ?? "") ===
-            String(demand.demande_CODE ?? demand.DEMANDE_CODE ?? "")
+          const maintenance = store.maintnces.find((item) =>String(item.maint_DEMANDE ?? "") === String(demand.demande_CODE ?? "")
           );
           return {
             ...demand,
-            maintenanceCode: maintenance?.maint_CODE ?? maintenance?.MAINT_CODE ?? "",
+            maintenanceCode: maintenance?.maint_CODE ?? "",
             maintenanceClassification:
-              maintenance?.maint_CLASSIFICATION ?? maintenance?.MAINT_CLASSIFICATION ?? "",
+              maintenance?.maint_CLASSIFICATION  ?? "",
           };
         });
 
@@ -214,6 +128,93 @@ export default defineComponent({
   },
 });
 </script>
+
+
+<template>
+  <v-card>
+    <v-app>
+      <!-- Barre d'en-tête — même style que RH / AMM -->
+      <v-app-bar :elevation="1" density="compact" color="#d7ead5" app>
+        <v-card density="compact">
+          <v-tabs
+            v-model="tabs"
+            bg-color="#d7ead5"
+            color="deep-purple-accent-4"
+            align-tabs="left"
+            density="compact"
+            >
+            <v-tab :to="{ name: 'maintenance-cars-file' }">VOITURES</v-tab>
+            <v-tab :to="{ name: 'maintenance-demande' }">DEMANDES</v-tab>
+            <v-tab :to="{ name: 'maintenance-liste' }">MAINTENANCE</v-tab>
+            <v-tab :to="{ name: 'maintenance-calendar' }">CALENDRIER</v-tab>
+          </v-tabs>
+        </v-card>
+
+        <v-spacer></v-spacer>
+
+        <!-- Bouton Dashboard OMAIN -->
+        <v-btn
+          variant="outlined"
+          size="small"
+          color="#0b3b17"
+          class="mr-2"
+          
+          @click="openDashboard"
+        >
+          <v-icon start size="18">mdi-view-dashboard-outline</v-icon>
+          OMAIN
+        </v-btn>
+
+        <div>
+          <u>Login</u> :&nbsp;<b><span style="color: #388e3c">{{ user }}</span></b>
+        </div>
+        &nbsp;&nbsp;
+
+        <div>
+          <span
+            :style="{
+              backgroundColor: isOnline ? 'green' : 'red',
+              width: '10px',
+              height: '10px',
+              borderRadius: '50%',
+              display: 'inline-block',
+            }"
+          ></span>
+        </div>
+
+        <div>
+          <v-btn @click="onHome">
+            <v-img :width="20" :src="require('@/assets/home.png')"></v-img>
+          </v-btn>
+        </div>
+      </v-app-bar>
+
+      <v-main>
+        <v-container fluid class="pa-4">
+          <router-view :key="refreshKey" />
+        </v-container>
+      </v-main>
+
+      <Teleport to="body">
+        <Transition name="dashboard-fade">
+          <TableauDeBord
+            v-if="showDashboard"
+            :stats="dashboardStats"
+            :user="user"
+            @close="refreshCurrentView"
+            @login="refreshCurrentView"
+            @back-home="refreshCurrentView"
+            @new-request="onDashboardNewRequest"
+            @open-item="onDashboardItem"
+            @open-maintenance="onDashboardOpenMaintenance"
+          />
+        </Transition>
+      </Teleport>
+    </v-app>
+  </v-card>
+</template>
+
+
 
 <style>
 /* Effet de flou si besoin */

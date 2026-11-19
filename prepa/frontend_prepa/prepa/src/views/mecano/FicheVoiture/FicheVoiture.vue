@@ -2,17 +2,27 @@
 import { computed, ref } from "vue";
 import TableVirtuelle from "@/components/mecano/TableVirtuelle.vue";
 import SelecteurAffichage from "@/components/mecano/FicheVoiture/SelecteurAffichage.vue";
+import AjoutVoiture from "@/components/mecano/FicheVoiture/AjoutVoiture.vue";
+import EditVoiture from "@/components/mecano/FicheVoiture/EditVoiture.vue";
+import DetailVehicule from "@/components/mecano/FicheVoiture/DétailVéhicule.vue";
 
 import imageDamas from "@/assets/damas.jpg";
 import imageBt50 from "@/assets/bt50.jpeg";
 import imageGeely from "@/assets/geely.jpeg";
 
 const searchQuery = ref("");
-const viewMode = ref("table"); // 'table' | 'grid'
+const viewMode = ref("table"); 
+const filtreMarque = ref(null);
+const filtreAnnee = ref(null);
+const filtreStatut = ref(null);
+const dateHeure = ref(new Date().toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" }));
 
 const selectedVehicule = ref(null);
 const panelVisible = ref(false);
 const loadingDetails = ref(false);
+const ajoutOuvert = ref(false);
+const editionOuverte = ref(false);
+const detailPleinEcran = ref(false);
 
 const selectionRequestId = ref(0);
 
@@ -63,6 +73,44 @@ const vehicules = ref([
     ],
   },
   {
+    id: 5,
+    voiture_IMMAT: "4947 TBF",
+    voiture_MARQUE: "MAZDA",
+    voiture_ANNEE: 2009,
+    voiture_MODELE: "BT-50",
+    voiture_KM: 348000,
+    image: imageBt50,
+    statut: "Actif",
+    historique: [
+      {
+        id: 1,
+        type: "Maintenance pneumatique",
+        date: "08/09/2026",
+        km: 153500,
+        description: "Remplacement des pneumatiques",
+      },
+    ],
+  },
+  {
+    id: 6,
+    voiture_IMMAT: "4947 TBF",
+    voiture_MARQUE: "MAZDA",
+    voiture_ANNEE: 2009,
+    voiture_MODELE: "BT-50",
+    voiture_KM: 348000,
+    image: imageBt50,
+    statut: "Actif",
+    historique: [
+      {
+        id: 1,
+        type: "Maintenance pneumatique",
+        date: "08/09/2026",
+        km: 153500,
+        description: "Remplacement des pneumatiques",
+      },
+    ],
+  },
+  {
     id: 3,
     voiture_IMMAT: "2997 TBS",
     voiture_MARQUE: "GEELY",
@@ -76,20 +124,27 @@ const vehicules = ref([
 ]);
 
 const vehiculesFiltres = computed(() => {
-  const query = searchQuery.value.trim().toLocaleLowerCase("fr");
-  if (!query) return vehicules.value;
+  const normaliser = (value) => String(value ?? "").trim().toLocaleLowerCase("fr");
+  const query = normaliser(searchQuery.value);
 
-  return vehicules.value.filter((vehicule) =>
-    [
+  return vehicules.value.filter((vehicule) => {
+    const correspondRecherche = !query || [
       vehicule.voiture_IMMAT,
       vehicule.voiture_MARQUE,
       vehicule.voiture_ANNEE,
       vehicule.voiture_MODELE,
       vehicule.voiture_KM,
       vehicule.statut,
-    ].some((value) => String(value ?? "").toLocaleLowerCase("fr").includes(query))
-  );
+    ].some((value) => normaliser(value).includes(query));
+
+    return correspondRecherche &&
+      (!filtreMarque.value || normaliser(vehicule.voiture_MARQUE) === normaliser(filtreMarque.value)) &&
+      (!filtreAnnee.value || Number(vehicule.voiture_ANNEE) === Number(filtreAnnee.value)) &&
+      (!filtreStatut.value || normaliser(vehicule.statut) === normaliser(filtreStatut.value));
+  });
 });
+const marquesDisponibles = computed(() => [...new Set(vehicules.value.map((v) => v.voiture_MARQUE).filter(Boolean))]);
+const anneesDisponibles = computed(() => [...new Set(vehicules.value.map((v) => v.voiture_ANNEE).filter(Boolean))].sort((a, b) => b - a));
 
 const headersVehicules = [
   { title: "Immatriculation", key: "voiture_IMMAT" },
@@ -97,11 +152,8 @@ const headersVehicules = [
   { title: "Année", key: "voiture_ANNEE" },
   { title: "Modèle", key: "voiture_MODELE" },
   { title: "KM", key: "voiture_KM" },
-  {
-    title: "État",
-    key: "statut",
-    align: "center",
-  },
+  { title: "État",key: "statut",align: "center",},
+  { title: "Action", key: "actions", align: "center", sortable: false },
 ];
 
 const getStatusCellStyle = (item) => {
@@ -146,12 +198,41 @@ const handleRowClick = async (item) => {
 const handleCardClick = (vehicule) => {
   handleRowClick(vehicule);
 };
+
+const ajouterVehicule = (vehicule) => {
+  if (vehicules.value.some((item) => item.voiture_IMMAT.toLowerCase() === vehicule.voiture_IMMAT.toLowerCase())) return;
+  const nouveau = { ...vehicule, id: Date.now() };
+  vehicules.value.unshift(nouveau);
+  selectedVehicule.value = nouveau;
+  panelVisible.value = true;
+  ajoutOuvert.value = false;
+};
+
+const modifierVehicule = (modifications) => {
+  const index = vehicules.value.findIndex((item) => item.id === selectedVehicule.value?.id);
+  if (index < 0) return;
+  vehicules.value[index] = { ...vehicules.value[index], ...modifications };
+  selectedVehicule.value = vehicules.value[index];
+  editionOuverte.value = false;
+};
+
+const modifierVehiculeDepuisListe = (vehicule) => {
+  selectedVehicule.value = vehicule;
+  editionOuverte.value = true;
+};
 </script>
 
 <template>
   <div class="page-vehicule">
+    <Transition name="layout-transition" mode="out-in">
+    <DetailVehicule
+      v-if="detailPleinEcran && selectedVehicule"
+      :vehicule="selectedVehicule"
+      :date-heure="dateHeure"
+      @back="detailPleinEcran = false"
+    />
 
-    <div class="vehicule-layout">
+    <div v-else class="vehicule-layout">
 
       <!-- PANNEAU GAUCHE -->
       <section class="vehicule-details">
@@ -219,6 +300,11 @@ const handleCardClick = (vehicule) => {
               <div class="vehicule-informations">
 
                 <div>
+                  <span>Bénéficiaire</span>
+                  <strong>{{ selectedVehicule.beneficiaire || "Non renseigné" }}</strong>
+                </div>
+
+                <div>
                   <span>Année</span>
                   <strong>{{ selectedVehicule.voiture_ANNEE }}</strong>
                 </div>
@@ -280,16 +366,24 @@ const handleCardClick = (vehicule) => {
           <p>Sélectionnez un véhicule dans la liste pour afficher sa fiche.</p>
         </div>
 
+        <v-btn class="voir-vehicule-btn" variant="outlined" size="small" color="#0b3b17" :disabled="!selectedVehicule" @click="detailPleinEcran = true">Voir le véhicule</v-btn>
+
       </section>
 
       <!-- ZONE DROITE : TABLEAU OU CARTES -->
       <section class="vehicule-table">
-        <v-card-actions density="compact" class="vehicule__actions">
-          <h2>Fiche Véhicule Interne OPHAM</h2>
-          <v-spacer />
-          <SelecteurAffichage v-model="viewMode" />
-        </v-card-actions>
-
+        <div class="vehicule-heading-row">
+          <h2>FICHE VEHICULE</h2>
+          <v-btn
+            class="nouvelle-voiture-btn"
+            variant="elevated"
+            color="#144f0e"
+            prepend-icon="mdi-plus"
+            @click="ajoutOuvert = true"
+          >
+            Nouvelle voiture
+          </v-btn>
+        </div>
         <div class="vehicule-toolbar">
           <v-text-field
             v-model="searchQuery"
@@ -301,6 +395,14 @@ const handleCardClick = (vehicule) => {
             clearable
             class="search"
           />
+          <v-spacer></v-spacer>
+          <SelecteurAffichage v-model="viewMode" />
+        </div>
+
+        <div class="vehicule-filtres">
+          <v-select v-model="filtreMarque" :items="marquesDisponibles" label="Marque" placeholder="Toutes" density="compact" variant="outlined" hide-details clearable />
+          <v-select v-model="filtreAnnee" :items="anneesDisponibles" label="Année" placeholder="Toutes" density="compact" variant="outlined" hide-details clearable />
+          <v-select v-model="filtreStatut" :items="['Actif', 'Inactif']" label="État" placeholder="Tous" density="compact" variant="outlined" hide-details clearable />
         </div>
 
         <!-- VUE TABLEAU -->
@@ -313,7 +415,13 @@ const handleCardClick = (vehicule) => {
           selected-item-key="id"
           :selected-item-id="selectedVehicule?.id"
           @click:row="handleRowClick"
-        />
+        >
+          <template #item.actions="{ item }">
+            <v-btn icon size="small" variant="text" color="warning" title="Modifier le véhicule" aria-label="Modifier le véhicule" @click.stop="modifierVehiculeDepuisListe(item)">
+              <v-icon size="20">mdi-pencil</v-icon>
+            </v-btn>
+          </template>
+        </TableVirtuelle>
 
         <!-- VUE CARTES -->
         <div v-else class="vehicule-grid">
@@ -350,6 +458,10 @@ const handleCardClick = (vehicule) => {
               <div class="vehicule-card__footer">
                 <v-icon icon="mdi-wrench-outline" size="14" />
                 <span>{{ vehicule.historique.length }} maintenance{{ vehicule.historique.length !== 1 ? 's' : '' }}</span>
+                <v-spacer />
+                <v-btn icon size="small" variant="text" color="warning" title="Modifier le véhicule" aria-label="Modifier le véhicule" @click.stop="modifierVehiculeDepuisListe(vehicule)">
+                  <v-icon size="20">mdi-pencil</v-icon>
+                </v-btn>
               </div>
             </div>
           </div>
@@ -361,6 +473,9 @@ const handleCardClick = (vehicule) => {
       </section>
 
     </div>
+    </Transition>
+    <AjoutVoiture v-model="ajoutOuvert" @saved="ajouterVehicule" />
+    <EditVoiture v-model="editionOuverte" :vehicule="selectedVehicule" @saved="modifierVehicule" />
   </div>
 </template>
 
@@ -376,6 +491,21 @@ const handleCardClick = (vehicule) => {
   padding-inline: 0;
   justify-content: flex-end;
   align-items: center;
+}
+
+.vehicule-heading-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.vehicule-heading-row h2 { font-size: 18px; font-weight: 650; }
+
+.nouvelle-voiture-btn {
+  min-height: 38px;
+  border-radius: 8px;
+  font-weight: 600;
 }
 
 .vehicule-layout {
@@ -397,8 +527,8 @@ const handleCardClick = (vehicule) => {
   padding: 16px;
   border: 1px solid #dce5dc;
   border-radius: 8px;
-  background: #fff;
-  box-shadow: 0 1px 4px rgba(20, 79, 14, 0.08);
+  background: #f7f7f7;
+  box-shadow: 0 1px 4px rgba(20, 79, 14, 0.06);
 }
 
 .vehicule-details__heading {
@@ -407,14 +537,25 @@ const handleCardClick = (vehicule) => {
   gap: 8px;
   margin-bottom: 16px;
   padding-bottom: 12px;
-  border-bottom: 1px solid #e5e9e5;
-  color: #285b2a;
+  border-bottom: 1px solid #ccddca;
+  color: #245d28;
 }
 
 .vehicule-details__heading h2 {
-  font-size: 15px;
-  font-weight: 600;
+  font-size: 16px;
+  font-weight: 700;
 }
+
+.vehicule-details .details-content { color: #202720; }
+.vehicule-details .empty-selection { color: #365c38; }
+.voir-vehicule-btn { margin-top: auto; align-self: center; min-width: 150px; font-weight: 600; text-transform: none; }
+.layout-transition-enter-active,
+.layout-transition-leave-active { transition: opacity 180ms ease, transform 180ms ease; }
+.layout-transition-enter-from { opacity: 0; transform: translateY(8px) scale(.995); }
+.layout-transition-leave-to { opacity: 0; transform: translateY(-5px) scale(.997); }
+.date-heure { margin-left: auto; color: #687568; font-size: 13px; }
+.vehicule-filtres { display: flex; gap: 8px; margin: 0 0 10px; }
+.vehicule-filtres > * { width: 145px; }
 
 .details-content {
   width: 100%;
@@ -422,6 +563,10 @@ const handleCardClick = (vehicule) => {
 
 .details-loaded {
   width: 100%;
+  padding: 12px;
+  border: 1px solid #dce7db;
+  border-radius: 7px;
+  background: #fff;
 }
 
 /* IMAGE DU VEHICULE */
@@ -451,12 +596,14 @@ const handleCardClick = (vehicule) => {
 }
 
 .vehicule-identite h2 {
-  font-size: 20px;
+  color: #202720;
+  font-size: 18px;
   font-weight: 700;
+  line-height: 1.25;
 }
 
 .vehicule-identite p {
-  color: #777;
+  color: #526052;
   margin-top: 4px;
   font-size: 13px;
 }
@@ -484,7 +631,7 @@ const handleCardClick = (vehicule) => {
 }
 
 .vehicule-informations span {
-  color: #777;
+  color: #526052;
   font-size: 13px;
 }
 
@@ -501,14 +648,15 @@ const handleCardClick = (vehicule) => {
 }
 
 .historique-header h3 {
-  font-size: 15px;
+  color: #263626;
+  font-size: 14px;
   font-weight: 700;
 }
 
 .historique-header span {
   font-size: 12px;
-  color: #777;
-  background-color: #f1f1f1;
+  color: #344934;
+  background-color: #edf3ed;
   padding: 3px 8px;
   border-radius: 12px;
 }
@@ -532,14 +680,14 @@ const handleCardClick = (vehicule) => {
 
 .maintenance-item span,
 .maintenance-item small {
-  color: #777;
+  color: #526052;
   font-size: 12px;
 }
 
 .historique-vide {
   padding: 20px 10px;
   text-align: center;
-  color: #888;
+  color: #526052;
   font-size: 13px;
   display: flex;
   flex-direction: column;
@@ -571,11 +719,34 @@ const handleCardClick = (vehicule) => {
 /* BARRE DE RECHERCHE */
 .vehicule-toolbar {
   display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top : 15px;
   margin-bottom: 8px;
 }
 
 .search {
   max-width: 420px;
+}
+
+@media (max-width: 900px) {
+  .vehicule-layout { grid-template-columns: 280px minmax(0, 1fr); }
+}
+@media (max-width: 700px) {
+  .vehicule-layout { grid-template-columns: 1fr; }
+  .vehicule-details { min-height: 260px; }
+  .vehicule-heading-row { align-items: flex-start; }
+  .vehicule-heading-row h2 { font-size: 16px; }
+  .vehicule-toolbar { gap: 8px; }
+  .search { min-width: 0; }
+  .vehicule-filtres { flex-wrap: wrap; }
+  .vehicule-filtres > * { flex: 1 1 130px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .layout-transition-enter-active,
+  .layout-transition-leave-active { transition: none; }
 }
 
 /* SKELETON */

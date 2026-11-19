@@ -713,10 +713,10 @@ const jumpToDayView = (date) => {
         <!-- Navigation temporelle -->
         <div class="d-flex align-center flex-wrap ga-2">
           <v-btn
-            variant="tonal"
-            color="primary"
+            variant="outlined"
+            color="#0b3b17"
             size="small"
-            class="font-weight-bold px-3"
+            class="calendar-action text-none px-3"
             prepend-icon="mdi-calendar-today"
             @click="onGoToToday"
           >
@@ -727,14 +727,16 @@ const jumpToDayView = (date) => {
             <v-btn
               icon="mdi-chevron-left"
               variant="text"
-              density="comfortable"
+              color="#0b3b17"
+              size="small"
               title="Précédent"
               @click="navigate(-1)"
             />
             <v-btn
               icon="mdi-chevron-right"
               variant="text"
-              density="comfortable"
+              color="#0b3b17"
+              size="small"
               title="Suivant"
               @click="navigate(1)"
             />
@@ -774,7 +776,6 @@ const jumpToDayView = (date) => {
 
         <v-radio-group
           v-model="maintenanceFilter"
-          density="compact"
           hide-details
           class="maintenance-filter"
         >
@@ -789,21 +790,20 @@ const jumpToDayView = (date) => {
           <v-btn-toggle
             v-model="currentView"
             mandatory
-            color="primary"
-            density="compact"
+            color="#0b3b17"
             variant="outlined"
             divided
             class="view-toggle"
           >
-            <v-btn value="month" class="text-none">
+            <v-btn value="month" size="small" class="text-none calendar-action">
               <v-icon start size="small">mdi-calendar-month</v-icon>
               <span>Mois</span>
             </v-btn>
-            <v-btn value="week" class="text-none">
+            <v-btn value="week" size="small" class="text-none calendar-action">
               <v-icon start size="small">mdi-calendar-week</v-icon>
               <span>Semaine</span>
             </v-btn>
-            <v-btn value="day" class="text-none">
+            <v-btn value="day" size="small" class="text-none calendar-action">
               <v-icon start size="small">mdi-calendar-day</v-icon>
               <span>Jour</span>
             </v-btn>

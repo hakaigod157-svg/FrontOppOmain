@@ -18,7 +18,6 @@ const emit = defineEmits(["close"]);
 
 const tab = ref("prepa");
 
-
 const loadingEtapes = ref(false);
 const loadingActionPrepa = ref(false);
 const dialogDateValidation = ref(false);
@@ -64,11 +63,6 @@ const headersEtapesReal = [
       // { title: "Statut", key: "etape_STATUT", align: "center", width: "105px" },
       { title: "Validation", key: "actions", align: "center", width: "100px" },
     ];
-
-
-
-
-
 
 
 const formatKm = (valeur) =>
@@ -419,7 +413,7 @@ const dateValidationMin = computed(() => {
 const dateValidationMax = computed(() => {
   if (typeEtapeAValider.value !== "intervention" && typeEtapeAValider.value !== "real") return null;
   const deadline = storeEtape.deadLine;
-  const date = deadline?.date || deadline?.DATE || deadline?.maint_DATE_PREVU || deadline;
+  const date = deadline?.date || deadline?.maint_DATE_PREVU || deadline;
   return date && dayjs(date).isValid() ? dayjs(date).format("YYYY-MM-DD") : null;
 });
 const confirmerValidationEtape = async () => {
@@ -458,7 +452,6 @@ const validerEtapePrepaAction = async (item, datePrepa) => {
           selectedEtapeFiles.value = updated;
         }
         await chargerDonneesEtEtapes(false);
-        // window.location.reload();
       } catch (err) {
         console.error("Erreur lors de la validation PREPA :", err);
       } finally {
@@ -622,7 +615,6 @@ const soumettreAjoutReal = async () => {
         });
         dialogAjoutReal.value = false;
         await chargerDonneesEtEtapes(false);
-        // window.location.reload();
       } catch (err) {
         console.error("Erreur ajout étape REAL :", err);
         erreurAjoutReal.value = "Erreur lors de l'enregistrement de l'étape de réalisation.";
@@ -630,10 +622,6 @@ const soumettreAjoutReal = async () => {
         loadingAjoutReal.value = false;
       }
     };
-
-
-
-
     
     // const ouvrirDialogAjoutReal = () => {
     //   formAjoutReal.value = {
@@ -681,16 +669,14 @@ const soumettreAjoutReal = async () => {
     // };
 
 
-
-
 const demandeTerminee = ref(false);
 const loadingCloture = ref(false);
 const dialogConfirmationCloture = ref(false);
 const demandeEtat = computed(() => Number(
   itemData.value?.demande_ETAT ??
-  itemData.value?.demande_etat ??
-  linkedDemande.value?.demande_ETAT ??
-  linkedDemande.value?.demande_etat
+  // itemData.value?.demande_etat ??
+  linkedDemande.value?.demande_ETAT  //??
+  // linkedDemande.value?.demande_etat
 ));
 const demandeCloturee = computed(() => demandeTerminee.value || demandeEtat.value === 99);
 
@@ -720,9 +706,6 @@ const choisirOngletInitial = () => {
   }
   tab.value = etapeTechnique.value?.enCours ? "realisation" : "prepa";
 };
-
-
-
 
     // const listEtape = async (classification = null) => {
     //   loadingEtapes.value = true;
@@ -836,11 +819,6 @@ const getMaintCode = (maintCode = null) => maintCode ||  itemData.value?.maint_C
   props.maintenance?.raw?.maint_CODE;
 
 
-
-
-
-
-
 const toIso = (d) => (d ? dayjs(d).toISOString() : null);
 
 const listEtape = async (maintCode = null) => {
@@ -852,7 +830,7 @@ const code = getMaintCode(maintCode);
       return;
     }
 const repApi = await storeEtape.getListePrepaMaint(code);
-console.log("PREPA reçu :", JSON.stringify(repApi?.[0]));
+// console.log("PREPA reçu :", JSON.stringify(repApi?.[0]));
 
 
     if (Array.isArray(repApi) && repApi.length > 0) {
@@ -864,7 +842,7 @@ console.log("PREPA reçu :", JSON.stringify(repApi?.[0]));
         etape_USER: item.maint_ETAPE_USER ?? item.intervenant ??item.maint_USER ?? "", 
         etape_UPLOAD: item.maint_ETAPE_UPLOAD,
         
-        etape_PJ: Number(item.maint_ETAPE_HAS_PJ ?? item.MAINT_ETAPE_HAS_PJ) === 1,
+        etape_PJ: Number(item.maint_ETAPE_HAS_PJ) === 1,
         enCours: Number(item.maint_ETAPE_ETAT) === 1,
         valide: Number(item.maint_ETAPE_ETAT) === 2,
         menuOpen: false,
@@ -896,9 +874,6 @@ const listEtapeReal = async (maintCode = null) => {
 const code = getMaintCode(maintCode);
 const repApiREAL = await storeEtape.getListeRealMaint(code);
     if (Array.isArray(repApiREAL) && repApiREAL.length > 0) {
-
-
-      // Réutilise la même détection que le repère orange dans l'onglet ETAPE.
       const etapeTechniqueActive = !!etapeTechnique.value?.enCours;
 
       const liste = repApiREAL.map((item, index) => {
@@ -912,7 +887,7 @@ const repApiREAL = await storeEtape.getListeRealMaint(code);
         const datePrev = item.maint_DATE_PREVU ??  null;
         const interv = item.maint_INTERV_REAL;
         const upload = item.maint_UPLOAD_REAL;
-        const pj = Number(item.maint_REAL_HAS_PJ ?? item.MAINT_REAL_HAS_PJ) === 1;
+        const pj = Number(item.maint_REAL_HAS_PJ ) === 1;
         const refPiece = item.maint_REFERENCE_PIECE;
         return {
           ligne_NUMERO: index + 1,

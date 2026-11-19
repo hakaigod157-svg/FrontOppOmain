@@ -2,16 +2,12 @@
 defineProps({
   label: { type: String, required: true },
   value: { type: [Number, String], default: '—' },
-  // stacked : nombre en haut, libellé en bas (petites cartes)
-  // footer  : contenu libre au-dessus, libellé à gauche et nombre à droite en pied de carte
   layout: {
     type: String,
     default: 'stacked',
     validator: (v) => ['stacked', 'footer'].includes(v),
   },
-  // bandeau teinté derrière le pied de carte (grands panneaux)
   bar: Boolean,
-  // rend la carte cliquable (élément <button>) ; le @click du parent passe tel quel
   clickable: Boolean,
 })
 </script>

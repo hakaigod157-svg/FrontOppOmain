@@ -60,10 +60,10 @@ const viewMaintenance = () => emit("view-maintenance", props.maintenance);
           </div>
           <v-btn
             size="small"
-            variant="tonal"
-            color="primary"
+            variant="outlined"
+            color="#0b3b17"
             prepend-icon="mdi-open-in-new"
-            class="mt-2 align-self-start"
+            class="mt-2 align-self-start text-none"
             @click.stop="viewMaintenance"
           >
             Voir maintenance
@@ -103,10 +103,10 @@ const viewMaintenance = () => emit("view-maintenance", props.maintenance);
     <v-btn
       v-if="maintenance.isComplete"
       size="small"
-      variant="tonal"
-      color="primary"
+      variant="outlined"
+      color="#0b3b17"
       prepend-icon="mdi-open-in-new"
-      class="view-maintenance-button"
+      class="view-maintenance-button text-none"
       @click.stop="viewMaintenance"
     >
       Voir maintenance

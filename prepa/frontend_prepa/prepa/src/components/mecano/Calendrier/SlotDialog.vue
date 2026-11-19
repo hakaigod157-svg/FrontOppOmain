@@ -112,9 +112,11 @@ const emit = defineEmits(["update:modelValue", "open-day", "open-maintenance"]);
       <v-card-actions class="pa-3 justify-end ga-2">
         <v-btn
           v-if="canJumpToDay"
-          variant="tonal"
-          color="primary"
+          variant="outlined"
+          color="#0b3b17"
           size="small"
+          density="compact"
+          class="text-none"
           prepend-icon="mdi-calendar-day"
           @click="emit('open-day')"
         >

@@ -138,9 +138,7 @@ export const useDemandeMaintenance = defineStore("demandeMaintenance", {
         async validerDemande(demandeCode, numVoiture, classification) {
             const sessionId = localStorage.getItem("sessionId");
             const { handleLogout } = useLogout();
-
             this.loading = true;
-
             try {
 
                 let kmVoiture = null;
@@ -148,7 +146,6 @@ export const useDemandeMaintenance = defineStore("demandeMaintenance", {
                     kmVoiture = await this.getKmVoiture(numVoiture);
                     console.log(kmVoiture)
                 }
-                // console.log("Km recupéré ito : " ,kmVoiture)
 
                 const params = { demandeCode, kmVoiture };
                 if (classification) {
@@ -481,11 +478,7 @@ export const useDemandeMaintenance = defineStore("demandeMaintenance", {
                 if (error.response?.status === 401) {
                     await handleLogout();
                 }
-               
-                
-
                 throw error;
-
             } finally {
                 this.loading = false;
             }

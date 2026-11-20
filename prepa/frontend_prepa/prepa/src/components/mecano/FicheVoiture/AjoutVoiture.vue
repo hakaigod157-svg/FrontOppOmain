@@ -28,14 +28,88 @@ const enregistrer = () => {
       <header class="dialog-header"><h2>Ajouter un véhicule</h2><v-btn icon="mdi-close" variant="text" aria-label="Fermer" :disabled="loading" @click="fermer" /></header>
       <v-divider />
       <v-card-text class="dialog-content">
-        <div class="add-grid"><div><div class="field-grid">
-          <div class="field-row"><v-icon class="field-icon" icon="mdi-card-account-details-outline"/><v-text-field v-model="form.voiture_IMMAT" label="Immatriculation *" placeholder="Ex. 2099 TBP" variant="outlined" density="comfortable" maxlength="20" /></div>
-          <div class="field-row"><v-icon class="field-icon" icon="mdi-account-outline"/><v-text-field v-model="form.beneficiaire" label="Bénéficiaire" placeholder="Nom du bénéficiaire" variant="outlined" density="comfortable" /></div>
-          <div class="field-row"><v-icon class="field-icon" icon="mdi-domain"/><v-text-field v-model="form.voiture_MARQUE" label="Marque *" placeholder="Ex. Toyota" variant="outlined" density="comfortable" /></div>
-          <div class="field-row"><v-icon class="field-icon" icon="mdi-car-outline"/><v-text-field v-model="form.voiture_MODELE" label="Modèle *" placeholder="Ex. Hilux" variant="outlined" density="comfortable" /></div>
-          <div class="field-row"><v-icon class="field-icon" icon="mdi-calendar-outline"/><v-text-field v-model.number="form.voiture_ANNEE" label="Année *" placeholder="2024" type="number" min="1900" :max="new Date().getFullYear() + 1" variant="outlined" density="comfortable" /></div>
-          <div class="field-row"><v-icon class="field-icon" icon="mdi-counter"/><v-text-field v-model.number="form.voiture_KM" label="Kilométrage actuel *" placeholder="0" type="number" min="0" suffix="km" variant="outlined" density="comfortable" /></div>
-        </div></div><label class="image-upload" :class="{'image-upload--filled':form.image}"><img v-if="form.image" :src="form.image" alt="Aperçu du véhicule"/><span v-else class="upload-empty"><v-icon icon="mdi-image-plus-outline" size="34"/><strong>Ajouter une photo du véhicule</strong><small>PNG, JPG ou WEBP</small></span><span class="upload-action"><v-icon icon="mdi-cloud-upload-outline" size="17"/>{{form.image?'Changer la photo':'Importer une image'}}</span><input type="file" accept="image/*" @change="imageChange"/></label></div>
+        <div class="add-grid">
+          <div>
+            <div class="field-grid">
+              <div class="field-row">
+                <v-icon class="field-icon" icon="mdi-card-account-details-outline"/>
+                <v-text-field
+                 v-model="form.voiture_IMMAT" 
+                 label="Immatriculation *" 
+                 placeholder="Ex. 2099 TBP" 
+                 variant="outlined" 
+                 density="comfortable" 
+                 maxlength="20" />
+              </div>
+
+          <div class="field-row">
+            <v-icon class="field-icon" icon="mdi-account-outline"/>
+              <v-text-field
+               v-model="form.beneficiaire" 
+               label="Bénéficiaire" 
+               placeholder="Nom du bénéficiaire" 
+               variant="outlined" 
+               density="comfortable" />
+              </div>
+
+            <div class="field-row">
+              <v-icon class="field-icon" 
+              icon="mdi-domain"/>
+              <v-text-field 
+              v-model="form.voiture_MARQUE" 
+              label="Marque *"
+              placeholder="Ex. Toyota" 
+              variant="outlined" 
+              density="comfortable" />
+            </div>
+
+          <div class="field-row">
+            <v-icon class="field-icon" icon="mdi-car-outline"/>
+              <v-text-field 
+              v-model="form.voiture_MODELE" 
+              label="Modèle *" 
+              placeholder="Ex. Hilux" 
+              variant="outlined" 
+              density="comfortable" />
+            </div>
+
+          <div class="field-row">
+            <v-icon class="field-icon" icon="mdi-calendar-outline"/>
+            <v-text-field 
+            v-model.number="form.voiture_ANNEE" 
+            label="Année *" 
+            placeholder="2024" 
+            type="number" min="1900" :max="new Date().getFullYear() + 1" 
+            variant="outlined" 
+            density="comfortable" />
+          </div>
+
+          <div class="field-row">
+            <v-icon class="field-icon" icon="mdi-counter"/>
+            <v-text-field 
+            v-model.number="form.voiture_KM" 
+            label="Kilométrage actuel *" 
+            placeholder="0" 
+            type="number" min="0" suffix="km" 
+            variant="outlined" 
+            density="comfortable" />
+          </div>
+
+        </div>
+      </div>
+      <label class="image-upload" 
+      :class="{'image-upload--filled':form.image}">
+      <img v-if="form.image" 
+      :src="form.image" 
+      alt="Aperçu du véhicule"/>
+      <span v-else class="upload-empty">
+        <v-icon icon="mdi-image-plus-outline" size="34"/>
+        <strong>Ajouter une photo du véhicule</strong>
+        <small>PNG, JPG ou WEBP</small>
+      </span>
+      <span class="upload-action">
+        <v-icon icon="mdi-cloud-upload-outline" size="17"/>{{form.image?'Changer la photo':'Importer une image'}}</span><
+        input type="file" accept="image/*" @change="imageChange"/></label></div>
         <div v-if="erreur" class="form-hint"><v-icon icon="mdi-information-outline" size="16" />{{ erreur }}</div>
       </v-card-text>
       <v-divider />

@@ -1,5 +1,7 @@
 <script setup>
 import { computed, ref } from "vue";
+import { useRouter } from "vue-router";
+import { maintStore } from "@/store/Maintenance/maintenance_store";
 import TableVirtuelle from "@/components/mecano/TableVirtuelle.vue";
 import SelecteurAffichage from "@/components/mecano/FicheVoiture/SelecteurAffichage.vue";
 import AjoutVoiture from "@/components/mecano/FicheVoiture/AjoutVoiture.vue";
@@ -16,6 +18,8 @@ const filtreMarque = ref(null);
 const filtreAnnee = ref(null);
 const filtreStatut = ref(null);
 const dateHeure = ref(new Date().toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" }));
+const maintenanceStore = maintStore();
+const router = useRouter();
 
 const selectedVehicule = ref(null);
 const panelVisible = ref(false);
@@ -23,6 +27,7 @@ const loadingDetails = ref(false);
 const ajoutOuvert = ref(false);
 const editionOuverte = ref(false);
 const detailPleinEcran = ref(false);
+const maintenanceExpandedId = ref(null);
 
 const selectionRequestId = ref(0);
 
@@ -36,79 +41,36 @@ const vehicules = ref([
     voiture_KM: 345879,
     image: imageDamas,
     statut: "Actif",
-    historique: [
-      {
-        id: 1,
-        type: "Maintenance moteur",
-        date: "15/10/2026",
-        km: 345000,
-        description: "Révision du moteur",
-      },
-      {
-        id: 2,
-        type: "Entretien périodique",
-        date: "12/07/2026",
-        km: 340000,
-        description: "Entretien général",
-      },
-    ],
   },
   {
     id: 2,
-    voiture_IMMAT: "4947 TBF",
+    voiture_IMMAT: "4946 TBF",
     voiture_MARQUE: "MAZDA",
     voiture_ANNEE: 2009,
     voiture_MODELE: "BT-50",
     voiture_KM: 348000,
     image: imageBt50,
     statut: "Actif",
-    historique: [
-      {
-        id: 1,
-        type: "Maintenance pneumatique",
-        date: "08/09/2026",
-        km: 153500,
-        description: "Remplacement des pneumatiques",
-      },
-    ],
   },
   {
     id: 5,
-    voiture_IMMAT: "4947 TBF",
+    voiture_IMMAT: "4946 TBF",
     voiture_MARQUE: "MAZDA",
     voiture_ANNEE: 2009,
     voiture_MODELE: "BT-50",
     voiture_KM: 348000,
     image: imageBt50,
     statut: "Actif",
-    historique: [
-      {
-        id: 1,
-        type: "Maintenance pneumatique",
-        date: "08/09/2026",
-        km: 153500,
-        description: "Remplacement des pneumatiques",
-      },
-    ],
   },
   {
     id: 6,
-    voiture_IMMAT: "4947 TBF",
+    voiture_IMMAT: "4946 TBF",
     voiture_MARQUE: "MAZDA",
     voiture_ANNEE: 2009,
     voiture_MODELE: "BT-50",
     voiture_KM: 348000,
     image: imageBt50,
     statut: "Actif",
-    historique: [
-      {
-        id: 1,
-        type: "Maintenance pneumatique",
-        date: "08/09/2026",
-        km: 153500,
-        description: "Remplacement des pneumatiques",
-      },
-    ],
   },
   {
     id: 3,
@@ -119,7 +81,6 @@ const vehicules = ref([
     voiture_KM: 98500,
     image: imageGeely,
     statut: "Inactif",
-    historique: [],
   },
 ]);
 
@@ -145,6 +106,21 @@ const vehiculesFiltres = computed(() => {
 });
 const marquesDisponibles = computed(() => [...new Set(vehicules.value.map((v) => v.voiture_MARQUE).filter(Boolean))]);
 const anneesDisponibles = computed(() => [...new Set(vehicules.value.map((v) => v.voiture_ANNEE).filter(Boolean))].sort((a, b) => b - a));
+
+const historiqueVehicule = (vehicule) => {
+  if (!vehicule?.voiture_IMMAT) return [];
+
+  return maintenanceStore.voitMtnce.map((item, index) => ({
+    id:  item.maint_CODE ?? item.id ?? index,
+    type: item.maint_type ?? item.maint_TYPE ?? item.maint_LIBELLE ?? "Maintenance",
+    date: item.maint_DATE ??  "Date non renseignée",
+    description: item.maint_DESCRIPTION ?? item.maint_LIBELLE ?? "",
+    km: item.maint_KM ?? item.km,
+    donnees: item,
+  }));
+};
+
+const historiqueSelectionne = computed(() => historiqueVehicule(selectedVehicule.value));
 
 const headersVehicules = [
   { title: "Immatriculation", key: "voiture_IMMAT" },
@@ -188,7 +164,9 @@ const handleRowClick = async (item) => {
   panelVisible.value = true;
   loadingDetails.value = true;
   selectedVehicule.value = item;
-  await new Promise((resolve) => setTimeout(resolve, 500));
+
+  // Charger les maintenances depuis l'API pour ce véhicule
+  await maintenanceStore.getVoitureMaintenance(item.voiture_IMMAT);
 
   if (currentRequest !== selectionRequestId.value) return;
 
@@ -220,6 +198,19 @@ const modifierVehiculeDepuisListe = (vehicule) => {
   selectedVehicule.value = vehicule;
   editionOuverte.value = true;
 };
+
+const toggleMaintenanceExpand = (maintenanceId) => {
+  maintenanceExpandedId.value = maintenanceExpandedId.value === maintenanceId ? null : maintenanceId;
+};
+
+const voirDetailMaintenance = (maintenance) => {
+  const code = maintenance.donnees?.maint_CODE ?? maintenance.id;
+  if (!code) return;
+  router.push({
+    name: "maintenance-liste",
+    query: { highlightMaint: String(code), openMaint: String(code) },
+  });
+};
 </script>
 
 <template>
@@ -227,9 +218,10 @@ const modifierVehiculeDepuisListe = (vehicule) => {
     <Transition name="layout-transition" mode="out-in">
     <DetailVehicule
       v-if="detailPleinEcran && selectedVehicule"
-      :vehicule="selectedVehicule"
+      :vehicule="{ ...selectedVehicule, historique: historiqueSelectionne }"
       :date-heure="dateHeure"
       @back="detailPleinEcran = false"
+      @voir-detail-maintenance="voirDetailMaintenance"
     />
 
     <div v-else class="vehicule-layout">
@@ -325,28 +317,56 @@ const modifierVehiculeDepuisListe = (vehicule) => {
                 <h3>Historique des maintenances</h3>
 
                 <span>
-                  {{ selectedVehicule.historique.length }}
+                  {{ historiqueSelectionne.length }}
                 </span>
               </div>
 
               <div
-                v-if="selectedVehicule.historique.length"
+                v-if="historiqueSelectionne.length"
                 class="historique-list"
               >
                 <div
-                  v-for="maintenance in selectedVehicule.historique"
+                  v-for="maintenance in historiqueSelectionne"
                   :key="maintenance.id"
-                  class="maintenance-item"
+                  class="maintenance-item-compact"
+                  :class="{ 'maintenance-item-compact--expanded': maintenanceExpandedId === maintenance.id }"
+                  @click="toggleMaintenanceExpand(maintenance.id)"
                 >
-                  <strong>{{ maintenance.type }}</strong>
+                  <!-- Ligne compacte : type / classification -->
+                  <div class="maintenance-item-summary">
+                    <v-icon size="16" class="maintenance-item-chevron" :class="{ 'maintenance-item-chevron--open': maintenanceExpandedId === maintenance.id }">mdi-chevron-right</v-icon>
+                    <strong>{{ maintenance.type }}</strong>
+                    <span class="maintenance-item-date">{{ maintenance.date }}</span>
+                  </div>
 
-                  <span>{{ maintenance.date }}</span>
+                  <!-- Détails dépliés au clic -->
+                  <Transition name="expand-detail">
+                    <div v-if="maintenanceExpandedId === maintenance.id" class="maintenance-item-details">
+                      <div class="maintenance-item-details__row">
+                        <span>Description</span>
+                        <strong>{{ maintenance.description || '—' }}</strong>
+                      </div>
+                      <div class="maintenance-item-details__row">
+                        <span>Kilométrage</span>
+                        <strong>{{ formatKm(maintenance.km) || '—' }}</strong>
+                      </div>
+                      <div class="maintenance-item-details__row">
+                        <span>Date</span>
+                        <strong>{{ maintenance.date }}</strong>
+                      </div>
 
-                  <small>{{ maintenance.description }}</small>
-
-                  <small>
-                    Kilométrage : {{ formatKm(maintenance.km) }}
-                  </small>
+                      <v-btn
+                        size="small"
+                        variant="elevated"
+                        color="#144f0e"
+                        class="voir-detail-btn"
+                        prepend-icon="mdi-eye-outline"
+                        @click.stop="voirDetailMaintenance(maintenance)"
+                      >
+                        VOIR DÉTAIL
+                      </v-btn>
+                    </div>
+                  </Transition>
                 </div>
               </div>
 
@@ -457,7 +477,7 @@ const modifierVehiculeDepuisListe = (vehicule) => {
               </div>
               <div class="vehicule-card__footer">
                 <v-icon icon="mdi-wrench-outline" size="14" />
-                <span>{{ vehicule.historique.length }} maintenance{{ vehicule.historique.length !== 1 ? 's' : '' }}</span>
+                <span>{{ historiqueVehicule(vehicule).length }} maintenance{{ historiqueVehicule(vehicule).length !== 1 ? 's' : '' }}</span>
                 <v-spacer />
                 <v-btn icon size="small" variant="text" color="warning" title="Modifier le véhicule" aria-label="Modifier le véhicule" @click.stop="modifierVehiculeDepuisListe(vehicule)">
                   <v-icon size="20">mdi-pencil</v-icon>
@@ -666,22 +686,113 @@ const modifierVehiculeDepuisListe = (vehicule) => {
   flex-direction: column;
 }
 
-.maintenance-item {
+/* Liste compacte des maintenances */
+.maintenance-item-compact {
+  border-bottom: 1px solid #e5e5e5;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.maintenance-item-compact:hover {
+  background-color: #f0f4f0;
+}
+
+.maintenance-item-compact--expanded {
+  background-color: #f7faf7;
+}
+
+.maintenance-item-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 4px;
+}
+
+.maintenance-item-summary strong {
+  font-size: 13px;
+  color: #263626;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.maintenance-item-date {
+  color: #526052;
+  font-size: 11px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.maintenance-item-chevron {
+  color: #607160;
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.maintenance-item-chevron--open {
+  transform: rotate(90deg);
+}
+
+/* Détails dépliés */
+.maintenance-item-details {
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  padding: 12px 0;
-  border-bottom: 1px solid #e5e5e5;
+  gap: 8px;
+  padding: 8px 12px 14px 28px;
+  border-top: 1px solid #e8ede8;
 }
 
-.maintenance-item strong {
-  font-size: 13px;
-}
-
-.maintenance-item span,
-.maintenance-item small {
-  color: #526052;
+.maintenance-item-details__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
   font-size: 12px;
+}
+
+.maintenance-item-details__row > span {
+  color: #607160;
+}
+
+.maintenance-item-details__row > strong {
+  font-size: 12px;
+  color: #202720;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.voir-detail-btn {
+  margin-top: 8px;
+  align-self: flex-end;
+  font-weight: 700;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  border-radius: 6px;
+}
+
+/* Transition expand */
+.expand-detail-enter-active {
+  transition: all 0.2s ease-out;
+  overflow: hidden;
+}
+.expand-detail-leave-active {
+  transition: all 0.15s ease-in;
+  overflow: hidden;
+}
+.expand-detail-enter-from,
+.expand-detail-leave-to {
+  opacity: 0;
+  max-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+.expand-detail-enter-to,
+.expand-detail-leave-from {
+  opacity: 1;
+  max-height: 200px;
 }
 
 .historique-vide {

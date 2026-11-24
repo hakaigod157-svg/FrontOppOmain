@@ -115,7 +115,7 @@ const emit = defineEmits(["update:modelValue", "open-day", "open-maintenance"]);
           variant="outlined"
           color="#0b3b17"
           size="small"
-          density="compact"
+          
           class="text-none"
           prepend-icon="mdi-calendar-day"
           @click="emit('open-day')"

@@ -149,10 +149,10 @@ const emit = defineEmits(['login', 'back-home', 'new-request', 'open-item', 'ope
   padding: 0;
   border: 0;
   border-radius: var(--radius-sm, 8px);
-  background: none;
+  background: transparent;
   color: var(--color-text, #1a1f1b);
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 
 .dashboard__close:hover {
@@ -248,19 +248,20 @@ const emit = defineEmits(['login', 'back-home', 'new-request', 'open-item', 'ope
 .dashboard__back {
   min-width: 180px;
   height: 48px;
-  border: 0;
+  border: 1px solid var(--color-primary, #2e7d32);
   border-radius: var(--radius-sm, 8px);
-  background: var(--color-primary-soft, #e8f5e9);
+  background: transparent;
   color: var(--color-primary-dark, #1b5e20);
   font: inherit;
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: background 0.15s ease, border-color 0.15s ease;
 }
 
 .dashboard__back:hover {
-  background: #d7ecd9;
+  background: var(--color-primary-soft, #e8f5e9);
+  border-color: var(--color-primary-dark, #1b5e20);
 }
 
 .dashboard__back:focus-visible {

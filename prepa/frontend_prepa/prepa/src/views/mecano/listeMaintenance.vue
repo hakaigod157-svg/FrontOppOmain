@@ -100,7 +100,7 @@ const getStatusCellStyle = (item) => {
 const maintenanceLegendItems = computed(() => {
   const types = [...new Set(
     (demandeStore.typeMaintenance || [])
-      .map((entry) => String(entry?.enum_CODE ?? entry?.ENUM_CODE ?? entry?.enum_code ?? entry ?? "").trim())
+      .map((entry) => String(entry?.enum_CODE ?? entry?.enum_code ?? entry ?? "").trim())
       .filter(Boolean)
   )].sort((first, second) => first.localeCompare(second));
 

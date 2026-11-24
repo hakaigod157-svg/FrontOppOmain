@@ -10,13 +10,13 @@ const props = defineProps({
   },
   typeDemande: {
     type: String,
-    required: true,
+    default: "",
   },
-  // Optionnel : si vide, le code est généré à l'ouverture
-  // code: {
-  //   type: String,
-  //   default: "",
-  // },
+  // Code pré-généré depuis le sélecteur de type
+  preGeneratedCode: {
+    type: String,
+    default: "",
+  },
 });
 
 const emit = defineEmits(["update:modelValue", "saved"]);
@@ -60,7 +60,7 @@ const form = reactive({
 });
 
 const resetForm = () => {
-  form.DEMANDE_CODE = props.code;
+  form.DEMANDE_CODE = props.preGeneratedCode || "";
   form.DEMANDE_DATE = dateDuJour();
   form.DEMANDE_VOITURE = null;
   form.DEMANDE_KM =null;
@@ -87,8 +87,18 @@ const listeTypesMaintenance = computed(() => {
 const preparer = async () => {
   resetForm();
 
- await store.getVoitureRhtra();
-  await store.getTypeMaint()
+  // Si un code pré-généré est fourni (depuis le sélecteur de type), l'utiliser
+  if (props.preGeneratedCode) {
+    form.DEMANDE_CODE = props.preGeneratedCode;
+  }
+
+  // Si un type pré-sélectionné est fourni, l'appliquer
+  if (props.typeDemande) {
+    form.DEMANDE_TYPE = props.typeDemande;
+  }
+
+  await store.getVoitureRhtra();
+  await store.getTypeMaint();
 
   if (form.DEMANDE_CODE) return;
 
@@ -112,7 +122,7 @@ watch(
 );
 
 watch(
-  () => props.code,
+  () => props.preGeneratedCode,
   (nouveauCode) => {
     if (nouveauCode) form.DEMANDE_CODE = nouveauCode;
   }
@@ -253,6 +263,21 @@ const save = async () => {
             />
           </v-col>
 
+            <!-- TYPE -->
+          <v-col cols="12" md="6">
+            <v-select
+              v-model="form.DEMANDE_TYPE"
+              :items="listeTypesMaintenance"
+              label="Type de demande"
+              variant="outlined"
+              density="compact"
+              placeholder="Choisir le type de Maintenance"
+              clearable
+              required
+            />
+          </v-col>
+
+
           <!-- VOITURE -->
           <v-col cols="12" md="6">
             <v-autocomplete
@@ -267,16 +292,6 @@ const save = async () => {
             />
           </v-col>
 
-          <v-col cols="12"  v-if="loadingDetails">
-            <v-progress-linear indeterminate />
-              </v-col>
-              <v-col cols="12"  md="6"  v-else-if="detailsVoiture">
-              <div class="details-voiture">
-              Km de la Voiture actuel :  {{ formatKm(detailsVoiture) }} km
-              </div>
-              
-          </v-col>
-
           <!-- MARQUE -->
           <v-col cols="12" md="6">
             <v-text-field
@@ -285,24 +300,20 @@ const save = async () => {
               variant="outlined"
               density="compact"
               placeholder="La marque est optionnelle"
-
             />
           </v-col>
 
-          <!-- TYPE -->
-          <v-col cols="12" md="6">
-            <v-select
-              v-model="form.DEMANDE_TYPE"
-              :items="listeTypesMaintenance"
-              label="Type de demande"
-              variant="outlined"
-              density="compact"
-              placeholder="Choisir le type de Maintenance"
-              clearable
-              required
-            />
+          <v-col cols="12" md="6" class="vehicle-details-column">
+            <div v-if="loadingDetails" class="details-voiture details-voiture--loading">
+              <v-progress-linear indeterminate />
+            </div>
+            <div v-else-if="detailsVoiture" class="details-voiture">
+              Km actuel du véhicule : {{ formatKm(detailsVoiture) }} km
+            </div>
+            <div v-else class="details-voiture-placeholder" aria-hidden="true" />
           </v-col>
-
+        
+        
           <!-- AUTEUR -->
           <!-- <v-col cols="12" md="6">
             <v-text-field
@@ -358,6 +369,20 @@ const save = async () => {
   border-left: 4px solid #0b3b17; /* petit trait de couleur à gauche */
   border-radius: 6px;
   padding: 12px 16px;
+}
+
+.vehicle-details-column {
+  min-height: 64px;
+}
+
+.details-voiture-placeholder,
+.details-voiture--loading {
+  min-height: 40px;
+}
+
+.details-voiture--loading {
+  display: flex;
+  align-items: center;
 }
 
 .details-titre {

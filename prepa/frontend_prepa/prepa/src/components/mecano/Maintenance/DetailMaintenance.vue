@@ -2101,6 +2101,7 @@ const openRealPJPreview = (item) =>
             locale="fr-FR"
             :min="dateValidationMin"
             :max="dateValidationMax"
+            @dblclick="confirmerValidationEtape"
           >
             <template #day="{ item, props }">
               <v-btn

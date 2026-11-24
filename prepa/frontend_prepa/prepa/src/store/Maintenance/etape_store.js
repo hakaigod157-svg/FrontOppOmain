@@ -260,7 +260,6 @@ export const useEtapeStore = defineStore("etapeStore", {
                         headers: { Authorization: sessionId },
                     }
                 );
-                // console.log("[validerEtapePrepa] Étape PREPA validée :", response.data);
                 return response.data;
             } catch (error) {
                 console.error("Erreur lors de la validation PREPA :", error);

@@ -692,14 +692,14 @@ watch(
 
 /* Active / selected state — premium violet, white text */
 .classification-pill.active {
-  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 50%, #5b21b6 100%);
+  background: linear-gradient(135deg, #225c10 0%, #6d28d9 50%, #21b664 100%);
   border-color: transparent;
   color: #fff;
   font-weight: 600;
   transform: scale(1.04) translateY(-1px);
   box-shadow:
     0 4px 16px rgba(109, 40, 217, 0.3),
-    0 0 0 1px rgba(109, 40, 217, 0.08),
+    0 0 0 1px rgba(40, 217, 173, 0.08),
     inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 

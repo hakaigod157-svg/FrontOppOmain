@@ -22,9 +22,7 @@ export const useDemandeMaintenance = defineStore("demandeMaintenance", {
         async fetchDemandes() {
             const sessionId = localStorage.getItem("sessionId");
             const { handleLogout } = useLogout();
-
             this.loading = true;
-
             try {
                 const response = await axios.get(
                     Config.SERVER_URL + "api/listDmdMntc",
@@ -34,24 +32,17 @@ export const useDemandeMaintenance = defineStore("demandeMaintenance", {
                         }
                     }
                 );
-
-                console.log("Efa nande tsara tany am base");
-
                 if (Array.isArray(response.data)) {
-
                     this.demandes = response.data.map(
                         (demande) => ({ ...demande })
                     );
-
                 } else if (
                     response.data &&
                     Array.isArray(response.data.target)
                 ) {
-
                     this.demandes = response.data.target.map(
                         (demande) => ({ ...demande })
                     );
-
                 } else {
                     this.demandes = [];
                     console.log(
@@ -70,7 +61,6 @@ export const useDemandeMaintenance = defineStore("demandeMaintenance", {
                 this.loading = false;
             }
         },
-
         // async searchDemandes(search = "", marque = "") {
 
         //     const sessionId = localStorage.getItem("sessionId");
@@ -161,12 +151,9 @@ export const useDemandeMaintenance = defineStore("demandeMaintenance", {
                         headers: { Authorization: sessionId }
                     }
                 );
-                console.log("Demande validée :", response.data);
                 await this.fetchDemandes();
-
             } catch (error) {
                 console.error("Erreur lors de la validation de la demande :", error);
-
                 if (error.response?.status === 401) {
                     await handleLogout();
                     alert("Vous avez été déconnecté")
@@ -239,12 +226,8 @@ export const useDemandeMaintenance = defineStore("demandeMaintenance", {
                         headers: { Authorization: sessionId }
                     }
                 );
-
-                console.log("Demande validée :", response.data);
-
                 await this.fetchDemandes();
                 return response.data;
-
             } catch (error) {
                 console.error("Erreur lors de la validation de la demande :", error);
                 if (error.response?.status === 401) {
@@ -259,7 +242,6 @@ export const useDemandeMaintenance = defineStore("demandeMaintenance", {
         async deleteDemande(demandeCode) {
             const sessionId = localStorage.getItem("sessionId");
             const { handleLogout } = useLogout();
-
             this.loading = true;
 
             try {
@@ -271,9 +253,6 @@ export const useDemandeMaintenance = defineStore("demandeMaintenance", {
                         headers: { Authorization: sessionId }
                     }
                 );
-
-                console.log("Demande validée :", response.data);
-
                 await this.fetchDemandes();
 
             } catch (error) {
@@ -300,10 +279,7 @@ export const useDemandeMaintenance = defineStore("demandeMaintenance", {
                         }
                     }
                 );
-                console.log(
-                    "Marques récupérées :",
-                    response.data
-                );
+                
                 if (Array.isArray(response.data)) {
                     this.marques = response.data;
                 } else if (
@@ -455,7 +431,7 @@ export const useDemandeMaintenance = defineStore("demandeMaintenance", {
                         params: {
                             demandeCode: demandeCode,
                             demandeVoiture: payload.DEMANDE_VOITURE,
-                            demandeMarque: payload.DEMANDE_MARQUE,
+                            demandeMarque: payload.DEMANDE_MARQUE ,
                             demandeType: payload.DEMANDE_TYPE,
                             demandeDescr: payload.DEMANDE_DESCR,
                             demandeKm:payload.DEMANDE_KM
@@ -535,45 +511,32 @@ export const useDemandeMaintenance = defineStore("demandeMaintenance", {
                     }
                 }
 
-                console.log("Réponse API voitures (raw) :", response.data);
+                // console.log("Réponse API voitures (raw) :", response.data);
 
                 if (Array.isArray(response.data)) {
-
                     this.voitures = response.data.map(
                         (voiture) => ({ ...voiture })
                     );
-
                 } else if (
                     response.data &&
                     Array.isArray(response.data.target)
                 ) {
-
                     this.voitures = response.data.target.map(
                         (voiture) => ({ ...voiture })
                     );
-
                 } else {
-
                     this.voitures = [];
-
-                    console.log(
-                        "vide be nenla base , tsy misy na 1 ary"
+                    console.log("vide be nenla base , tsy misy na 1 ary"
                     );
                 }
-
-                console.log("Voitures finales dans le store :", this.voitures);
-
+                // console.log("Voitures finales dans le store :", this.voitures);
             } catch (error) {
-
                 console.error(
                     "Erreur lors du chargement des voitures :",
                     error
                 );
-
                 this.voitures = [];
-
                 await handleLogout();
-
             } finally {
 
                 this.loading = false;
@@ -600,12 +563,11 @@ export const useDemandeMaintenance = defineStore("demandeMaintenance", {
                         }
                     }
                 );
-
                 if (response.status === 204 || !response.data) {
                     return null;
                 }
 
-                console.log("Km voiture récupéré :", response.data);
+                // console.log("Km voiture récupéré :", response.data);
                 return response.data;
 
             } catch (error) {
@@ -677,13 +639,11 @@ export const useDemandeMaintenance = defineStore("demandeMaintenance", {
                         }
                     }
                 );
-
                 if (response.status === 204 || !response.data) {
                     this.typeMaintenance = [];
                     return null;
                 }
 
-                console.log("Enumeration récupérée :", response.data);
 
                 if (Array.isArray(response.data)) {
                     this.typeMaintenance = response.data;
@@ -726,9 +686,6 @@ export const useDemandeMaintenance = defineStore("demandeMaintenance", {
                     this.enumerations = [];
                     return null;
                 }
-
-                console.log("Enumeration récupérée :", response.data);
-
                 if (Array.isArray(response.data)) {
                     this.enumerations = response.data;
                 } else {

@@ -106,34 +106,34 @@ const formatDateTime = (value) => {
 const normalizeDemande = (data) => {
   if (!data) return {};
   const rawDate =
-    data.demande_DATE || data.DEMANDE_DATE || data.demande_date || "";
+    data.demande_DATE || "";
   const dateCre =
-    data.demande_DATE_CRE || data.DEMANDE_DATE_CRE || data.demande_date_cre || "";
+    data.demande_DATE_CRE  || "";
   const dateModif =
-    data.demande_DATE_MODIF || data.DEMANDE_DATE_MODIF || data.demande_date_modif || "";
+    data.demande_DATE_MODIF  || "";
 
   return {
     demande_CODE:
-      data.demande_CODE || data.DEMANDE_CODE || data.demande_code || "",
+      data.demande_CODE  || "",
     demande_DATE: toInputDate(rawDate),
     demande_VOITURE:
-      data.demande_VOITURE || data.DEMANDE_VOITURE || data.demande_voiture || "",
+      data.demande_VOITURE  || "",
     demande_MARQUE:
-      data.demande_MARQUE || data.DEMANDE_MARQUE || data.demande_marque || "",
+      data.demande_MARQUE || "",
     demande_TYPE:
-      data.demande_TYPE || data.DEMANDE_TYPE || data.demande_type || "",
+      data.demande_TYPE || "",
     demande_AUTEUR:
-      data.demande_AUTEUR || data.DEMANDE_AUTEUR || data.demande_auteur || "",
+      data.demande_AUTEUR  || "",
     demande_DESCR:
-      data.demande_DESCR || data.DEMANDE_DESCR || data.demande_descr || "",
+      data.demande_DESCR  || "",
     demande_ETAT:
-      data.demande_ETAT ?? data.DEMANDE_ETAT ?? data.demande_etat ?? null,
+      data.demande_ETAT ?? null,
     demande_DATE_CRE: dateCre,
     demande_USER_CRE:
-      data.demande_USER_CRE || data.DEMANDE_USER_CRE || data.demande_user_cre || "",
+      data.demande_USER_CRE || "",
     demande_DATE_MODIF: dateModif,
     demande_USER_MODIF:
-      data.demande_USER_MODIF || data.DEMANDE_USER_MODIF || data.demande_user_modif || "",
+      data.demande_USER_MODIF  || "",
   };
 };
 
@@ -202,8 +202,6 @@ const listeTypesMaintenance = computed(() => {
     .map((e) => e.enum_CODE)
     .filter(Boolean);
 });
-
-
 
 watch(
   () => props.modelValue,

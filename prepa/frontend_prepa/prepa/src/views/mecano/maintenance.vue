@@ -22,9 +22,25 @@ export default defineComponent({
     const store = maintStore();
     const demandeStore = useDemandeMaintenance();
 
+    const isMaintenanceCompleted = (demande) => {
+      const etat = Number(demande?.demande_ETAT);
+      if (etat === 99) return true;
+
+      const statut = String(demande?.statut ?? demande?.STATUT ?? "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toUpperCase()
+        .trim();
+
+      return ["TERMIN", "CLOTUR", "FINI", "ACHEV", "COMPLET"].some((mot) =>
+        statut.includes(mot)
+      );
+    };
+
     const dashboardStats = computed(() => {
       const demandes = demandeStore.demandes || [];
       const pendingItems = demandes.filter((d) => Number(d.demande_ETAT) === 1);
+      const completedItems = demandes.filter(isMaintenanceCompleted);
       const inProgressItems = demandes
         .filter((d) => Number(d.demande_ETAT) === 2)
         .map((demand) => {
@@ -40,7 +56,7 @@ export default defineComponent({
 
       return {
         overdue: 0,
-        completed: 0,
+        completed: completedItems.length,
         inProgress: inProgressItems.length,
         pending: pendingItems.length,
         inProgressItems,
@@ -147,6 +163,7 @@ export default defineComponent({
             <v-tab :to="{ name: 'maintenance-demande' }">DEMANDES</v-tab>
             <v-tab :to="{ name: 'maintenance-liste' }">MAINTENANCE</v-tab>
             <v-tab :to="{ name: 'maintenance-calendar' }">CALENDRIER</v-tab>
+            <v-tab :to="{ name: 'maintenance-reparation' }">REPARATION</v-tab>
           </v-tabs>
         </v-card>
 

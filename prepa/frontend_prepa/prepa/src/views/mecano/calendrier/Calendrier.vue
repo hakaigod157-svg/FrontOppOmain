@@ -37,7 +37,7 @@ const MONTH_GRID_SIZE = 42;
 const MAINTENANCE_FILTERS = [
   { title: "Toutes les maintenances", value: "all", predicate: () => true },
   {
-    title: "Maintenance en Cours",
+    title: "Maintenance en cours",
     value: "in-progress",
     predicate: (maintenance) =>
       maintenance.steps.some((step) => !step.isComplete)
@@ -425,7 +425,7 @@ const events = ref([]);
 const loading = ref(true);
 const loadingRequest = ref(false);
 const hasLoadedOnce = ref(false);
-const maintenanceFilter = ref(MAINTENANCE_FILTERS[0].value);
+const maintenanceFilter = ref("in-progress");
 
 const visibleEvents = computed(() => {
   const active =

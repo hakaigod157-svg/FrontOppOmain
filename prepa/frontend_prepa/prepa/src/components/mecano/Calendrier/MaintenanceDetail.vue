@@ -33,7 +33,6 @@ const viewMaintenance = () => emit("view-maintenance", props.maintenance);
   <v-expansion-panels
     v-if="isDialog && maintenance.isComplete"
     variant="accordion"
-    density="compact"
   >
     <v-expansion-panel class="slot-maintenance-panel">
       <v-expansion-panel-title>

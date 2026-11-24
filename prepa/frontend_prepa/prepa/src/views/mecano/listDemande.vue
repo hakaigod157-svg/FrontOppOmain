@@ -3,6 +3,7 @@ import { ref, onMounted, computed, watch, nextTick } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import TableVirtuelle from "@/components/mecano/TableVirtuelle.vue";
+import TypeMaintenanceSelector from "@/components/mecano/Demande/TypeMaintenanceSelector.vue";
 import FormDialog from "@/components/mecano/Demande/FormDialog.vue";
 import EditDialog from "@/components/mecano/Demande/EditDialog.vue";
 import ValidationDemande from "@/components/mecano/Demande/ValidationDemande.vue";
@@ -20,6 +21,9 @@ const store = useDemandeMaintenance();
 const storeEtape = useEtapeStore();
 
 const showForm = ref(false);
+const showTypeSelector = ref(false);
+const selectedType = ref("");
+const preGeneratedCode = ref("");
 const showEdit = ref(false);
 const editingCode = ref("");
 const editingDemande = ref(null);
@@ -31,6 +35,12 @@ const selectedDemande = ref(null);
 const demandeClignotante = ref("");
 
 const nouvelleDemande = () => {
+  showTypeSelector.value = true;
+};
+
+const onTypeSelected = ({ type, code }) => {
+  selectedType.value = type;
+  preGeneratedCode.value = code;
   showForm.value = true;
 };
 
@@ -39,7 +49,7 @@ watch(
   () => route.query.nouvelle,
   async (value) => {
     if (value !== "1") return;
-    showForm.value = true;
+    showTypeSelector.value = true;
     const query = { ...route.query };
     delete query.nouvelle;
     await router.replace({ query });
@@ -67,6 +77,9 @@ const chargerDemandes = async () => {
 const onSaved = async (code) => {
   showForm.value = false;
   showEdit.value = false;
+  showTypeSelector.value = false;
+  selectedType.value = "";
+  preGeneratedCode.value = "";
   searchQuery.value = "";
   demandeClignotante.value = "";
   await chargerDemandes();
@@ -294,8 +307,14 @@ onMounted(async () => {
       >
         Nouvelle demande
       </v-btn>
+      <TypeMaintenanceSelector
+        v-model="showTypeSelector"
+        @type-selected="onTypeSelected"
+      />
       <FormDialog
         v-model="showForm"
+        :type-demande="selectedType"
+        :pre-generated-code="preGeneratedCode"
         @saved="onSaved"
       />
       <EditDialog

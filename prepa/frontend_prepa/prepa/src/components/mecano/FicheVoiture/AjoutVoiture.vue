@@ -108,8 +108,8 @@ const enregistrer = () => {
         <small>PNG, JPG ou WEBP</small>
       </span>
       <span class="upload-action">
-        <v-icon icon="mdi-cloud-upload-outline" size="17"/>{{form.image?'Changer la photo':'Importer une image'}}</span><
-        input type="file" accept="image/*" @change="imageChange"/></label></div>
+        <v-icon icon="mdi-cloud-upload-outline" size="17"/>{{form.image?'Changer la photo':'Importer une image'}}</span>
+        <input type="file" accept="image/*" @change="imageChange"/></label></div>
         <div v-if="erreur" class="form-hint"><v-icon icon="mdi-information-outline" size="16" />{{ erreur }}</div>
       </v-card-text>
       <v-divider />
@@ -119,5 +119,61 @@ const enregistrer = () => {
 </template>
 
 <style scoped>
-.vehicle-dialog{border-radius:12px!important;overflow:hidden}.dialog-header{display:flex;align-items:center;justify-content:space-between;padding:22px 28px 18px}.dialog-header h2{font-size:20px;font-weight:650;line-height:1.3;color:#202720}.dialog-content{padding:24px 28px}.add-grid{display:grid;grid-template-columns:1fr 1fr;gap:28px;align-items:stretch}.field-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px 16px}.field-row{display:grid;grid-template-columns:16px minmax(0,1fr);align-items:center;gap:7px;min-width:0}.field-icon{width:14px;height:14px;font-size:14px;color:#687568}.image-upload{position:relative;min-height:300px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:14px;border:1px dashed #829782;border-radius:8px;background:#f8faf8;overflow:hidden;cursor:pointer}.image-upload input{position:absolute;width:1px;height:1px;opacity:0}.image-upload img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.upload-empty{display:flex;align-items:center;flex-direction:column;gap:9px;color:#376e39}.upload-empty strong{font-size:14px;color:#263626}.upload-empty small{color:#5f6b60}.upload-action{z-index:1;display:flex;gap:7px;align-items:center;padding:8px 12px;border:1px solid #c5d3c5;border-radius:6px;background:white;color:#285b2a;font-size:12px}.form-hint{display:flex;gap:7px;align-items:center;margin-top:12px;color:#344934;font-size:13px}.dialog-footer{display:flex;justify-content:space-between;align-items:center;padding:16px 28px 20px}.dialog-footer>div{display:flex;gap:8px}.required-note{font-size:12px;color:#526052}.required-note span{color:#b71c1c}@media(max-width:700px){.dialog-header,.dialog-content{padding-inline:18px}.add-grid{grid-template-columns:1fr}.field-grid{grid-template-columns:1fr;gap:0}.image-upload{min-height:190px}.dialog-footer{align-items:flex-start;gap:12px;padding-inline:18px;flex-direction:column-reverse}.dialog-footer>div{width:100%;justify-content:flex-end}}
+.vehicle-dialog{
+  border-radius:12px!important;
+  overflow:hidden
+}
+.dialog-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:22px 28px 18px}
+
+.dialog-header h2{
+  font-size:20px;
+  font-weight:650;
+  line-height:1.3;
+  color:#202720
+}
+.dialog-content{padding:24px 28px}
+.add-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;gap:28px;
+  align-items:stretch
+}
+.field-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:4px 16px
+}
+.field-row{
+  display:grid;
+  grid-template-columns:16px minmax(0,1fr);
+  align-items:center;
+  gap:7px;
+  min-width:0
+}
+.field-icon{
+  width:14px;
+  height:14px;
+  font-size:14px;
+  color:#687568
+}
+.image-upload{position:relative;min-height:300px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:14px;border:1px dashed #829782;border-radius:8px;background:#f8faf8;overflow:hidden;cursor:pointer}
+.image-upload input{position:absolute;width:1px;height:1px;opacity:0}
+.image-upload img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.upload-empty{display:flex;align-items:center;flex-direction:column;gap:9px;color:#376e39}
+.upload-empty strong{font-size:14px;color:#263626}.upload-empty small{color:#5f6b60}
+.upload-action{z-index:1;display:flex;gap:7px;align-items:center;padding:8px 12px;border:1px solid #c5d3c5;border-radius:6px;background:white;color:#285b2a;font-size:12px}
+.form-hint{display:flex;gap:7px;align-items:center;margin-top:12px;color:#344934;font-size:13px}
+.dialog-footer{display:flex;justify-content:space-between;align-items:center;padding:16px 28px 20px}
+.dialog-footer>div{display:flex;gap:8px}.required-note{font-size:12px;color:#526052}
+.required-note span{color:#b71c1c}@media(max-width:700px)
+{.dialog-header,
+.dialog-content{padding-inline:18px}
+.add-grid{grid-template-columns:1fr}
+.field-grid{grid-template-columns:1fr;gap:0}
+.image-upload{min-height:190px}
+.dialog-footer{align-items:flex-start;gap:12px;padding-inline:18px;flex-direction:column-reverse}
+.dialog-footer>div{width:100%;justify-content:flex-end}}
 </style>

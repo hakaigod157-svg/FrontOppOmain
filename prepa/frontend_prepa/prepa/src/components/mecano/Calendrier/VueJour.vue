@@ -110,7 +110,7 @@ const emit = defineEmits(["open-slot", "open-maintenance"]);
               <v-btn
                 variant="outlined"
                 size="x-small"
-                density="compact"
+               
                 color="#0b3b17"
                 prepend-icon="mdi-plus"
                 class="slot-action-btn text-none"

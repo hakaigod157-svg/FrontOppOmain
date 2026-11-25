@@ -2,6 +2,7 @@
 import { computed, ref } from "vue";
 import TableVirtuelle from "@/components/mecano/TableVirtuelle.vue";
 import { useDemandeMaintenance } from "@/store/Maintenance/demande_store";
+import EditType from "@/components/mecano/TypeReparation/EditType.vue";
 
 const maintenanceStore = useDemandeMaintenance();
 const types = ref([]);
@@ -11,6 +12,7 @@ const kanban = ref([]);
 const loadingTypes = ref(false);
 const loadingEtapes = ref(false);
 const rechercheType = ref("");
+const edition = ref(null);
 
 const headers = [
   { title: "Type de maintenance", key: "type", width: "32%" },
@@ -32,7 +34,7 @@ const hauteurTableau = computed(() => loadingTypes.value
 
 const lireCode = (item) => String(typeof item === "string"
   ? item
-  : item?.enum_CODE ??  item?.enum_code ?? item?.enum_VALEUR ?? item?.maint_TYPE ??  item?.enum_LIBELLE ?? ""
+  : item?.enum_CODE ??  item?.enum_code ?? item?.enum_VALEUR ?? item?.maint_TYPE ?? ""
 ).trim();
 
 const chargerTypes = async () => {
@@ -100,6 +102,13 @@ chargerTypes();
 
 <template>
   <div class="page-reparations">
+    <EditType
+      v-if="edition"
+      :type-maintenance="edition.type"
+      :classification-selectionnee="edition.classification"
+      @close="edition = null"
+    />
+    <template v-else>
     <v-card-actions density="compact" class="page-actions">
       <h1>Types de maintenance</h1>
       <v-spacer />
@@ -173,11 +182,14 @@ chargerTypes();
       </div>
       <div v-else class="kanban">
         <section v-for="colonne in kanban" :key="colonne.classification" class="classification">
-          <h3>{{ colonne.classification }}</h3>
+          <header class="classification-heading">
+            <h3>{{ colonne.classification }}</h3>
+            <v-btn icon="mdi-pencil" size="small" variant="text" color="success" :aria-label="`Modifier ${colonne.classification}`" @click="edition = { type: typeSelectionne.type, classification: colonne.classification }" />
+          </header>
           <div class="lanes">
             <section class="lane lane-prepa">
               <header class="lane-heading">
-                <strong>Étape · Préparation</strong>
+                <strong>Étape</strong>
                 <span>{{ colonne.prepa.length }}</span>
               </header>
               <div v-for="(etape, index) in colonne.prepa" :key="index" class="step-card">
@@ -188,7 +200,7 @@ chargerTypes();
 
             <section class="lane lane-technique">
               <header class="lane-heading">
-                <strong>Technique · Réalisation</strong>
+                <strong>Technique</strong>
                 <span>{{ colonne.real.length }}</span>
               </header>
               <div v-for="(etape, index) in colonne.real" :key="index" class="step-card">
@@ -200,6 +212,7 @@ chargerTypes();
         </section>
       </div>
     </section>
+    </template>
   </div>
 </template>
 
@@ -227,6 +240,8 @@ chargerTypes();
 .kanban { display: flex; align-items: flex-start; gap: 12px; overflow-x: auto; }
 .classification { flex: 0 0 430px; padding: 12px; border: 1px solid #e0e0e0; border-radius: 4px; background: #fafafa; }
 .classification h3 { margin: 0 0 12px; padding-bottom: 8px; border-bottom: 1px solid #e0e0e0; font-size: .95rem; font-weight: 600; }
+.classification-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.classification-heading h3 { flex: 1; }
 .lanes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .lane { min-width: 0; padding: 8px; border: 1px solid #e0e0e0; border-radius: 4px; background: white; }
 .lane-heading { display: flex; justify-content: space-between; align-items: center; min-height: 34px; margin: -8px -8px 8px; padding: 6px 8px; border-bottom: 1px solid #e0e0e0; color: #424242; font-size: .76rem; }

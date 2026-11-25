@@ -35,20 +35,20 @@ const REFRESH_INTERVAL_MS = 60000;
 const MONTH_GRID_SIZE = 42;
 
 const MAINTENANCE_FILTERS = [
-  { title: "Toutes les maintenances", value: "all", predicate: () => true },
   {
-    title: "Maintenance en cours",
+    title: "En cours",
     value: "in-progress",
     predicate: (maintenance) =>
       maintenance.steps.some((step) => !step.isComplete)
-  }
+  },
+  { title: "Toutes les maintenances", value: "all", predicate: () => true }
 ];
 
 const CLASSIFICATION_STYLES = [
   { match: "PREVENT", icon: "mdi-shield-check" },
-  { match: "CURAT", icon: "mdi-wrench" },
-  { match: "CORRECT", icon: "mdi-alert-circle" },
-  { match: "PNEU", icon: "mdi-tire" }
+  { match: "PANN" || "DIAG" || "ACC", icon: "mdi-wrench" },
+  { match: "VISIT", icon: "mdi-alert-circle" },
+  { match: "ASS", icon: "mdi-tire" }
 ];
 const FALLBACK_CLASSIFICATION_ICON = "mdi-car-wrench";
 

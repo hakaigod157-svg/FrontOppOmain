@@ -34,7 +34,7 @@ const selectionRequestId = ref(0);
 const vehicules = ref([
   {
     id: 1,
-    voiture_IMMAT: "2099 TBP",
+    voiture_IMMAT: "2092 TBM",
     voiture_MARQUE: "CHEVROLET",
     voiture_ANNEE: 2008,
     voiture_MODELE: "DAMAS",
@@ -54,7 +54,7 @@ const vehicules = ref([
   },
   {
     id: 5,
-    voiture_IMMAT: "4946 TBF",
+    voiture_IMMAT: "4947 TBF",
     voiture_MARQUE: "MAZDA",
     voiture_ANNEE: 2009,
     voiture_MODELE: "BT-50",
@@ -64,17 +64,17 @@ const vehicules = ref([
   },
   {
     id: 6,
-    voiture_IMMAT: "4946 TBF",
+    voiture_IMMAT: "7421 TBR",
     voiture_MARQUE: "MAZDA",
-    voiture_ANNEE: 2009,
-    voiture_MODELE: "BT-50",
+    voiture_ANNEE: 2015,
+    voiture_MODELE: "B2900",
     voiture_KM: 348000,
     image: imageBt50,
     statut: "Actif",
   },
   {
     id: 3,
-    voiture_IMMAT: "2997 TBS",
+    voiture_IMMAT: "2615 WWT",
     voiture_MARQUE: "GEELY",
     voiture_ANNEE: 2017,
     voiture_MODELE: "GX3",
@@ -111,11 +111,11 @@ const historiqueVehicule = (vehicule) => {
   if (!vehicule?.voiture_IMMAT) return [];
 
   return maintenanceStore.voitMtnce.map((item, index) => ({
-    id:  item.maint_CODE ?? item.id ?? index,
-    type: item.maint_type ?? item.maint_TYPE ?? item.maint_LIBELLE ?? "Maintenance",
+    id:  item.maint_CODE  ?? index,
+    type:  item.maint_TYPE ?? "Maintenance",
     date: item.maint_DATE ??  "Date non renseignée",
-    description: item.maint_DESCRIPTION ?? item.maint_LIBELLE ?? "",
-    km: item.maint_KM ?? item.km,
+    description: item.maint_DESCRIPTION ?? "",
+    km: item.maint_KM ,
     donnees: item,
   }));
 };

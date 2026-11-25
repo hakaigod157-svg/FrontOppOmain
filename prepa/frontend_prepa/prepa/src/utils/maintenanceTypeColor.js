@@ -3,12 +3,10 @@ const normalizeTypeCode = (value) => String(value ?? "").trim().toUpperCase();
 const getTypeCode = (entry) =>
   entry?.enum_CODE ?? entry?.ENUM_CODE ?? entry?.enum_code ?? entry;
 
-const TYPE_COLORS = ["#079030ff", "#e02b03ff", "#004fe2ff", "#079030ff"];
+//                    Assurance.     PONCTUELLE.    PREVENTIVE.     VISITE_TEC
+const TYPE_COLORS = ["#079030ff", "#845b02ff", "#004fe2ff", "#890790ff"];
 
-/**
- * Attribue une couleur distincte aux types renvoyés par /getTypeMaint.
- * Le tri rend l'association stable même si l'API ne garantit pas son ordre.
- */
+
 export const getMaintenanceTypeColor = (type, availableTypes = []) => {
   const requestedType = normalizeTypeCode(type);
   if (!requestedType) return "#64748b";

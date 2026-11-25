@@ -8,10 +8,11 @@ import FormDialog from "@/components/mecano/Demande/FormDialog.vue";
 import EditDialog from "@/components/mecano/Demande/EditDialog.vue";
 import ValidationDemande from "@/components/mecano/Demande/ValidationDemande.vue";
 import DetailMaintenance from "@/components/mecano/Maintenance/DetailMaintenance.vue";
-import CalendarLegend from "@/components/mecano/Calendrier/CalendarLegend.vue";
+// import CalendarLegend from "@/components/mecano/Calendrier/CalendarLegend.vue";
 
 import { useDemandeMaintenance } from "@/store/Maintenance/demande_store";
 import { useEtapeStore } from "@/store/Maintenance/etape_store";
+import { maintStore } from "@/store/Maintenance/maintenance_store";
 import { getMaintenanceTypeColor } from "@/utils/maintenanceTypeColor";
 
 const searchQuery = ref("");
@@ -19,6 +20,7 @@ const route = useRoute();
 const router = useRouter();
 const store = useDemandeMaintenance();
 const storeEtape = useEtapeStore();
+const storeMtnce = maintStore();
 
 const showForm = ref(false);
 const showTypeSelector = ref(false);
@@ -58,17 +60,39 @@ watch(
 );
 
 const chargerDemandes = async () => {
-  await Promise.all([store.fetchDemandes(), store.getTypeMaint()]);
+  await Promise.all([
+    store.fetchDemandes(),
+    store.getTypeMaint(),
+    storeMtnce.getMaintenances(),
+  ]);
+
   await Promise.all(
     store.demandes.map(async (item) => {
-      const code = item.demande_CODE;
-      if (code && code !== "-") {
-        const etape = await storeEtape.getEtapeEnCours(code);
-        if (etape) {
-          if (etape.statut !== undefined) item.statut = etape.statut;
-          if (etape.etape_EN_COURS !== undefined) item.etape_EN_COURS = etape.etape_EN_COURS;
-          if (etape.duree !== undefined) item.duree = etape.duree;
+      const etat = Number(item.demande_ETAT);
+      item.etapeEnCoursLibelle = null;
+
+      if (etat === 99) {
+        item.statut = "TERMINÉE";
+      } else if (etat === 2) {
+        item.statut = "EN COURS";
+        const maintenance = (storeMtnce.maintnces || []).find(
+          (m) => m.maint_DEMANDE === item.demande_CODE
+        );
+
+        if (maintenance?.maint_CODE) {
+          const etapeMaint = await storeEtape.getEtapeMaint(maintenance.maint_CODE);
+          if (etapeMaint) {
+            item.etapeEnCoursLibelle =
+              etapeMaint.etape_EN_COURS ||
+              etapeMaint.maint_ETAPE_LIGNE ||
+              etapeMaint.etape_LIBELLE ||
+              null;
+          }
         }
+      } else if (etat === 3) {
+        item.statut = "REFUSÉE";
+      } else {
+        item.statut = "ATTENTE VALIDATION";
       }
     })
   );
@@ -111,10 +135,9 @@ const headersDemandes = [
   { title: "Auteur", key: "demande_AUTEUR" ,width:"90px"},
   { title: "Description", key: "demande_DESCR" , width:"500px" },
   {
-    title: "État",key: "statut",align: "center",cellProps: ({ item }) => ({
+    title: "État", key: "statut", align: "center", width: "160px", cellProps: ({ item }) => ({
       style: getStatusCellStyle(item),
       class: "statut-col-td",
-      width:"90px"
     }),
   },
   // { title: "Étape en cours", key: "etape_EN_COURS" , width:"150px"},
@@ -131,15 +154,15 @@ const headersDemandes = [
 ];
 
 const getStatusText = (item) => {
-  if (item.statut) return item.statut;
-  const etat = Number(item.demande_ETAT);
-  if (etat === 2) return "EN COURS";
+  const etat = Number(item?.demande_ETAT);
+  if (etat === 99) return "TERMINÉE";
   if (etat === 3) return "REFUSÉE";
-  return "";
+  if (etat === 2) return "EN COURS";
+  return item?.statut || "ATTENTE VALIDATION";
 };
 
 const getStatusCellStyle = (item) => {
-  const s = String(item?.statut || "").toUpperCase().trim();
+  const s = String(getStatusText(item) || "").toUpperCase().trim();
   const etat = Number(item?.demande_ETAT);
 
   if (s.includes("REFUS") || s.includes("ANNUL") || etat === 3) {
@@ -174,7 +197,7 @@ const getStatusCellStyle = (item) => {
 const demandeLegendItems = computed(() => {
   const types = [...new Set(
     (store.typeMaintenance || [])
-      .map((entry) => String(entry?.enum_CODE ?? entry?.ENUM_CODE ?? entry?.enum_code ?? entry ?? "").trim())
+      .map((entry) => String(entry?.enum_CODE ?? entry ?? "").trim())
       .filter(Boolean)
   )].sort((first, second) => first.localeCompare(second));
 
@@ -295,17 +318,16 @@ onMounted(async () => {
     <v-card-actions density="compact" class="demandes__actions">
       <h2>DEMANDES</h2>
       <v-spacer />
-      <v-btn 
-      variant="elevated" color="#144f0e"
-          style="font-weight: 600; border-radius: 8px"
-      class="boutonNvDmd"
-        
+      <v-btn
+        variant="flat"
+        color="#144f0e"
+        class="boutonNvDmd"
         prepend-icon="mdi-plus"
         :loading="store.loading"
         :disabled="store.loading"
         @click="nouvelleDemande"
       >
-        Nouvelle demande
+        NOUVELLE DEMANDE
       </v-btn>
       <TypeMaintenanceSelector
         v-model="showTypeSelector"
@@ -343,6 +365,7 @@ onMounted(async () => {
     <TableVirtuelle
       :headers="headersDemandes"
       :items="store.demandes"
+      :maintenance-types="store.typeMaintenance"
       :search="searchQuery"
       :highlighted-demand-code="demandeClignotante"
       :loading="store.loading"
@@ -368,7 +391,10 @@ onMounted(async () => {
       <!-- Colonne État -->
       <template v-slot:[`item.statut`]="{ item }">
         <div class="statut-col-cell" :style="getStatusCellStyle(item)">
-          {{ getStatusText(item) }}
+          <span>{{ getStatusText(item) }}</span>
+          <span v-if="getStatusText(item) === 'EN COURS' && item.etapeEnCoursLibelle" class="etape-en-cours-label">
+            ({{ item.etapeEnCoursLibelle }})
+          </span>
         </div>
       </template>
 
@@ -408,11 +434,11 @@ onMounted(async () => {
       </template>
     </TableVirtuelle>
 
-    <CalendarLegend
+    <!-- <CalendarLegend
       :items="demandeLegendItems"
       title="Type et statut"
       label="Légende de la liste des demandes"
-    />
+    /> -->
 
     <!-- Dialog détail demande / étapes avec background blur -->
     <v-dialog
@@ -463,6 +489,18 @@ onMounted(async () => {
   display: flex;
   justify-content: flex-end;
   padding: 0;
+}
+
+.boutonNvDmd {
+  min-height: 30px;
+  padding-inline: 12px;
+  border: 1px solid #144f0e;
+  border-radius: 5px;
+  box-shadow: none;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
 }
 
 .demandes__toolbar {
@@ -522,6 +560,7 @@ onMounted(async () => {
   height: 100%;
   min-height: 28px;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   font-weight: 700;
@@ -530,6 +569,19 @@ onMounted(async () => {
   text-transform: uppercase;
   text-align: center;
   padding: 2px 4px;
+  line-height: 1.3;
+}
+
+.etape-en-cours-label {
+  max-width: 140px;
+  margin-top: 1px;
+  overflow: hidden;
+  font-size: 9px;
+  font-weight: 500;
+  opacity: 0.85;
+  text-overflow: ellipsis;
+  text-transform: none;
+  white-space: nowrap;
 }
 
 :deep(.statut-col-td) {

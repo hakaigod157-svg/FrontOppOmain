@@ -230,6 +230,56 @@ export const useEtapeStore = defineStore("etapeStore", {
                 this.loading = false;
             }
         },
+
+        async getEtapeMaint(maintCode) {
+            if (!maintCode || maintCode === "-") {
+                return null;
+            }
+            const sessionId = localStorage.getItem("sessionId");
+            const { handleLogout } = useLogout();
+
+            this.loading = true;
+            try {
+                const response = await axios.get(
+                    Config.SERVER_URL + "api/etapeMaint",
+                    {
+                        headers: {
+                            Authorization: sessionId
+                        },
+                        params: {
+                            MAINT_CODE: maintCode
+                        }
+                    }
+                );
+                
+                // console.log("Étape en cours récupérée depuis l'API :", response.data);
+
+                if (response.status === 204 || !response.data) {
+                    this.etapeEnCours = null;
+                    return null;
+                }
+
+                let data = response.data;
+                if (data && data.target) {
+                    data = data.target;
+                }
+                if (Array.isArray(data)) {
+                    data = data.length > 0 ? data[0] : null;
+                }
+
+                this.etapeEnCours = data;
+                return data;
+            } catch (error) {
+                console.error("Erreur lors de la récupération de l'étape en cours :", error);
+                if (error.response?.status === 401) {
+                    await handleLogout();
+                }
+                this.etapeEnCours = null;
+                return null;
+            } finally {
+                this.loading = false;
+            }
+        },
 //////////////////////////////////////////////////////
 
 
@@ -274,10 +324,7 @@ export const useEtapeStore = defineStore("etapeStore", {
 /**
  * Ito ndray Etape Realisation avec Action sns 
  * $_POST 
- * @param {*} maintCode 
- * @param {*} data 
- * @returns 
- */
+ */ 
         async validerEtapeReal(maintCode, data = {}, file = null) {
             const sessionId = localStorage.getItem("sessionId");
             const { handleLogout } = useLogout();
@@ -358,14 +405,10 @@ export const useEtapeStore = defineStore("etapeStore", {
             }
         },
 
-   
-
         async cloturerMaintenance(maintCode){
             if (!maintCode) return false;
-
             const sessionId = localStorage.getItem("sessionId");
             const { handleLogout } = useLogout();
-
             this.loading = true;
             try {
                 await axios.post(Config.SERVER_URL + "api/terminerDmd",null,
@@ -379,7 +422,6 @@ export const useEtapeStore = defineStore("etapeStore", {
                     }
                 );
                 return true;
-                
             } catch (error) {
                 console.error("Erreur lors de la clôture de la maintenance :", error);
                 if (error.response?.status === 401) {

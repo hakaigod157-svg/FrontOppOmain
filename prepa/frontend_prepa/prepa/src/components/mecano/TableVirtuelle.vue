@@ -2,6 +2,7 @@
 <script setup>
 import { reactive, computed } from "vue";
 import dayjs from "dayjs";
+import { getMaintenanceTypeColor } from "@/utils/maintenanceTypeColor";
 
 const props = defineProps({
   headers: { type: Array, required: true },
@@ -47,6 +48,12 @@ const props = defineProps({
     ]
   },
 
+  badgeCols: {
+    type: Array,
+    default: () => ["demande_TYPE", "maint_TYPE"] // noms des colonnes à afficher en badge
+  },
+  maintenanceTypes: { type: Array, default: () => [] },
+
   totalDoublons: { type: Number, default: 0 },
   showNbDoublons: { type: Boolean, default: false }
 });
@@ -80,6 +87,9 @@ const formatKm = (valeur) => {
   return String(valeur).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
 };
 
+const getBadgeColor = (value) =>
+  getMaintenanceTypeColor(value, props.maintenanceTypes);
+
 const tokonyApotraToogle = (item, field) => {
   const text = String(item?.[field] ?? "").trim();
   return text.length > longMaxText;
@@ -103,8 +113,8 @@ const skeletonRows = computed(() => {
 const rowProps = ({ item }) => {
   const row = item?.raw ?? item;
 
-  const demandeCode = row?.demande_CODE ?? row?.DEMANDE_CODE;
-  const maintenanceCode = row?.maint_CODE ?? row?.MAINT_CODE;
+  const demandeCode = row?.demande_CODE ;
+  const maintenanceCode = row?.maint_CODE ;
 
   // Identification de la ligne sélectionnée
   const selectedId = row?.[props.selectedItemKey];
@@ -209,6 +219,21 @@ const filteredItems = computed(() => {
         v-slot:[`item.${col}`]="{ item }"
       >
         {{ formatKm(item[col]) }}{{ item[col] !== null && item[col] !== undefined && item[col] !== "" ? " km" : "" }}
+      </template>
+
+      <!-- Types de demande et de maintenance -->
+      <template
+        v-for="col in badgeCols"
+        :key="'badge-' + col"
+        v-slot:[`item.${col}`]="{ item }"
+      >
+        <span
+          v-if="item[col]"
+          class="type-badge"
+          :style="{ '--badge-accent': getBadgeColor(item[col]) }"
+        >
+          {{ item[col] }}
+        </span>
       </template>
 
       <!-- Gestion dynamique des textes longs -->
@@ -357,6 +382,22 @@ const filteredItems = computed(() => {
   font-size: 11px;
   min-height: 20px;
   text-transform: none;
+}
+
+.type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  padding: 3px 9px;
+  border: 1px solid var(--badge-accent);
+  border-radius: 5px;
+  background: var(--badge-accent);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
 }
 
 .text-truncate {

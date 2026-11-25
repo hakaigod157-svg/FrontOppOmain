@@ -3,7 +3,6 @@ import { ref, onMounted, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import TableVirtuelle from "@/components/mecano/TableVirtuelle.vue";
 import DetailMaintenance from "@/components/mecano/Maintenance/DetailMaintenance.vue";
-import CalendarLegend from "@/components/mecano/Calendrier/CalendarLegend.vue";
 import { maintStore } from "@/store/Maintenance/maintenance_store";
 import { useEtapeStore } from "@/store/Maintenance/etape_store";
 import { useDemandeMaintenance } from "@/store/Maintenance/demande_store";
@@ -47,7 +46,7 @@ const headersMaintenance = [
   { title: "Type", key: "maint_TYPE", align: "center" },
   { title: "Kilométrage", key: "maint_KM" , align: "center"},
   {
-    title: "Statut",key: "statut", align:"center", cellProps: ({ item }) => ({
+    title: "Statut", key: "statut", align: "center", width: "160px", cellProps: ({ item }) => ({
       style: getStatusCellStyle(item),
       class: "statut-col-td",
     }),
@@ -100,7 +99,7 @@ const getStatusCellStyle = (item) => {
 const maintenanceLegendItems = computed(() => {
   const types = [...new Set(
     (demandeStore.typeMaintenance || [])
-      .map((entry) => String(entry?.enum_CODE ?? entry?.enum_code ?? entry ?? "").trim())
+      .map((entry) => String(entry?.enum_CODE ?? "").trim())
       .filter(Boolean)
   )].sort((first, second) => first.localeCompare(second));
 
@@ -118,17 +117,39 @@ const maintenanceLegendItems = computed(() => {
 });
 
 const chargerMaintenances = async () => {
-  await Promise.all([storeMtnce.getMaintenances(), demandeStore.getTypeMaint()]);
+  await Promise.all([
+    storeMtnce.getMaintenances(),
+    demandeStore.getTypeMaint(),
+    demandeStore.fetchDemandes(),
+  ]);
+
   await Promise.all(
     storeMtnce.maintnces.map(async (item) => {
-      const code = item.maint_DEMANDE ;
-      if (code && code !== "-") {
-        const etape = await storeEtape.getEtapeEnCours(code);
-        if (etape) {
-          if (etape.statut !== undefined) item.statut = etape.statut;
-          if (etape.etape_EN_COURS !== undefined) item.etape_EN_COURS = etape.etape_EN_COURS;
-          if (etape.duree !== undefined) item.duree = etape.duree;
+      item.etapeEnCoursLibelle = null;
+      const demande = (demandeStore.demandes || []).find(
+        (d) => d.demande_CODE === item.maint_DEMANDE
+      );
+      const etat = Number(demande?.demande_ETAT ?? 0);
+
+      if (etat === 99) {
+        item.statut = "TERMINÉE";
+      } else if (etat === 2) {
+        item.statut = "EN COURS";
+        const maintCode = item.maint_CODE;
+        if (maintCode && maintCode !== "-") {
+          const etapeMaint = await storeEtape.getEtapeMaint(maintCode);
+          if (etapeMaint) {
+            item.etapeEnCoursLibelle =
+              etapeMaint.etape_EN_COURS ||
+              etapeMaint.maint_ETAPE_LIGNE ||
+              etapeMaint.etape_LIBELLE ||
+              null;
+          }
         }
+      } else if (etat === 3) {
+        item.statut = "REFUSÉE";
+      } else {
+        item.statut = "ATTENTE VALIDATION";
       }
     })
   );
@@ -198,6 +219,7 @@ const voir = (item) => {
     <TableVirtuelle
       :headers="headersMaintenance"
       :items="storeMtnce.maintnces"
+      :maintenance-types="demandeStore.typeMaintenance"
       :search="searchQuery"
       :loading="loading || storeMtnce.loading"
       :height="550"
@@ -217,7 +239,10 @@ const voir = (item) => {
 
       <template v-slot:[`item.statut`]="{ item }">
         <div class="statut-col-cell" :style="getStatusCellStyle(item)">
-          {{ getStatusText(item) }}
+          <span>{{ getStatusText(item) }}</span>
+          <span v-if="getStatusText(item) === 'EN COURS' && item.etapeEnCoursLibelle" class="etape-en-cours-label">
+            ({{ item.etapeEnCoursLibelle }})
+          </span>
         </div>
       </template>
 
@@ -234,11 +259,11 @@ const voir = (item) => {
       </template>
     </TableVirtuelle>
 
-    <CalendarLegend
+    <!-- <CalendarLegend
       :items="maintenanceLegendItems"
       title="Type et statut"
       label="Légende de la liste des maintenances"
-    />
+    /> -->
 
     <v-dialog
       v-if="dialogVisible"
@@ -342,6 +367,7 @@ const voir = (item) => {
   height: 100%;
   min-height: 28px;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   font-weight: 700;
@@ -350,6 +376,19 @@ const voir = (item) => {
   text-transform: uppercase;
   text-align: center;
   padding: 2px 4px;
+  line-height: 1.3;
+}
+
+.etape-en-cours-label {
+  max-width: 140px;
+  margin-top: 1px;
+  overflow: hidden;
+  font-size: 9px;
+  font-weight: 500;
+  opacity: 0.85;
+  text-overflow: ellipsis;
+  text-transform: none;
+  white-space: nowrap;
 }
 
 :deep(.statut-col-td) {

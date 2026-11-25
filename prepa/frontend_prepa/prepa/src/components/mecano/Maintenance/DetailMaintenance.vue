@@ -972,6 +972,7 @@ const cloturerMaintenance = async () => {
 const isVerification = (item) => {
       return String(item.action || "").toUpperCase() === "VERIFICATION";
     };
+
 const isRetour = (item) => {
       return String(item.action || "").toUpperCase() === "RETOUR";
     };
@@ -982,10 +983,6 @@ const RenouvVe = (item) => {
       return String(item.action || "").toUpperCase() === "RENOUVELLEMENT";
     };
 
-
-
-
-    
 
 
 const requis = (item) => {

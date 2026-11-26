@@ -394,7 +394,9 @@ const voirDetailMaintenance = (maintenance) => {
       <section class="vehicule-table">
         <div class="vehicule-heading-row">
           <h2>FICHE VEHICULE</h2>
+
           <v-btn
+          density="compact"
             class="nouvelle-voiture-btn"
             variant="elevated"
             color="#144f0e"
@@ -523,8 +525,8 @@ const voirDetailMaintenance = (maintenance) => {
 .vehicule-heading-row h2 { font-size: 18px; font-weight: 650; }
 
 .nouvelle-voiture-btn {
-  min-height: 38px;
-  border-radius: 8px;
+  min-height: 28px;
+  border-radius: 4px;
   font-weight: 600;
 }
 

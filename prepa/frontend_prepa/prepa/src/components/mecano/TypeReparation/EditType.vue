@@ -117,8 +117,8 @@ const selectionnerType = async (type) => {
 };
 
 const labelEtape = (etape, nature) => nature === "prepa"
-  ? etape?.maint_ETAPE_LIGNE ?? etape?.etape_LIBELLE ??  etape?.enum_CODE ?? etape?.enum_VALEUR ?? etape?.etape_CODE ?? "Étape"
-  : etape?.maint_INTERV_REAL ?? etape?.etape_LIBELLE ??  etape?.enum_CODE ?? etape?.enum_VALEUR ?? etape?.etape_CODE ?? "Étape";
+  ? etape?.maint_ETAPE_LIGNE ?? etape?.etape_LIBELLE ??  etape?.enum_CODE ?? etape?.enum_VALEUR  ?? "Étape"
+  : etape?.maint_INTERV_REAL ?? etape?.etape_LIBELLE ??  etape?.enum_CODE ?? etape?.enum_VALEUR  ?? "Étape";
 
 const debutGlisser = (event, etape, nature, index, classification) => {
   etapeGlissee.value = { etape, nature, index, classification };
@@ -168,9 +168,13 @@ chargerEtapesDisponibles();
 <template>
   <div class="page-reparations">
     <v-card-actions density="compact" class="page-actions">
-      <v-btn prepend-icon="mdi-arrow-left" variant="text" @click="emit('close')">Retour</v-btn>
-      <h1>Modifier les étapes · {{ classificationSelectionnee }}</h1>
+      <v-btn prepend-icon="mdi-arrow-left" variant="outlined" density="compact" @click="emit('close')">Retour</v-btn>
       <v-spacer />
+      <div>
+
+        <h1>Modifier les étapes · {{ classificationSelectionnee }}</h1>
+        <v-spacer />
+      </div>
     </v-card-actions>
 
     <div v-if="false" class="types-section">
@@ -211,13 +215,12 @@ chargerEtapesDisponibles();
     </div>
 
     <section v-if="typeSelectionne" class="details-section">
-      <div class="selected-type">
+      <!-- <div class="selected-type">
         <span>Type de maintenance sélectionné</span>
         <strong>{{ typeSelectionne.type }}</strong>
-      </div>
+      </div> -->
       <div class="edit-toolbar">
         <span>Glissez les étapes pour les réordonner ou les déplacer entre Étape et Technique.</span>
-        <v-btn color="success" prepend-icon="mdi-content-save" @click="enregistrerModifications">Enregistrer</v-btn>
       </div>
       <v-alert v-if="messageEdition" density="compact" variant="tonal" type="info">{{ messageEdition }}</v-alert>
 
@@ -227,6 +230,7 @@ chargerEtapesDisponibles();
           :key="`skeleton-${classification}`"
           class="classification"
         >
+        
           <v-skeleton-loader type="text" class="skeleton-title" />
           <div class="lanes">
             <section v-for="lane in 2" :key="lane" class="lane">
@@ -239,6 +243,7 @@ chargerEtapesDisponibles();
               </div>
             </section>
           </div>
+
         </section>
       </div>
       <div v-else-if="!kanban.length" class="empty-state">
@@ -264,7 +269,7 @@ chargerEtapesDisponibles();
           <div class="lanes">
             <section class="lane lane-prepa" @dragover.prevent @drop="deposerEtape($event, 'prepa', colonne.classification)">
               <header class="lane-heading">
-                <strong>Étape · Préparation</strong>
+                <strong>Étape</strong>
                 <span>{{ colonne.prepa.length }}</span>
               </header>
               <div v-for="(etape, index) in colonne.prepa" :key="index" class="step-card draggable-step" draggable="true" @dragstart="debutGlisser($event, etape, 'prepa', index, colonne.classification)">
@@ -276,7 +281,7 @@ chargerEtapesDisponibles();
 
             <section class="lane lane-technique" @dragover.prevent @drop="deposerEtape($event, 'real', colonne.classification)">
               <header class="lane-heading">
-                <strong>Technique · Réalisation</strong>
+                <strong>Technique</strong>
                 <span>{{ colonne.real.length }}</span>
               </header>
               <div v-for="(etape, index) in colonne.real" :key="index" class="step-card draggable-step" draggable="true" @dragstart="debutGlisser($event, etape, 'real', index, colonne.classification)">
@@ -285,7 +290,12 @@ chargerEtapesDisponibles();
               </div>
               <p v-if="!colonne.real.length" class="lane-empty">Aucune étape enregistrée</p>
             </section>
+            
+
           </div>
+          <div class="btnEnregistrer">
+              <v-btn density="compact" color="success" @click="enregistrerModifications">Enregistrer</v-btn>
+            </div>
         </section>
       </div>
     </section>
@@ -293,9 +303,10 @@ chargerEtapesDisponibles();
 </template>
 
 <style scoped>
-.page-reparations { display: flex; flex-direction: column; gap: 8px; }
+.btnEnregistrer{ display : flex ; justify-content: center; padding-top: 15px;}
+.page-reparations { display: flex; flex-direction: column; gap: 14px; width: 100%; }
 .page-actions { padding: 0; }
-.page-actions h2 { margin: 0; font-size: 1.1rem; font-weight: 600; }
+.page-actions h2 { margin: 0; font-size: 1.1rem; font-weight: 400; }
 .types-section { margin-bottom: 8px; }
 .types-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 8px; }
 .search-types { max-width: 420px; font-size: .875rem; }
@@ -307,30 +318,32 @@ chargerEtapesDisponibles();
 .selection-label.selected { color: #144f0e; font-weight: 700; }
 .types-section :deep(.maint_header tbody tr.v-data-table__tr) { cursor: pointer; }
 .types-section :deep(.maint_header tbody tr.v-data-table__tr:hover) { background: #f4f7f4; }
-.types-section :deep(.maint_header tbody tr.v-data-table__tr > td) { height: 50px !important; padding-left: 15px !important; }
+.types-section :deep(.maint_header tbody tr.v-data-table__tr > td) { height: 30px !important; padding-left: 15px !important; }
 .types-section :deep(.maint_header tbody tr:not(.v-data-table__tr)) { display: none; }
 .details-section { display: flex; flex-direction: column; gap: 8px; }
-.edit-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: #526057; font-size: .82rem; }
+.edit-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 54px; padding: 8px 14px; border: 1px solid #dfe6e0; border-radius: 6px; background: #f8faf8; color: #526057; font-size: .95rem; }
+.edit-toolbar :deep(.v-btn) { min-height: 44px; padding-inline: 20px; font-weight: 600; }
 .selected-type { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 42px; padding: 8px 12px; border: 1px solid #dfe6e0; border-left: 3px solid #2e7d32; border-radius: 4px; background: #f5f7f5; }
 .selected-type span { color: #526057; font-size: .82rem; }
 .selected-type strong { color: #24402a; font-size: .9rem; font-weight: 700; }
-.kanban { display: flex; align-items: flex-start; gap: 12px; overflow-x: auto; }
-.available-steps { flex: 0 0 245px; max-height: 560px; overflow-y: auto; padding: 12px; border: 1px solid #dfe6e0; border-radius: 4px; background: #f5f7f5; }
-.available-steps h3 { margin: 0 0 12px; padding-bottom: 8px; border-bottom: 1px solid #dfe6e0; color: #24402a; font-size: .95rem; font-weight: 600; }
+.kanban { display: flex; align-items: stretch; gap: 18px; width: 85%; min-height: 35vh; overflow-x: auto; }
+.available-steps { flex: 0 0 285px; max-height: 72vh; overflow-y: auto; padding: 16px; border: 1px solid #dfe6e0; border-radius: 7px; background: #f5f7f5; }
+.available-steps h3 { position: sticky; top: -16px; z-index: 1; margin: -16px -16px 12px; padding: 16px; border-bottom: 1px solid #dfe6e0; border-radius: 7px 7px 0 0; background: #f5f7f5; color: #24402a; font-size: 1.05rem; font-weight: 700; }
 .available-step { cursor: grab; }
 .available-loading { padding: 8px 0; color: #757575; font-size: .8rem; }
-.classification { flex: 0 0 430px; padding: 12px; border: 1px solid #e0e0e0; border-radius: 4px; background: #fafafa; }
-.classification h3 { margin: 0 0 12px; padding-bottom: 8px; border-bottom: 1px solid #e0e0e0; font-size: .95rem; font-weight: 600; }
-.lanes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.lane { min-width: 0; padding: 8px; border: 1px solid #e0e0e0; border-radius: 4px; background: white; }
-.lane-heading { display: flex; justify-content: space-between; align-items: center; min-height: 34px; margin: -8px -8px 8px; padding: 6px 8px; border-bottom: 1px solid #e0e0e0; color: #424242; font-size: .76rem; }
+.classification { flex: 1 0 760px; min-width: 760px; padding: 18px; border: 1px solid #e0e0e0; border-radius: 7px; background: #fafafa; }
+.classification > h3 { margin: 0 0 16px; padding-bottom: 12px; border-bottom: 1px solid #e0e0e0; font-size: 1.2rem; font-weight: 700; }
+.lanes { display: grid; grid-template-columns: minmax(320px, 1fr) minmax(320px, 1fr); gap: 16px; min-height: 55vh; }
+.lane { min-width: 0; padding: 12px; border: 1px solid #e0e0e0; border-radius: 6px; background: white; }
+.lane-heading { display: flex; justify-content: space-between; align-items: center; min-height: 48px; margin: -12px -12px 12px; padding: 8px 12px; border-bottom: 1px solid #e0e0e0; color: #424242; font-size: .95rem; }
 .lane-prepa .lane-heading { border-bottom-color: #c9ddca; background: #edf5ed; color: #285b2d; }
 .lane-technique .lane-heading { border-bottom-color: #cbd5e1; background: #eef2f7; color: #3e536d; }
 .lane-heading span { color: #757575; font-weight: 400; }
-.step-card { margin-bottom: 7px; padding: 9px; border: 1px solid #e0e0e0; border-left: 3px solid #68996b; border-radius: 4px; background: white; font-size: .82rem; line-height: 1.35; }
+.step-card { min-height: 48px; margin-bottom: 9px; padding: 10px 12px; border: 1px solid #e0e0e0; border-left: 4px solid #68996b; border-radius: 6px; background: white; font-size: .95rem; line-height: 1.45; }
 .step-card { display: flex; align-items: center; gap: 7px; }
 .step-label { flex: 1; min-width: 0; }
 .draggable-step { cursor: grab; }
+.draggable-step :deep(.v-btn) { width: 38px; height: 38px; }
 .draggable-step:active { cursor: grabbing; opacity: .65; }
 .lane-technique .step-card { border-left-color: #7186a0; }
 .lane-empty { padding: 8px 0; color: #757575; font-size: .8rem; }
@@ -340,5 +353,11 @@ chargerEtapesDisponibles();
 .kanban-skeleton .skeleton-step { min-height: 37px; margin-bottom: 7px; padding: 9px; border: 1px solid #e0e0e0; border-left: 3px solid #cfd8dc; border-radius: 4px; }
 .kanban-skeleton :deep(.v-skeleton-loader__text) { margin: 0; }
 .empty-state { display: flex; align-items: center; gap: 10px; min-height: 70px; color: #757575; font-size: .88rem; }
-@media (max-width: 700px) { .classification { flex-basis: 360px; } .lanes { grid-template-columns: 1fr; } }
+@media (max-width: 500px) {
+  .kanban { flex-direction: column; min-height: 0; overflow: visible; }
+  .available-steps { flex: auto; max-height: 35vh; }
+  .classification { flex: auto; min-width: 0; }
+  .lanes { grid-template-columns: 1fr; min-height: 0; }
+  .edit-toolbar { align-items: stretch; flex-direction: column; }
+}
 </style>

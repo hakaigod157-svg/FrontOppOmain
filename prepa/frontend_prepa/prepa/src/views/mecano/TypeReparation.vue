@@ -110,7 +110,7 @@ chargerTypes();
     />
     <template v-else>
     <v-card-actions density="compact" class="page-actions">
-      <h1>Types de maintenance</h1>
+      <h1>TYPES DE MAINTENANCES</h1>
       <v-spacer />
     </v-card-actions>
 
@@ -145,17 +145,17 @@ chargerTypes();
         </template>
         <template #item.selection="{ item }">
           <span class="selection-label" :class="{ selected: item.type === typeSelectionne?.type }">
-            {{ item.type === typeSelectionne?.type ? "Sélectionné" : item.selection }}
+            {{ item.type === typeSelectionne?.type ? "SÉLÉCTIONNÉ" : item.selection }}
           </span>
         </template>
       </TableVirtuelle>
     </div>
 
     <section v-if="typeSelectionne" class="details-section">
-      <div class="selected-type">
+      <!-- <div class="selected-type">
         <span>Type de maintenance sélectionné</span>
         <strong>{{ typeSelectionne.type }}</strong>
-      </div>
+      </div> -->
 
       <div v-if="loadingEtapes" class="kanban kanban-skeleton" aria-label="Chargement des étapes">
         <section

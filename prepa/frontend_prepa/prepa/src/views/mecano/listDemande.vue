@@ -322,12 +322,13 @@ onMounted(async () => {
         variant="flat"
         color="#144f0e"
         class="boutonNvDmd"
+        density="compact"
         prepend-icon="mdi-plus"
         :loading="store.loading"
         :disabled="store.loading"
         @click="nouvelleDemande"
       >
-        NOUVELLE DEMANDE
+         NOUVELLE DEMANDE
       </v-btn>
       <TypeMaintenanceSelector
         v-model="showTypeSelector"
@@ -492,12 +493,12 @@ onMounted(async () => {
 }
 
 .boutonNvDmd {
-  min-height: 30px;
+  min-height: 28px;
   padding-inline: 12px;
   border: 1px solid #144f0e;
   border-radius: 5px;
   box-shadow: none;
-  font-size: 12px;
+  /* font-size: 12px; */
   font-weight: 600;
   letter-spacing: 0;
   text-transform: none;

@@ -182,7 +182,7 @@ const fermer = () => {
 <style scoped lang="scss">
 .type-selector-container {
   width: 100%;
-  background: rgba(248, 251, 255, 0.82);
+  background: rgba(248, 255, 249, 0.82);
   -webkit-backdrop-filter: blur(28px) saturate(145%);
   backdrop-filter: blur(28px) saturate(145%);
   border: 1px solid rgba(255, 255, 255, 0.9);
@@ -240,7 +240,7 @@ const fermer = () => {
 .type-card {
   width: 240px;
   min-height: 420px;
-  border-radius: 20px;
+  border-radius: 6px;
   overflow: hidden;
   isolation: isolate;
   position: relative;
@@ -374,14 +374,14 @@ const fermer = () => {
   align-items: center;
   justify-content: center;
   padding: 12px;
-  background-color: #dcebd8;
+  background-color: #d1f003;
   transition: background-color 0.2s ease;
   margin: 0;
   width: 48px;
   height: 48px;
-  border-radius: 8px;
+  border-radius: 3px;
   border: 1px solid rgba(255, 255, 255, 0.72);
-  box-shadow: 0 4px 14px rgba(7, 36, 17, 0.18);
+  box-shadow: 0 4px 14px rgba(22, 96, 48, 0.18);
 }
 
 .type-empty {

@@ -1,6 +1,8 @@
 <script setup>
 import { ref, computed, watch, onMounted } from "vue";
 import { useDemandeMaintenance } from "@/store/Maintenance/demande_store";
+import CardVerticale from "@/components/mecano/UI/CardVerticale.vue";
+import BoutonRetourFermer from "@/components/mecano/UI/BoutonRetourFermer.vue";
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
@@ -108,15 +110,7 @@ const fermer = () => {
     <v-card class="type-selector-container" rounded="lg">
         <!-- Bouton Retour -->
         <div class="type-selector-header">
-          <v-btn
-            variant="outlined"
-            color="#0b3b17"
-            size="small"
-            class="retour-btn text-none"
-            @click="fermer"
-          >
-            Retour
-          </v-btn>
+          <BoutonRetourFermer class="retour-btn text-none" label="Retour" :icon="''" @click="fermer" />
 
           <div class="type-selector-heading">
             <h1 class="type-selector-title">Création d'une nouvelle demande</h1>
@@ -138,33 +132,14 @@ const fermer = () => {
 
         <!-- Cards des types de maintenance -->
         <div v-else class="type-cards-wrapper">
-          <div
+          <CardVerticale
             v-for="(typeCode, index) in typesMaintenanceList"
             :key="typeCode"
-            class="type-card"
+            :title="typeCode"
+            :subtitle="getSubtext(typeCode)"
+            :image="getCardBackground(index)"
             @click="selectType(typeCode)"
-          >
-            <!-- Photo de fond -->
-            <div class="type-card__image">
-              <div
-                class="type-card__image-bg"
-                :style="{ backgroundImage: `url(${getCardBackground(index)})` }"
-              />
-              <div class="type-card__image-overlay" />
-              <div class="type-card__text-overlay" />
-            </div>
-
-            <!-- Infos en bas de la carte -->
-            <div class="type-card__info">
-              <h3 class="type-card__name">{{ typeCode }}</h3>
-              <p class="type-card__sub">{{ getSubtext(typeCode) }}</p>
-            </div>
-
-            <!-- Bouton flèche -->
-            <div class="type-card__action" @click.stop="selectType(typeCode)">
-              <v-icon size="28" color="#0b3b17">mdi-arrow-right</v-icon>
-            </div>
-          </div>
+          />
 
           <!-- Fallback si aucun type trouvé -->
           <div

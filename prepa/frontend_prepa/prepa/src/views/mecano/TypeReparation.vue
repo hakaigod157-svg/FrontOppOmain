@@ -3,6 +3,9 @@ import { computed, ref } from "vue";
 import TableVirtuelle from "@/components/mecano/TableVirtuelle.vue";
 import { useDemandeMaintenance } from "@/store/Maintenance/demande_store";
 import EditType from "@/components/mecano/TypeReparation/EditType.vue";
+import { getMaintenanceTypeColor } from "@/utils/maintenanceTypeColor";
+import BarreRecherche from "@/components/mecano/UI/BarreRecherche.vue";
+import CardHorizontale from "@/components/mecano/UI/CardHorizontale.vue";
 
 const maintenanceStore = useDemandeMaintenance();
 const types = ref([]);
@@ -13,6 +16,7 @@ const loadingTypes = ref(false);
 const loadingEtapes = ref(false);
 const rechercheType = ref("");
 const edition = ref(null);
+const couleurType = computed(() => getMaintenanceTypeColor(typeSelectionne.value?.type, maintenanceStore.typeMaintenance));
 
 const headers = [
   { title: "Type de maintenance", key: "type", width: "32%" },
@@ -102,13 +106,15 @@ chargerTypes();
 
 <template>
   <div class="page-reparations">
-    <EditType
-      v-if="edition"
-      :type-maintenance="edition.type"
-      :classification-selectionnee="edition.classification"
-      @close="edition = null"
-    />
-    <template v-else>
+    <Transition name="repair-view" mode="out-in">
+      <div v-if="edition" key="edition" class="repair-transition-view">
+        <EditType
+          :type-maintenance="edition.type"
+          :classification-selectionnee="edition.classification"
+          @close="edition = null"
+        />
+      </div>
+      <div v-else key="list" class="repair-transition-view">
     <v-card-actions density="compact" class="page-actions">
       <h1>TYPES DE MAINTENANCES</h1>
       <v-spacer />
@@ -116,15 +122,11 @@ chargerTypes();
 
     <div class="types-section">
       <div class="types-toolbar">
-        <v-text-field
+        <BarreRecherche
           v-model="rechercheType"
           placeholder="Rechercher un type de maintenance"
-          prepend-inner-icon="mdi-magnify"
-          density="compact"
-          variant="outlined"
-          hide-details
-          clearable
           class="search-types"
+          
         />
         <span class="types-count">{{ types.length }} type(s)</span>
       </div>
@@ -192,9 +194,7 @@ chargerTypes();
                 <strong>Étape</strong>
                 <span>{{ colonne.prepa.length }}</span>
               </header>
-              <div v-for="(etape, index) in colonne.prepa" :key="index" class="step-card">
-                <span class="step-dot"></span>{{ labelEtape(etape, 'prepa') }}
-              </div>
+              <CardHorizontale v-for="(etape, index) in colonne.prepa" :key="index" class="step-card" :color="couleurType"><span>{{ labelEtape(etape, 'prepa') }}</span></CardHorizontale>
               <p v-if="!colonne.prepa.length" class="lane-empty">Aucune étape enregistrée</p>
             </section>
 
@@ -203,20 +203,27 @@ chargerTypes();
                 <strong>Technique</strong>
                 <span>{{ colonne.real.length }}</span>
               </header>
-              <div v-for="(etape, index) in colonne.real" :key="index" class="step-card">
-                <span class="step-dot"></span>{{ labelEtape(etape, 'real') }}
-              </div>
+              <CardHorizontale v-for="(etape, index) in colonne.real" :key="index" class="step-card" :color="couleurType"><span>{{ labelEtape(etape, 'real') }}</span></CardHorizontale>
               <p v-if="!colonne.real.length" class="lane-empty">Aucune étape enregistrée</p>
             </section>
           </div>
         </section>
       </div>
     </section>
-    </template>
+      </div>
+    </Transition>
   </div>
 </template>
 
 <style scoped>
+.repair-view-enter-active,
+.repair-view-leave-active { transition: opacity 180ms ease, transform 180ms ease; }
+.repair-view-enter-from { opacity: 0; transform: translateY(4px); }
+.repair-view-leave-to { opacity: 0; transform: translateY(-2px); }
+@media (prefers-reduced-motion: reduce) {
+  .repair-view-enter-active,
+  .repair-view-leave-active { transition-duration: 1ms; }
+}
 .page-reparations { display: flex; flex-direction: column; gap: 8px; }
 .page-actions { padding: 0; }
 .page-actions h2 { margin: 0; font-size: 1.1rem; font-weight: 600; }
@@ -238,18 +245,17 @@ chargerTypes();
 .selected-type span { color: #526057; font-size: .82rem; }
 .selected-type strong { color: #24402a; font-size: .9rem; font-weight: 700; }
 .kanban { display: flex; align-items: flex-start; gap: 12px; overflow-x: auto; }
-.classification { flex: 0 0 430px; padding: 12px; border: 1px solid #e0e0e0; border-radius: 4px; background: #fafafa; }
+.classification { flex: 0 0 430px; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; background: #fafafa; }
 .classification h3 { margin: 0 0 12px; padding-bottom: 8px; border-bottom: 1px solid #e0e0e0; font-size: .95rem; font-weight: 600; }
 .classification-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .classification-heading h3 { flex: 1; }
 .lanes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.lane { min-width: 0; padding: 8px; border: 1px solid #e0e0e0; border-radius: 4px; background: white; }
+.lane { min-width: 0; padding: 8px; border: 1px solid #e0e0e0; border-radius: 8px; background: white; }
 .lane-heading { display: flex; justify-content: space-between; align-items: center; min-height: 34px; margin: -8px -8px 8px; padding: 6px 8px; border-bottom: 1px solid #e0e0e0; color: #424242; font-size: .76rem; }
 .lane-prepa .lane-heading { border-bottom-color: #c9ddca; background: #edf5ed; color: #285b2d; }
 .lane-technique .lane-heading { border-bottom-color: #cbd5e1; background: #eef2f7; color: #3e536d; }
 .lane-heading span { color: #757575; font-weight: 400; }
-.step-card { margin-bottom: 7px; padding: 9px; border: 1px solid #e0e0e0; border-left: 3px solid #68996b; border-radius: 4px; background: white; font-size: .82rem; line-height: 1.35; }
-.lane-technique .step-card { border-left-color: #7186a0; }
+.step-card { margin-bottom: 7px; font-size: .82rem; line-height: 1.35; }
 .lane-empty { padding: 8px 0; color: #757575; font-size: .8rem; }
 .kanban-skeleton .skeleton-title { width: 45%; margin-bottom: 12px; }
 .kanban-skeleton .skeleton-lane-heading { width: 70%; }

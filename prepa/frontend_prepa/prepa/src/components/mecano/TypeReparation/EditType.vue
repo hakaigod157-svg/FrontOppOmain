@@ -3,6 +3,9 @@ import { computed, ref } from "vue";
 import TableVirtuelle from "@/components/mecano/TableVirtuelle.vue";
 import { useDemandeMaintenance } from "@/store/Maintenance/demande_store";
 import { useEtapeStore } from "@/store/Maintenance/etape_store";
+import { getMaintenanceTypeColor } from "@/utils/maintenanceTypeColor";
+import CardHorizontale from "@/components/mecano/UI/CardHorizontale.vue";
+import BoutonRetourFermer from "@/components/mecano/UI/BoutonRetourFermer.vue";
 
 const props = defineProps({
   typeMaintenance: { type: String, required: true },
@@ -16,6 +19,7 @@ const types = ref([]);
 const classifications = ref([]);
 const typeSelectionne = ref(null);
 const kanban = ref([]);
+const couleurType = computed(() => getMaintenanceTypeColor(typeSelectionne.value?.type, maintenanceStore.typeMaintenance));
 const loadingTypes = ref(false);
 const loadingEtapes = ref(false);
 const rechercheType = ref("");
@@ -125,7 +129,7 @@ const debutGlisser = (event, etape, nature, index, classification) => {
   event.dataTransfer.effectAllowed = "move";
 };
 
-const deposerEtape = (event, destination, classification) => {
+const deposerEtape = (event, destination, classification, targetIndex = null) => {
   event.preventDefault();
   const source = etapeGlissee.value;
   if (!source) return;
@@ -134,15 +138,18 @@ const deposerEtape = (event, destination, classification) => {
   if (!listeCible) return;
   if (source.nature === "available") {
     if (listeCible.some((item) => labelEtape(item, destination) === source.etape.code)) return;
-    listeCible.push(destination === "prepa"
+    const nouvelleEtape = destination === "prepa"
       ? { ...source.etape, maint_ETAPE_LIGNE: source.etape.code }
-      : { ...source.etape, maint_INTERV_REAL: source.etape.code });
+      : { ...source.etape, maint_INTERV_REAL: source.etape.code };
+    listeCible.splice(targetIndex == null ? listeCible.length : targetIndex, 0, nouvelleEtape);
   } else {
     const colonneSource = kanban.value.find((item) => item.classification === source.classification);
     const listeSource = source.nature === "prepa" ? colonneSource?.prepa : colonneSource?.real;
     if (!listeSource) return;
     const [etape] = listeSource.splice(source.index, 1);
-    listeCible.push(etape);
+    let insertion = targetIndex == null ? listeCible.length : targetIndex;
+    if (listeSource === listeCible && source.index < insertion) insertion -= 1;
+    listeCible.splice(Math.max(0, insertion), 0, etape);
   }
   etapeGlissee.value = null;
   messageEdition.value = "Étape déplacée. Pensez à enregistrer les changements.";
@@ -168,7 +175,7 @@ chargerEtapesDisponibles();
 <template>
   <div class="page-reparations">
     <v-card-actions density="compact" class="page-actions">
-      <v-btn prepend-icon="mdi-arrow-left" variant="outlined" density="compact" @click="emit('close')">Retour</v-btn>
+      <BoutonRetourFermer label="Retour" density="compact" @click="emit('close')" />
       <v-spacer />
       <div>
 
@@ -254,15 +261,17 @@ chargerEtapesDisponibles();
           <h3>Étapes disponibles</h3>
           <div v-if="loadingDisponibles" class="available-loading">Chargement des étapes…</div>
           <div v-else-if="!etapesDisponibles.length" class="available-loading">Aucune étape disponible</div>
-          <div
+          <CardHorizontale
             v-for="etape in etapesDisponibles"
             :key="etape.code"
             class="step-card available-step"
+            compact
+            :color="couleurType"
             draggable="true"
             @dragstart="debutGlisser($event, etape, 'available', -1, '')"
           >
-            <span class="step-dot"></span>{{ etape.code }}
-          </div>
+            <span>{{ etape.code }}</span>
+          </CardHorizontale>
         </aside>
         <section v-for="colonne in kanban" :key="colonne.classification" class="classification">
           <h3>{{ colonne.classification }}</h3>
@@ -272,10 +281,10 @@ chargerEtapesDisponibles();
                 <strong>Étape</strong>
                 <span>{{ colonne.prepa.length }}</span>
               </header>
-              <div v-for="(etape, index) in colonne.prepa" :key="index" class="step-card draggable-step" draggable="true" @dragstart="debutGlisser($event, etape, 'prepa', index, colonne.classification)">
-                <span class="step-dot"></span><span class="step-label">{{ labelEtape(etape, 'prepa') }}</span>
+              <CardHorizontale v-for="(etape, index) in colonne.prepa" :key="index" class="step-card draggable-step" compact :color="couleurType" draggable="true" @dragstart="debutGlisser($event, etape, 'prepa', index, colonne.classification)" @dragover.prevent @drop.stop="deposerEtape($event, 'prepa', colonne.classification, index)">
+                <span class="step-label">{{ labelEtape(etape, 'prepa') }}</span>
                 <v-btn icon="mdi-trash-can-outline" size="x-small" variant="text" color="error" :aria-label="`Supprimer ${labelEtape(etape, 'prepa')}`" @click.stop="supprimerEtape('prepa', index, colonne.classification)" />
-              </div>
+              </CardHorizontale>
               <p v-if="!colonne.prepa.length" class="lane-empty">Aucune étape enregistrée</p>
             </section>
 
@@ -284,10 +293,10 @@ chargerEtapesDisponibles();
                 <strong>Technique</strong>
                 <span>{{ colonne.real.length }}</span>
               </header>
-              <div v-for="(etape, index) in colonne.real" :key="index" class="step-card draggable-step" draggable="true" @dragstart="debutGlisser($event, etape, 'real', index, colonne.classification)">
-                <span class="step-dot"></span><span class="step-label">{{ labelEtape(etape, 'real') }}</span>
+              <CardHorizontale v-for="(etape, index) in colonne.real" :key="index" class="step-card draggable-step" compact :color="couleurType" draggable="true" @dragstart="debutGlisser($event, etape, 'real', index, colonne.classification)" @dragover.prevent @drop.stop="deposerEtape($event, 'real', colonne.classification, index)">
+                <span class="step-label">{{ labelEtape(etape, 'real') }}</span>
                 <v-btn icon="mdi-trash-can-outline" size="x-small" variant="text" color="error" :aria-label="`Supprimer ${labelEtape(etape, 'real')}`" @click.stop="supprimerEtape('real', index, colonne.classification)" />
-              </div>
+              </CardHorizontale>
               <p v-if="!colonne.real.length" class="lane-empty">Aucune étape enregistrée</p>
             </section>
             
@@ -339,13 +348,11 @@ chargerEtapesDisponibles();
 .lane-prepa .lane-heading { border-bottom-color: #c9ddca; background: #edf5ed; color: #285b2d; }
 .lane-technique .lane-heading { border-bottom-color: #cbd5e1; background: #eef2f7; color: #3e536d; }
 .lane-heading span { color: #757575; font-weight: 400; }
-.step-card { min-height: 48px; margin-bottom: 9px; padding: 10px 12px; border: 1px solid #e0e0e0; border-left: 4px solid #68996b; border-radius: 6px; background: white; font-size: .95rem; line-height: 1.45; }
-.step-card { display: flex; align-items: center; gap: 7px; }
+.step-card { margin-bottom: 9px; font-size: .95rem; line-height: 1.45; }
 .step-label { flex: 1; min-width: 0; }
 .draggable-step { cursor: grab; }
 .draggable-step :deep(.v-btn) { width: 38px; height: 38px; }
 .draggable-step:active { cursor: grabbing; opacity: .65; }
-.lane-technique .step-card { border-left-color: #7186a0; }
 .lane-empty { padding: 8px 0; color: #757575; font-size: .8rem; }
 .kanban-skeleton .skeleton-title { width: 45%; margin-bottom: 12px; }
 .kanban-skeleton .skeleton-lane-heading { width: 70%; }

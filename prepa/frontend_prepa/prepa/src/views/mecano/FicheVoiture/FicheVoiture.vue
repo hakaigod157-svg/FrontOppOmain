@@ -1,4 +1,6 @@
 <script setup>
+import NouvelleEntiteButton from "@/components/mecano/UI/NouvelleEntiteButton.vue";
+import BoutonOutline from "@/components/mecano/UI/BoutonOutline.vue";
 import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
 import { maintStore } from "@/store/Maintenance/maintenance_store";
@@ -386,7 +388,7 @@ const voirDetailMaintenance = (maintenance) => {
           <p>Sélectionnez un véhicule dans la liste pour afficher sa fiche.</p>
         </div>
 
-        <v-btn class="voir-vehicule-btn" variant="outlined" size="small" color="#0b3b17" :disabled="!selectedVehicule" @click="detailPleinEcran = true">Voir le véhicule</v-btn>
+        <BoutonOutline class="voir-vehicule-btn" label="Voir le véhicule" :disabled="!selectedVehicule" @click="detailPleinEcran = true" />
 
       </section>
 
@@ -395,16 +397,7 @@ const voirDetailMaintenance = (maintenance) => {
         <div class="vehicule-heading-row">
           <h2>FICHE VEHICULE</h2>
 
-          <v-btn
-          density="compact"
-            class="nouvelle-voiture-btn"
-            variant="elevated"
-            color="#144f0e"
-            prepend-icon="mdi-plus"
-            @click="ajoutOuvert = true"
-          >
-            Nouvelle voiture
-          </v-btn>
+          <NouvelleEntiteButton class="nouvelle-voiture-btn" label="Nouvelle voiture" icon="mdi-plus" @click="ajoutOuvert = true" />
         </div>
         <div class="vehicule-toolbar">
           <v-text-field

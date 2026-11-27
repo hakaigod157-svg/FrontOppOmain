@@ -2,6 +2,7 @@
 import EnteteTableauDeBord from './EnteteTableauDeBord.vue'
 import CarteStatistique from './CarteStatistique.vue'
 import CalendrierPreventif from '@/components/mecano/Calendrier/CalendrierPreventif.vue'
+import NouvelleEntiteButton from '@/components/mecano/UI/NouvelleEntiteButton.vue'
 
 defineProps({
   stats: {
@@ -85,9 +86,7 @@ const emit = defineEmits(['login', 'back-home', 'new-request', 'open-item', 'ope
             <CalendrierPreventif @open-maintenance="emit('open-maintenance', $event)" />
           </div>
 
-          <button type="button" class="dashboard__new-request" @click="$emit('new-request')">
-            Nouvelle demande
-          </button>
+          <NouvelleEntiteButton native class="dashboard__new-request" label="Nouvelle demande" @click="emit('new-request')" />
         </div>
       </main>
 
@@ -122,7 +121,7 @@ const emit = defineEmits(['login', 'back-home', 'new-request', 'open-item', 'ope
   --color-primary: #2e7d32;
   --color-primary-dark: #1b5e20;
   --color-primary-soft: #e8f5e9;
-  --radius-md: 15px;
+  --radius-md: 8px;
   --radius-sm: 8px;
   --space-1: 8px;
   --space-2: 16px;

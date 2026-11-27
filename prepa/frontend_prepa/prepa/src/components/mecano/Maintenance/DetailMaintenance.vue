@@ -574,7 +574,7 @@ const formAjoutReal = ref({
 
 
   const ouvrirDialogAjoutReal = () => {
-      if (demandeCloturee.value || interventionCloturee.value) return;
+      if (!peutAjouterRealisation.value) return;
       formAjoutReal.value = {
         intervReal: null,
         datePrevu: dayjs().format("YYYY-MM-DD"),
@@ -588,7 +588,7 @@ const formAjoutReal = ref({
     };
 
 const soumettreAjoutReal = async () => {
-      if (demandeCloturee.value || interventionCloturee.value) {
+      if (!peutAjouterRealisation.value) {
         dialogAjoutReal.value = false;
         return;
       }
@@ -693,6 +693,11 @@ const etapeTechnique = computed(() => {
 const interventionCloturee = computed(() => !!etapeTechnique.value?.valide);
 const toutesEtapesPrepaValidees = computed(() =>
   etapesPrepa.value.length > 0 && etapesPrepa.value.every((etape) => etape.valide)
+);
+const peutAjouterRealisation = computed(() =>
+  Boolean(etapeTechnique.value?.enCours) &&
+  !toutesEtapesRealValidees.value &&
+  !demandeCloturee.value
 );
 
 const choisirOngletInitial = () => {
@@ -1571,7 +1576,7 @@ const openRealPJPreview = (item) =>
                 variant="flat"
                 prepend-icon="mdi-plus-circle"
                 class="text-none font-weight-bold"
-                :disabled="demandeCloturee || interventionCloturee"
+                :disabled="!peutAjouterRealisation"
                 @click="ouvrirDialogAjoutReal"
               >
                 Ajouter une réalisation

@@ -6,9 +6,10 @@ import useSessionTimeout from "@/utils/useSessionTimeout";
 import TableauDeBord from "@/components/mecano/TableauDeBord/TableauDeBord.vue";
 import { maintStore } from "@/store/Maintenance/maintenance_store";
 import { useDemandeMaintenance } from "@/store/Maintenance/demande_store";
+import BoutonOutline from "@/components/mecano/UI/BoutonOutline.vue";
 
 export default defineComponent({
-  components: { TableauDeBord },
+  components: { TableauDeBord, BoutonOutline },
   setup() {
     const user = localStorage.getItem("username") || "Invité";
     const isOnline = ref(navigator.onLine);
@@ -170,17 +171,7 @@ export default defineComponent({
         <v-spacer></v-spacer>
 
         <!-- Bouton Dashboard OMAIN -->
-        <v-btn
-          variant="outlined"
-          size="small"
-          color="#0b3b17"
-          class="mr-2"
-          
-          @click="openDashboard"
-        >
-          <v-icon start size="18">mdi-view-dashboard-outline</v-icon>
-          OMAIN
-        </v-btn>
+        <BoutonOutline class="mr-2" label="OMAIN" icon="mdi-view-dashboard-outline" @click="openDashboard" />
 
         <div>
           <u>Login</u> :&nbsp;<b><span style="color: #388e3c">{{ user }}</span></b>

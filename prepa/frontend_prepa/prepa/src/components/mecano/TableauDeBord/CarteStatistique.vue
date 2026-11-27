@@ -95,7 +95,7 @@ defineProps({
   min-height: 58px;
   margin: 5px;
   padding: 0 24px 0 34px;
-  border-radius: 5px;
+  border-radius: var(--radius-sm, 8px);
   background: var(--color-surface-strong);
 }
 
